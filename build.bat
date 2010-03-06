@@ -1,4 +1,4 @@
-@echo off
+@ECHO OFF
 
 SET F=
 REM SET F=%F% -cov
@@ -38,11 +38,17 @@ REM SET P=%P% src\gui\min\gui.d
 
 SET L=
 
-pushd util\gen
-php cpu_gen.php
-popd
+IF NOT EXIST "dmd\windows\bin\dfl.exe" (
+	PUSHD dmd
+	CALL setup.bat
+	POPD dmd
+)
 
-del /q pspemu.exe 2> NUL > NUL
-rcc -32 res\psp.rc -ores\psp.res
-dfl %F% %P% %L% -ofpspemu
-del /q *.obj *.map res\psp.res 2> NUL > NUL
+PUSHD util\gen
+..\..\dmd\php cpu_gen.php
+POPD
+
+DEL /Q pspemu.exe 2> NUL > NUL
+dmd\windows\bin\rcc -32 res\psp.rc -ores\psp.res
+dmd\windows\bin\dfl %F% %P% %L% -ofpspemu
+DEL /Q *.obj *.map res\psp.res 2> NUL > NUL
