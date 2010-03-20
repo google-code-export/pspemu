@@ -240,8 +240,6 @@ static final class CPU {
 		}
 		
 		while (true) { try { while (true) {		
-			//if (*interruptFlags) processInterrupts();
-			
 			tick++;
 			
 			if ((tick % 40000) == 0) mem.interrupts.queue(INTS.THREAD0);
