@@ -124,9 +124,23 @@ class INT {
 	}
 	
 	void process() {
-		foreach (k, c; callbacksQueue) {
-			callbacksQueue.remove(k); queued--;
-			c();
+		int callbacksQueueLength = callbacksQueue.length;
+		try {
+			if (0) {
+				foreach (key; callbacksQueue.keys.dup) {
+					auto callback = callbacksQueue[key];
+					callbacksQueue.remove(key); queued--;
+					callback();
+				}
+			} else {
+				foreach (callback; callbacksQueue) {
+					callback();
+					queued--;
+				}
+				callbacksQueue = null;
+			}
+		} catch (Object e) {
+			writefln("Interrupt.process: %s | callbacksQueue.length==%d", e, callbacksQueueLength);
 		}
 	}
 }
@@ -159,6 +173,7 @@ class Memory : Stream {
 	} else {
 		ubyte[] main; final const int main_addr = 0x08_000000, main_mask = 0x01FFFFFF; // Main Memory  | 32MB FAT
 	}
+	
 	ubyte[] frmb; final const int frmb_addr = 0x04_000000, frmb_mask = 0x001FFFFF; // Frame Buffer | 2MB
 	ubyte[] spad; final const int spad_addr = 0x00_010000, spad_mask = 0x00003FFF; // Scratch Pad  | 16KB
 	uint[] breakpoints;
