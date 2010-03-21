@@ -5,10 +5,10 @@
 	sRT = (RS + IMM );
 
 @SLTI
-	sRT = (cast(int) RSU < IMM );
+	sRT = (cast(int) RSU < IMM);
 	
 @SLTIU
-	sRT = (cast(uint)RSU < IMMU);
+	sRT = (cast(uint)RSU < IMM);
 
 @ANDI
 	sRT = (RS & IMMU);

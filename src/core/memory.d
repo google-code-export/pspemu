@@ -19,15 +19,29 @@ class Registers {
 	uint PC, nPC;
 	uint HI, LO;
 	uint[0x20] r;
-	float[0x20] f;
+	union {
+		float[0x20] f;
+		uint[0x20] fi;
+	}
 	uint IC = 0xFFFFFFFF; // Interrupt Controller
 	uint CC;
 	
-	void copy(Registers freg) {
-		ubyte* s1 = cast(ubyte*)&freg.PC;
-		ubyte* s2 = cast(ubyte*)&PC;
-		int size = (cast(ubyte*)&CC - s2) + CC.sizeof;
-		s2[0..size] = s1[0..size];
+	void copy(Registers that) {
+		if (1) {
+			ubyte* s1 = cast(ubyte*)&that.PC;
+			ubyte* s2 = cast(ubyte*)&PC;
+			int size = (cast(ubyte*)&CC - s2) + CC.sizeof;
+			s2[0..size] = s1[0..size];
+		} else {
+			this.PC  = that.PC;
+			this.nPC = that.nPC;
+			this.LO  = that.LO;
+			this.HI  = that.HI;
+			this.IC  = that.IC;
+			this.CC  = that.CC;
+			this.r[0..$] = that.r[0..$];
+			this.f[0..$] = that.f[0..$];
+		}
 	}
 	
 	enum R {

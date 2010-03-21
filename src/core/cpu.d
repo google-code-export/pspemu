@@ -17,6 +17,8 @@ import psp.gpu;
 //version = fake_registers; // Ignore zr writting
 //version = fast_pc_read;   // Executing only from main ram (ignoring bad addresses)
 
+//debug = FULL_LOG;
+
 debug (used_i) ulong[char[]] used_i_table;
 debug (used_a) ulong[uint  ] used_a_table;
 
@@ -34,6 +36,11 @@ interface IBIOS {
 }
 
 static final class CPU {
+	debug (FULL_LOG) {
+		static Stream logfile;
+		static Registers logregs;
+	}
+
 	static Memory mem;
 	static Registers regs;
 	static Controller ctrl;
@@ -193,7 +200,16 @@ static final class CPU {
 		}
 		
 		ubyte REV1(ubyte b) { return ((b * 0x0802LU & 0x22110LU) | (b * 0x8020LU & 0x88440LU)) * 0x10101LU >> 16;  }
-		uint  REV4(uint  v) { return (REV1((v >>  0) & 0xFF) << 24) | (REV1((v >>  8) & 0xFF) << 18) | (REV1((v >> 16) & 0xFF) <<  8) | (REV1((v >> 24) & 0xFF) <<  0); }
+		//uint  REV4(uint  v) { return (REV1((v >>  0) & 0xFF) << 24) | (REV1((v >>  8) & 0xFF) << 18) | (REV1((v >> 16) & 0xFF) <<  8) | (REV1((v >> 24) & 0xFF) <<  0); }
+		uint BITREV(uint v) {
+			v = ((v >> 1) & 0x55555555) | ((v & 0x55555555) << 1 ); // swap odd and even bits
+			v = ((v >> 2) & 0x33333333) | ((v & 0x33333333) << 2 ); // swap consecutive pairs
+			v = ((v >> 4) & 0x0F0F0F0F) | ((v & 0x0F0F0F0F) << 4 ); // swap nibbles ... 
+			v = ((v >> 8) & 0x00FF00FF) | ((v & 0x00FF00FF) << 8 ); // swap bytes
+			v = ( v >> 16             ) | ( v               << 16); // swap 2-byte long pairs
+			return v;
+		}
+
 		
 		uint ROTR(uint a, uint b) { b = (b & 0x1F);
 			asm { mov EAX, a; mov ECX, b; ror EAX, CL; mov a, EAX; }
@@ -283,12 +299,43 @@ static final class CPU {
 			OP = pc_read(PC);
 			
 			//mixin(import("cpu_switch.back.d"));
-			mixin(import("cpu_switch.d"));
-			
+
+			debug (FULL_LOG) {
+				if (logfile is null) {
+					logfile = new BufferedFile("log.txt", FileMode.OutNew);
+					writefln("Opening log.txt");
+				}
+				if (logregs is null) {
+					logregs = new Registers;
+				}
+				logregs.copy(regs);
+				logfile.writef("PC=%08X,OP=%08X", PC, OP);
+			}
+
+			do {
+				mixin(import("cpu_switch.d"));
+			} while (0);
+
+			debug (FULL_LOG) {
+				for (int n = 0; n < 32; n++) {
+					if (logregs.r[n] != regs.r[n]) logfile.writef(",r%d=%08X", n, regs.r[n]);
+				}
+				for (int n = 0; n < 32; n++) {
+					if (logregs.fi[n] != regs.fi[n]) logfile.writef(",f%d=%08X", n, regs.fi[n]);
+				}
+				if (logregs.LO != regs.LO) logfile.writef(",LO=%08X", regs.LO);
+				if (logregs.HI != regs.HI) logfile.writef(",HI=%08X", regs.HI);
+				if (logregs.CC != regs.CC) logfile.writef(",CC=%08X", regs.CC);
+				logfile.writefln("");
+			}
+
 		} } catch (ExitException e) {
 			writefln("Program end");
 			return;
 		} catch (Exception e) {
+			debug (FULL_LOG) {
+				logfile.flush();
+			}
 			ErrorResult retval =  ErrorResult.ABORT;
 			
 			if (e.classinfo.name == InterruptException.classinfo.name) {

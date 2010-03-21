@@ -17,4 +17,4 @@
 	sRD = SEB(RT);
 
 @BITREV
-	sRD = REV4(RT);
+	sRD = BITREV(RT);
