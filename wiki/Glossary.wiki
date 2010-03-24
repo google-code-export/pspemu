@@ -1,4 +1,5 @@
 #summary Glossary of terminology related to pspemu
+#labels Featured
 
 = D Language =
 
