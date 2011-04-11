@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{002A2DE9-8BB6-484D-9802-7E4AD4084715}") = "DPspEmulator", "DPspEmulator\DPspEmulator.visualdproj", "{1FE7A7F2-E580-43B8-9056-50F4FC301601}"
+EndProject
+Project("{002A2DE9-8BB6-484D-9802-7E4AD4084715}") = "DPspEmulatorUtils", "DPspEmulatorUtils\DPspEmulatorUtils.visualdproj", "{B04CC8E5-1449-4CF4-8F48-DDA4AF05DBD5}"
+EndProject
+Project("{002A2DE9-8BB6-484D-9802-7E4AD4084715}") = "DPspEmulatorCore", "DPspEmulatorCore\DPspEmulatorCore.visualdproj", "{3C3C75A5-41B7-4F85-9EE2-385EF727316C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1FE7A7F2-E580-43B8-9056-50F4FC301601}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1FE7A7F2-E580-43B8-9056-50F4FC301601}.Debug|Win32.Build.0 = Debug|Win32
+		{1FE7A7F2-E580-43B8-9056-50F4FC301601}.Release|Win32.ActiveCfg = Release|Win32
+		{1FE7A7F2-E580-43B8-9056-50F4FC301601}.Release|Win32.Build.0 = Release|Win32
+		{B04CC8E5-1449-4CF4-8F48-DDA4AF05DBD5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B04CC8E5-1449-4CF4-8F48-DDA4AF05DBD5}.Debug|Win32.Build.0 = Debug|Win32
+		{B04CC8E5-1449-4CF4-8F48-DDA4AF05DBD5}.Release|Win32.ActiveCfg = Release|Win32
+		{B04CC8E5-1449-4CF4-8F48-DDA4AF05DBD5}.Release|Win32.Build.0 = Release|Win32
+		{3C3C75A5-41B7-4F85-9EE2-385EF727316C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3C3C75A5-41B7-4F85-9EE2-385EF727316C}.Debug|Win32.Build.0 = Debug|Win32
+		{3C3C75A5-41B7-4F85-9EE2-385EF727316C}.Release|Win32.ActiveCfg = Release|Win32
+		{3C3C75A5-41B7-4F85-9EE2-385EF727316C}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
