@@ -13,21 +13,7 @@ private import core.thread;
 enum : bool { Unsigned, Signed }	
 enum Sign : bool { Unsigned, Signed }	
 
-alias ulong  u64;
-alias uint   u32;
-alias ushort u16;
-alias ubyte  u8;
-alias long   s64;
-alias int    s32;
-alias short  s16;
-alias byte   s8;
-
-// Reinterpret.
-// float -> int
-int   F_I(float v) { return *cast(int   *)&v; }
-// int -> float
-float I_F(int   v) { return *cast(float *)&v; }
-
+/+
 struct InfiniteLoop(int maxCount = 512/*, string file = __FILE__, int line = __LINE__*/) {
 	uint count = maxCount;
 	void increment(void delegate() callback = null, string file = __FILE__, int line = __LINE__) {
@@ -48,73 +34,7 @@ void changeAfter(T)(T* var, int microseconds, T value) {
 }
 
 static const changeAfterTimerPausedMicroseconds = "bool paused = true; changeAfter(&paused, delay, false);";
-
-T onException(T)(lazy T t, T errorValue) { try { return t(); } catch { return errorValue; } }
-T nullOnException(T)(lazy T t) { return onException!(T)(t, null); }
-
-ubyte[] TA(T)(ref T v) {
-	return cast(ubyte[])((&v)[0..1]);
-}
-
-T read(T)(Stream stream, long position = -1) {
-	T t;
-	if (position >= 0) stream = new SliceStream(stream, position, position + (1 << 24));
-	stream.read(TA(t));
-	return t;
-}
-
-T readInplace(T)(ref T t, Stream stream, long position = -1) {
-	if (position >= 0) stream.position = position;
-	stream.read(TA(t));
-	return t;
-}
-
-void writeZero(Stream stream, uint count) {
-	ubyte[1024] block;
-	while (count > 0) {
-		int w = min(count, block.length);
-		stream.write(block[0..w]);
-		count -= w;
-	}
-}
-
-string readStringz(Stream stream, long position = -1) {
-	string s;
-	char c;
-	if (position >= 0) {
-		//writefln("SetPosition:%08X", position);
-		stream = new SliceStream(stream, position, position + (1 << 24));
-	}
-	while (!stream.eof) {
-		stream.read(c);
-		if (c == 0) break;
-		s ~= c;
-	} 
-	return s;
-}
-
-ulong readVarInt(Stream stream) {
-	ulong v;
-	ubyte b;
-	while (!stream.eof) {
-		stream.read(b);
-		v <<= 7;
-		v |= (b & 0x7F);
-		if (!(b & 0x80)) break;
-	}
-	return v;
-}
-
-void swap(T)(ref T a, ref T b) { auto c = a; a = b; b = c; }
-T min(T)(T l, T r) { return (l < r) ? l : r; }
-T max(T)(T l, T r) { return (l > r) ? l : r; }
-T clamp(T)(T v, T l = 1.0, T r = 1.0) {
-	if (v < l) v = l;
-	if (v > r) v = r;
-	return v;
-}
-T xabs(T)(T v) { return (v >= 0) ? v : -v; }
-T sign(T)(T v) { if (v == 0) return 0; return (v > 0) ? 1 : -1; }
++/
 
 class CircularList(Type, bool CheckAvailable = true) {
 	/*
@@ -247,13 +167,12 @@ class TaskQueue {
 	alias executeAll opCall;
 }
 
+/+
 enum RunningState {
 	RUNNING = 0,
 	PAUSED  = 1,
 	STOPPED = 2,
 }
-
-class HaltException : Exception { this(string type = "HALT") { super(type); } }
 
 abstract class PspHardwareComponent {
 	Thread thread;
@@ -329,3 +248,4 @@ abstract class PspHardwareComponent {
 		}
 	}
 }
++/

@@ -69,6 +69,9 @@ template ThreadManForUser_Threads() {
 		auto newThreadState = new ThreadState(currentEmulatorState, new Registers());
 		newThreadState.registers.copyFrom(currentRegisters);
 		newThreadState.registers.pcSet = entry;
+		newThreadState.registers.SP = hleEmulatorState.memoryPartition.allocHigh(stackSize).high - 4;
+		writefln("threadNewSP: %08X", newThreadState.registers.SP);
+		
 		
 		return hleEmulatorState.uniqueIdFactory.add("thread", newThreadState);
 		
@@ -136,6 +139,8 @@ template ThreadManForUser_Threads() {
 		// newCpuThread could access parent's stack because it has some cycles at the start.
 		newCpuThread.thisThreadWaitCyclesAtLeast(100);
 		
+		// @TODO
+		
 		return 0;
 		
 		//callLibrary("ThreadManForUser", "sceKernelStartThread");
@@ -149,8 +154,6 @@ template ThreadManForUser_Threads() {
 			return -1;
 		}
 		//writefln("sceKernelStartThread:%d,%d,%d", thid, arglen, cpu.memory.getPointerReverseOrNull(argp));
-		pspThread.registers.A0 = arglen;
-		pspThread.registers.A1 = cpu.memory.getPointerReverseOrNull(argp);
 		pspThread.info.status  = PspThreadStatus.PSP_THREAD_RUNNING;
 		threadManager.addToRunningList(pspThread);
 

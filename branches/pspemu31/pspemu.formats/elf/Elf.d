@@ -4,7 +4,9 @@ module pspemu.formats.elf.Elf;
 
 import pspemu.core.cpu.Instruction;
 
-import pspemu.utils.Utils;
+import pspemu.utils.StructUtils;
+import pspemu.utils.StreamUtils;
+import pspemu.utils.MathUtils;
 import pspemu.utils.MemoryPartition;
 //import pspemu.utils.Logger;
 
@@ -304,7 +306,7 @@ class Elf {
 
 		uint memory_read32(uint position) {
 			memoryStream.position = position;
-			return pspemu.utils.Utils.read!(uint)(memoryStream);
+			return read!(uint)(memoryStream);
 		}
 
 		uint memory_write32(uint position, uint data) {

@@ -131,7 +131,8 @@ class MemoryPartition {
 	public MemoryPartition allocLow(uint size, uint alignment = 1) {
 		prepareChilds();
 
-		foreach (child; childsByLow) {
+		foreach (childKey; childsByLow.keys) {
+			auto child = childsByLow[childKey];
 			if (!child.used && child.length > size) {
 				uint childLow = child.low;
 				child.low = childLow + size;
@@ -146,7 +147,29 @@ class MemoryPartition {
 				return allocatedChild; 
 			}			
 		}
-		throw(new NotEnoughSpaceException("No available space"));
+		throw(new NotEnoughSpaceException("allocLow:: No available space"));
+	}
+	
+	public MemoryPartition allocHigh(uint size, uint alignment = 1) {
+		prepareChilds();
+
+		foreach (childKey; childsByHigh.keys.reverse) {
+			auto child = childsByHigh[childKey];
+			if (!child.used && child.length > size) {
+				uint childHigh = child.high;
+				child.high = childHigh - size;
+				uint padsize = (alignment - (childHigh % alignment)) % alignment;
+				if (padsize > 0) {
+					createChild(childHigh - padsize, childHigh);
+					childHigh += padsize;
+				}
+				
+				auto allocatedChild = createChild(childHigh - size, childHigh);
+				allocatedChild.used = true;
+				return allocatedChild; 
+			}			
+		}
+		throw(new NotEnoughSpaceException("allocHigh:: No available space"));
 	}
 	
 	public string toString() {

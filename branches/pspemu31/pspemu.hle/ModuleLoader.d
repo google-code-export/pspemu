@@ -12,6 +12,12 @@ import pspemu.formats.elf.ElfDwarf;
 import pspemu.formats.Pbp;
 
 import pspemu.utils.MemoryPartition;
+import pspemu.utils.StructUtils;
+import pspemu.utils.StreamUtils;
+import pspemu.utils.ExceptionUtils;
+
+import pspemu.hle.ModuleManager;
+import pspemu.hle.Syscall;
 
 class ModuleLoader {
 	enum ModuleFlags : ushort {
@@ -53,7 +59,7 @@ class ModuleLoader {
 	}
 	
 	static struct ModuleInfo {
-		uint flags;     ///
+		uint flags;         ///
 		char[28] name;      /// Name of the module.
 		uint gp;            /// Global Pointer initial value.
 		uint exportsStart;  ///
@@ -67,12 +73,19 @@ class ModuleLoader {
 
 	Stream memoryStream;
 	MemoryPartition memoryPartition;
+	ModuleManager moduleManager;
 	Elf elf;
 	ElfDwarf dwarf;
+	ModuleInfo moduleInfo;
+	Stream importsStream;
+	Stream exportsStream;
+	ModuleImport[] moduleImports;
+	ModuleExport[] moduleExports;
 
-	public this(Stream memoryStream, MemoryPartition memoryPartition) {
+	public this(Stream memoryStream, MemoryPartition memoryPartition, ModuleManager moduleManager) {
 		this.memoryStream    = memoryStream;
 		this.memoryPartition = memoryPartition;
+		this.moduleManager   = moduleManager;
 	}
 	
 	public void load(Stream stream, string name = "<unknown>") {
@@ -99,6 +112,74 @@ class ModuleLoader {
 		this.elf = new Elf(stream);
 		this.elf.allocateMemory(memoryPartition);
 		this.elf.writeToMemory(memoryStream);
+
+		readInplace(moduleInfo, this.elf.SectionStream(".rodata.sceModuleInfo"));
+		
+		this.importsStream = getMemorySliceRelocated(moduleInfo.importsStart, moduleInfo.importsEnd);
+		this.exportsStream = getMemorySliceRelocated(moduleInfo.exportsStart, moduleInfo.exportsEnd);
+		
+		processImports();
+	}
+	
+	Syscall.Function[] funcs;
+	
+	public void processImports() {
+		// Load Imports.
+		//version (DEBUG_LOADER) writefln("Imports (0x%08X-0x%08X):", moduleInfo.importsStart, moduleInfo.importsEnd);
+
+		uint[][string] unimplementedNids;
+	
+		while (!importsStream.eof) {
+			auto moduleImport     = read!(ModuleImport)(importsStream);
+			//writefln("%08X", moduleImport.name);
+			auto moduleImportName = moduleImport.name ? readStringz(memoryStream, moduleImport.name) : "<null>";
+			//assert(moduleImport.entry_size == moduleImport.sizeof);
+			version (DEBUG_LOADER) {
+				writefln("  '%s'", moduleImportName);
+				writefln("  {");
+			}
+			try {
+				moduleImports ~= moduleImport;
+				auto nidStream  = getMemorySlice(moduleImport.nidAddress , moduleImport.nidAddress  + moduleImport.func_count * 4);
+				auto callStream = getMemorySlice(moduleImport.callAddress, moduleImport.callAddress + moduleImport.func_count * 8);
+				//writefln("%08X", moduleImport.callAddress);
+				
+				auto pspModule = nullOnException(moduleManager[moduleImportName]);
+
+				while (!nidStream.eof) {
+					uint nid = read!(uint)(nidStream);
+					
+					if ((pspModule !is null) && (nid in pspModule.nids)) {
+						version (DEBUG_LOADER) writefln("    %s", pspModule.nids[nid]);
+						//auto Instruction syscallInstruction;
+						callStream.write(cast(uint)(0x0000000C | (0x1000 << 6))); // syscall 0x2307
+						callStream.write(cast(uint)cast(void *)&pspModule.nids[nid]);
+					} else {
+						version (DEBUG_LOADER) writefln("    0x%08X:<unimplemented>", nid);
+						callStream.write(cast(uint)(0x0000000C | (0x1001 << 6))); // syscall 0x2307
+						auto func = new Syscall.Function(delegate(Syscall.Function func) {
+							.writefln("trying to call %s", func.info);
+						}, std.string.format("'%s':%08X", moduleImportName, nid));
+						funcs ~= func;
+						callStream.write(cast(uint)cast(void *)func);
+						
+						writefln("@FUNC: %08X", cast(uint)cast(void *)func);
+
+						//callStream.write(cast(uint)(0x70000000));
+						//callStream.write(cast(uint)0);
+						unimplementedNids[moduleImportName] ~= nid;
+					}
+					//writefln("++");
+					//writefln("--");
+				}
+			} catch (Throwable o) {
+				writefln("  ERRROR!: %s", o);
+				throw(o);
+			}
+			version (DEBUG_LOADER) {
+				writefln("  }");
+			}
+		}
 	}
 	
 	uint PC() {
@@ -106,8 +187,7 @@ class ModuleLoader {
 	}
 
 	uint GP() {
-		//return getRelocatedAddress(moduleInfo.gp);
-		return -1;
+		return getRelocatedAddress(moduleInfo.gp);
 	}
 	
 	uint getRelocatedAddress(uint addr) {
@@ -119,6 +199,14 @@ class ModuleLoader {
 		} else {
 			return addr + elf.relocationAddress;
 		}
+	}
+	
+	Stream getMemorySlice(uint from, uint to) {
+		return new SliceStream(memoryStream, (from), (to));
+	}
+
+	Stream getMemorySliceRelocated(uint from, uint to) {
+		return new SliceStream(memoryStream, getRelocatedAddress(from), getRelocatedAddress(to));
 	}
 
 
@@ -168,9 +256,6 @@ class Loader {
 	ModuleManager moduleManager;
 	AllegrexAssembler assembler, assemblerExe;
 	Memory memory() { return executionState.memory; }
-	ModuleInfo moduleInfo;
-	ModuleImport[] moduleImports;
-	ModuleExport[] moduleExports;
 
 	void allocatePartitionBlock() {
 		// Not a Memory supplied.
@@ -200,25 +285,6 @@ class Loader {
 		}
 	}
 
-	uint getRelocatedAddress(uint addr) {
-		if (addr >= elf.relocationAddress) {
-			if (elf.relocationAddress > 0) {
-				Logger.log(Logger.Level.WARNING, "Loader", "Trying to get an already relocated address:%08X", addr);
-			}
-			return addr;
-		} else {
-			return addr + elf.relocationAddress;
-		}
-	}
-
-	Stream getMemorySliceRelocated(uint from, uint to) {
-		return new SliceStream(memory, getRelocatedAddress(from), getRelocatedAddress(to));
-	}
-
-	Stream getMemorySlice(uint from, uint to) {
-		return new SliceStream(memory, (from), (to));
-	}
-
 	void load() {
 		this.elf.preWriteToMemory(memory);
 		{
@@ -235,52 +301,7 @@ class Loader {
 		auto importsStream = getMemorySliceRelocated(moduleInfo.importsStart, moduleInfo.importsEnd);
 		auto exportsStream = getMemorySliceRelocated(moduleInfo.exportsStart, moduleInfo.exportsEnd);
 		
-		// Load Imports.
-		version (DEBUG_LOADER) writefln("Imports (0x%08X-0x%08X):", moduleInfo.importsStart, moduleInfo.importsEnd);
-
-		uint[][string] unimplementedNids;
 	
-		while (!importsStream.eof) {
-			auto moduleImport     = read!(ModuleImport)(importsStream);
-			//writefln("%08X", moduleImport.name);
-			auto moduleImportName = moduleImport.name ? readStringz(memory, moduleImport.name) : "<null>";
-			//assert(moduleImport.entry_size == moduleImport.sizeof);
-			version (DEBUG_LOADER) {
-				writefln("  '%s'", moduleImportName);
-				writefln("  {");
-			}
-			try {
-				moduleImports ~= moduleImport;
-				auto nidStream  = getMemorySlice(moduleImport.nidAddress , moduleImport.nidAddress  + moduleImport.func_count * 4);
-				auto callStream = getMemorySlice(moduleImport.callAddress, moduleImport.callAddress + moduleImport.func_count * 8);
-				//writefln("%08X", moduleImport.callAddress);
-				
-				auto pspModule = nullOnException(moduleManager[moduleImportName]);
-
-				while (!nidStream.eof) {
-					uint nid = read!(uint)(nidStream);
-					
-					if ((pspModule !is null) && (nid in pspModule.nids)) {
-						version (DEBUG_LOADER) writefln("    %s", pspModule.nids[nid]);
-						callStream.write(cast(uint)(0x0000000C | (0x1000 << 6))); // syscall 0x2307
-						callStream.write(cast(uint)cast(void *)&pspModule.nids[nid]);
-					} else {
-						version (DEBUG_LOADER) writefln("    0x%08X:<unimplemented>", nid);
-						//callStream.write(cast(uint)(0x70000000));
-						//callStream.write(cast(uint)0);
-						unimplementedNids[moduleImportName] ~= nid;
-					}
-					//writefln("++");
-					//writefln("--");
-				}
-			} catch (Object o) {
-				writefln("  ERRROR!: %s", o);
-				throw(o);
-			}
-			version (DEBUG_LOADER) {
-				writefln("  }");
-			}
-		}
 		
 		if (unimplementedNids.length > 0) {
 			int count = 0;
@@ -312,12 +333,6 @@ class Loader {
 			moduleExports ~= moduleExport;
 		}
 	}
-
-	uint PC() {
-		//writefln("assemblertext: %08X", assemblerExe.segments["text"]);
-		return elf ? getRelocatedAddress(elf.header.entryPoint) : assemblerExe.segments["text"];
-	}
-	uint GP() { return elf ? getRelocatedAddress(moduleInfo.gp) : 0; }
 
 	void setRegisters() {
 		auto threadManForUser = moduleManager.get!(ThreadManForUser);

@@ -24,6 +24,10 @@ class Emulator {
 		emulatorState.display.start();
 	}
 	
+	public void startGpu() {
+		emulatorState.gpu.start();
+	}
+	
 	public void startMainThread() {
 		mainCpuThread.start();
 	}

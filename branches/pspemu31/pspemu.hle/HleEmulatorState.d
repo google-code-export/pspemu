@@ -36,11 +36,18 @@ class HleEmulatorState : ISyscall {
 		this.emulatorState   = emulatorState;
 		this.memoryPartition = new MemoryPartition(Memory.Segments.mainMemory.low, Memory.Segments.mainMemory.high);
 		this.moduleManager   = new ModuleManager(this);
-		this.moduleLoader    = new ModuleLoader(this.emulatorState.memory, this.memoryPartition);
+		this.moduleLoader    = new ModuleLoader(this.emulatorState.memory, this.memoryPartition, this.moduleManager);
 		this.uniqueIdFactory = new UniqueIdFactory();
 		this.syscallObject   = new Syscall(this);
 		
 		this.emulatorState.syscall = this;
+	}
+	
+	public uint allocBytes(ubyte[] bytes) {
+		auto allocPartition = memoryPartition.allocLow(bytes.length, 8);
+		emulatorState.memory.twrite(allocPartition.low, bytes); 
+		//cast(ubyte[])"EBOOT.PBP" ~ '\0'
+		return allocPartition.low;
 	}
 	
 	public ThreadState currentThreadState() {

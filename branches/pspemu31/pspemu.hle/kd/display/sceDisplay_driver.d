@@ -50,7 +50,7 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	}
 
 	int _sceDisplayWaitVblankStart(bool _processCallbacks) {
-		currentEmulatorState.display.vblankStartCondition.wait();
+		currentEmulatorState.display.waitVblank();
 		
 		return 0;
 

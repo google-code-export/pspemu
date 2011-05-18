@@ -6,7 +6,8 @@ import std.stream, std.string, std.stdio;
 import std.algorithm;
 import std.range;
 
-import pspemu.utils.Utils;
+import pspemu.utils.StructUtils;
+import pspemu.utils.StreamUtils;
 
 //debug = DEBUG_ELF_DWARF_OPCODES;
 

@@ -53,7 +53,11 @@ class Display {
 		this.thread = new Thread(&this.run);
 		this.thread.start();
 	}
-
+	
+	public void waitVblank() {
+		vblankStartCondition.wait();
+	}
+	
 	protected void run() {
 		environment["SDL_VIDEO_WINDOW_POS"] = "";
 		environment["SDL_VIDEO_CENTERED"] = "1";
@@ -67,6 +71,17 @@ class Display {
 		
 		//for (int n = 0; n < 512 * 272 * 4; n++) memory.frameBuffer[n] = 0xFF;
 		
+		enum PspDisplayPixelFormats {
+			PSP_DISPLAY_PIXEL_FORMAT_565 = 0,
+			PSP_DISPLAY_PIXEL_FORMAT_5551,
+			PSP_DISPLAY_PIXEL_FORMAT_4444,
+			PSP_DISPLAY_PIXEL_FORMAT_8888
+		}
+		
+		uint makebits(int disp, int nbits) {
+			return ((1 << nbits) - 1) << disp;
+		}
+		
 		while (running) {
 			SDL_Event event;
 			SDL_PollEvent(&event);
@@ -77,9 +92,33 @@ class Display {
 				default:
 				break;
 			}
-			SDL_Surface* display = SDL_CreateRGBSurfaceFrom(memory.getPointer(this.topaddr), this.width, this.height, 32, this.bufferwidth * 4, 0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000);			
+			
+			SDL_Surface* display;
+			switch (cast(PspDisplayPixelFormats)this.pixelformat) {
+				case PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_565:
+					display = SDL_CreateRGBSurfaceFrom(memory.getPointer(this.topaddr), this.width, this.height, 16, this.bufferwidth * 2, makebits(0, 5), makebits(5, 6), makebits(11, 5), 0x00000000);
+				break;
+				case PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_5551:
+					//display = SDL_CreateRGBSurfaceFrom(memory.getPointer(this.topaddr), this.width, this.height, 16, this.bufferwidth * 2, makebits(0, 5), makebits(5, 5), makebits(10, 5), makebits(15, 1));
+					display = SDL_CreateRGBSurfaceFrom(memory.getPointer(this.topaddr), this.width, this.height, 16, this.bufferwidth * 2, makebits(0, 5), makebits(5, 5), makebits(10, 5), 0);
+				break;
+				case PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_4444:
+					//display = SDL_CreateRGBSurfaceFrom(memory.getPointer(this.topaddr), this.width, this.height, 16, this.bufferwidth * 2, makebits(0, 4), makebits(4, 4), makebits(8, 4), makebits(12, 4));
+					display = SDL_CreateRGBSurfaceFrom(memory.getPointer(this.topaddr), this.width, this.height, 16, this.bufferwidth * 2, makebits(0, 4), makebits(4, 4), makebits(8, 4), 0);
+				break;
+				default:
+				case PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_8888:
+					display = SDL_CreateRGBSurfaceFrom(memory.getPointer(this.topaddr), this.width, this.height, 32, this.bufferwidth * 4, 0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000);
+				break;
+			}
+			
+			/*
+				PspDisplayPixelFormats { PSP_DISPLAY_PIXEL_FORMAT_565 = 0, PSP_DISPLAY_PIXEL_FORMAT_5551, PSP_DISPLAY_PIXEL_FORMAT_4444, PSP_DISPLAY_PIXEL_FORMAT_8888 }
+			*/
 			SDL_BlitSurface(display, null, screen, null);
 			SDL_Flip(screen);
+			
+			SDL_FreeSurface(display);
 
 			this.vblankStartCondition.notifyAll();
 			
