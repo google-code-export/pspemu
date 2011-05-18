@@ -1,4 +1,4 @@
-module pspemu.hle.kd.display; // kd/display.prx (sceDisplay_Service)
+module pspemu.hle.kd.display.sceDisplay_driver; // kd/display.prx (sceDisplay_Service)
 
 //debug = DEBUG_SYSCALL;
 
@@ -188,10 +188,6 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	}
 }
 
-class sceDisplay : sceDisplay_driver { // Flags: 0x40010000
-}
-
 static this() {
-	mixin(ModuleNative.registerModule("sceDisplay"));
 	mixin(ModuleNative.registerModule("sceDisplay_driver"));
 }

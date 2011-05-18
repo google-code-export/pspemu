@@ -1,4 +1,4 @@
-module pspemu.hle.kd.utils; // kd/utils.prx (sceKernelUtils)
+module pspemu.hle.kd.utils.UtilsForUser; // kd/utils.prx (sceKernelUtils)
 
 //debug = DEBUG_SYSCALL;
 
@@ -186,9 +186,6 @@ class UtilsForUser : ModuleNative {
 	}
 }
 
-class UtilsForKernel : UtilsForUser {
-}
-
 struct timeval {
 	uint tv_sec;
 	uint tv_usec;
@@ -202,5 +199,4 @@ struct timezone {
 static this() {
 	//pragma(msg, ModuleNative.registerModule("UtilsForUser"));
 	mixin(ModuleNative.registerModule("UtilsForUser"));
-	mixin(ModuleNative.registerModule("UtilsForKernel"));
 }

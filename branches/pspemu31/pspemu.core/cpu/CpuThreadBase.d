@@ -66,12 +66,19 @@ abstract class CpuThreadBase {
 	
 	abstract public CpuThreadBase createCpuThread(ThreadState threadState);
 	
-	public void run() {
+	protected void run() {
 		thisThreadCpuThreadBase = this;
 		//cpuThreadBasePerThread[Thread.getThis] = this;
 		writefln("nativeThread");
 		if (executeBefore != null) executeBefore();
 		execute();
+	}
+	
+	public void thisThreadWaitCyclesAtLeast(int count = 100) {
+		while (true) {
+			Thread.yield();
+			if (this.executedInstructionsCount >= 100) break;
+		}
 	}
 
 	
