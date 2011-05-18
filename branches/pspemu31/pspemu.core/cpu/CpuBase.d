@@ -30,7 +30,7 @@ string genSwitchAll() {
 		pragma(msg, mixin(str));
 		return mixin(str);
 	} else {
-		return import("cached_switch_all.di");
+		return import("cached_switch_all.dcode");
 	} 
 }
 
@@ -108,6 +108,12 @@ abstract class CpuBase {
 	    }
     }
     
+
+	/*    
+    void execute() {
+    }
+    */
+
     string toString() {
     	return "CpuBase(" ~ threadState.toString() ~ ")";
     }

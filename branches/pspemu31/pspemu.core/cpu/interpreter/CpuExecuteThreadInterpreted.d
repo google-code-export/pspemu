@@ -32,7 +32,7 @@ class CpuExecuteThreadInterpreted : CpuBase {
 	public CpuBase createCpuThread(ThreadState threadState) {
 		return new CpuExecuteThreadInterpreted(threadState);
 	}
-	
+
 	mixin TemplateCpu_ALU;
 	mixin TemplateCpu_MEMORY;
 	mixin TemplateCpu_BRANCH;
@@ -41,9 +41,19 @@ class CpuExecuteThreadInterpreted : CpuBase {
 	mixin TemplateCpu_FPU;
     //void OP_UNK() { writefln("Unknown!!!"); }
     
+    /+
+	mixin(DummyGenUnk());
+    //mixin(DummyGen(PspInstructions_ALU));
+    //mixin(DummyGen(PspInstructions_BCU));
+    //mixin(DummyGen(PspInstructions_LSU));
+    //mixin(DummyGen(PspInstructions_FPU));
+    mixin(DummyGen(PspInstructions_COP0));
+    mixin(DummyGen(PspInstructions_VFPU_IMP));
+    //mixin(DummyGen(PspInstructions_VFPU));
+    //mixin(DummyGen(PspInstructions_SPECIAL));
     
-    /*
-	void execute() {
+    
+    void execute() {
     	try {
 	    	while (running) {
 		    	this.instruction.v = memory.tread!(uint)(this.registers.PC);
@@ -59,5 +69,5 @@ class CpuExecuteThreadInterpreted : CpuBase {
 	    	writefln("%s", this);
 	    }
     }
-	*/
+    +/
 }

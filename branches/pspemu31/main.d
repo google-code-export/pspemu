@@ -18,7 +18,7 @@ unittest {
 int main() {
 	auto emulator = new Emulator();
 	auto moduleLoader = emulator.hleEmulatorState.moduleLoader; 
-	moduleLoader.load(new BufferedFile(r"C:\projects\pspemu\bin\minifire.elf", FileMode.In), "minifire.elf");
+	moduleLoader.load(new BufferedFile(r"C:\projects\pspemu31\bin\minifire.elf", FileMode.In), "minifire.elf");
 	
 	writefln("%08X", moduleLoader.PC);
 	//auto stack = emulator.hleEmulatorState.memoryPartition.alloc(0x8000);
