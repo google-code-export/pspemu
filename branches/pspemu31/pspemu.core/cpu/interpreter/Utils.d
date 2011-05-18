@@ -1,10 +1,9 @@
 module pspemu.core.cpu.interpreter.Utils;
 
 enum Advance { NO, YES }
-enum : bool { Unsigned, Signed }	
-enum Sign : bool { Unsigned, Signed }	
 
-T1 reinterpret(T1, T2)(T2 v) { return *cast(T1 *)&v; }
+public import pspemu.utils.Math;
+
 
 // $rd = cast(uint)registers.R[instruction.RD]
 // #rt = cast( int)registers.R[instruction.RT]

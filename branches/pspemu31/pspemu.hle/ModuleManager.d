@@ -5,6 +5,8 @@ import std.stdio;
 import pspemu.hle.Module;
 import pspemu.hle.ModuleNative;
 
+import pspemu.hle.HleEmulatorState;
+
 //public import pspemu.All;
 class ModuleManager {
 	/**
@@ -13,6 +15,12 @@ class ModuleManager {
 	private Module[string] loadedModules;
 
 	string delegate() getCurrentThreadName;
+	
+	HleEmulatorState hleEmulatorState;
+	
+	public this(HleEmulatorState hleEmulatorState) {
+		this.hleEmulatorState = hleEmulatorState;
+	}
 
 	void reset() {
 		//Logger.log(Logger.Level.DEBUG, "ModuleManager", "reset()");
@@ -32,6 +40,7 @@ class ModuleManager {
 	Module getName(string moduleName) {
 		if (moduleName !in loadedModules) {
 			auto loadedModule = cast(Module)(ModuleNative.getModule(moduleName).create);
+			loadedModule.hleEmulatorState = this.hleEmulatorState;
 			//loadedModule.cpu = cpu;
 			//loadedModule.moduleManager = this;
 			loadedModule.init();
