@@ -4,7 +4,8 @@ module pspemu.hle.kd.display.sceDisplay_driver; // kd/display.prx (sceDisplay_Se
 
 import pspemu.core.cpu.CpuThreadBase;
 
-import core.thread;
+//import core.thread;
+import std.stdio;
 import std.c.windows.windows;
 
 import pspemu.hle.Module;
@@ -50,6 +51,7 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	}
 
 	int _sceDisplayWaitVblankStart(bool _processCallbacks) {
+		writefln("_sceDisplayWaitVblankStart");
 		currentEmulatorState.display.waitVblank();
 		
 		return 0;
@@ -129,6 +131,7 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	 * @return 0 on success
 	 */
 	int sceDisplaySetFrameBuf(uint topaddr, int bufferwidth, int pixelformat, int sync) {
+		writefln("sceDisplaySetFrameBuf");
 		//currentEmulatorState.display.info = Display.Info(topaddr, bufferwidth, pixelformat, sync);
 		currentEmulatorState.display.sceDisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, sync);
 		return 0;
@@ -145,6 +148,7 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	 * @return 0 on success
 	 */
 	int sceDisplayGetFrameBuf(uint* topaddr, int* bufferwidth, int* pixelformat, int sync) {
+		writefln("sceDisplayGetFrameBuf");
 		*topaddr     = currentEmulatorState.display.topaddr;
 		*bufferwidth = currentEmulatorState.display.bufferwidth;
 		*pixelformat = currentEmulatorState.display.pixelformat;
@@ -165,6 +169,7 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	 * @return ???
 	 */
 	int sceDisplaySetMode(int mode, int width, int height) {
+		writefln("sceDisplaySetMode");
 		currentEmulatorState.display.mode   = mode;
 		currentEmulatorState.display.width  = width;
 		currentEmulatorState.display.height = height;
@@ -181,6 +186,7 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	 * @return 0 on success
 	 */
 	int sceDisplayGetMode(int* pmode, int* pwidth, int* pheight) {
+		writefln("sceDisplayGetMode");
 		*pmode   = currentEmulatorState.display.mode;
 		*pwidth  = currentEmulatorState.display.width;
 		*pheight = currentEmulatorState.display.height;

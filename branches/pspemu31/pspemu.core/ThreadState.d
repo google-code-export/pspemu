@@ -12,6 +12,7 @@ class ThreadState {
 	public EmulatorState emulatorState;
 	public Registers registers;
 	public Thread nativeThread;
+	public string name;
 	
 	public this(EmulatorState emulatorState, Registers registers) {
 		this.emulatorState = emulatorState;

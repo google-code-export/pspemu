@@ -6,6 +6,7 @@ debug = DEBUG_SYSCALL;
 
 import std.stdio;
 import std.string;
+import core.thread;
 
 import pspemu.core.cpu.CpuThreadBase;
 import pspemu.core.cpu.Registers;
@@ -24,20 +25,24 @@ static string classInfoBaseName(ClassInfo ci) {
 abstract class Module {
 	public HleEmulatorState hleEmulatorState;
 	
-	public CpuThreadBase currentCpuThread() {
+	static public CpuThreadBase currentCpuThread() {
 		return thisThreadCpuThreadBase;
 	}
 
-	public ThreadState currentThreadState() {
+	static public ThreadState currentThreadState() {
 		return currentCpuThread.threadState;
 	}
 	
-	public EmulatorState currentEmulatorState() {
+	static public EmulatorState currentEmulatorState() {
 		return currentThreadState.emulatorState;
 	}
 
-	public Registers currentRegisters() {
+	static public Registers currentRegisters() {
 		return currentThreadState.registers;
+	}
+	
+	static public void writefln(T...)(T args) {
+		//.writefln("PC(0x%08X) :: %s ::%s", currentRegisters.PC, Thread.getThis.name, std.string.format(args));
 	}
 
 	/*
