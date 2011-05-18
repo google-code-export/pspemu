@@ -3,6 +3,7 @@ module pspemu.hle.HleEmulatorState;
 import std.stdio;
 import std.conv;
 import std.random;
+import core.thread;
 
 import pspemu.core.EmulatorState;
 import pspemu.core.ThreadState;
@@ -111,15 +112,16 @@ class HleEmulatorState : ISyscall {
 				newThreadState.registers.A1 = argp;
 				
 				auto newCpuThread = cpuThread.createCpuThread(newThreadState);
+				/*
 				newCpuThread.executeBefore = delegate() {
-					/*
-					while (true) {
-						writefln("%d", threadState.);
-					}
-					*/
 					writefln("started new thread");
 				};
-				newCpuThread.run();
+				*/
+				
+				newCpuThread.start();
+
+				// newCpuThread could access parent's stack because it has some cycles at the start.
+				newCpuThread.thisThreadWaitCyclesAtLeast(100);
 				
 				set_return_value(0);
 				
