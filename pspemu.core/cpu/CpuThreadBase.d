@@ -106,6 +106,9 @@ abstract class CpuThreadBase {
     void execute() {
     	try {
 	    	while (running) {
+	    		if (this.registers.PC <= 0x08800100) throw(new Exception("Invalid address for executing"));
+	    		//writefln("PC: %08X", this.registers.PC);
+
 		    	this.instruction.v = memory.tread!(uint)(this.registers.PC);
 		    	//writefln("  %08X", this.instruction.v);
 		    	mixin(genSwitchAll());
@@ -115,6 +118,7 @@ abstract class CpuThreadBase {
 	    } catch (HaltException haltException) {
 	    	writefln("halted thread: %s", this);
 	    } catch (Exception exception) {
+	    	writefln("at 0x%08X", this.registers.PC);
 	    	writefln("%s", exception);
 	    	writefln("%s", this);
 	    }

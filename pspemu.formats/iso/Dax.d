@@ -1,7 +1,8 @@
 module pspemu.formats.iso.Dax;
 
 import std.stream;
-import pspemu.utils.Utils;
+
+import pspemu.utils.StreamUtils;
 
 class DAXStream : Stream {
 	struct Header {

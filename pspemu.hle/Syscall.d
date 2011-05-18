@@ -28,6 +28,17 @@ import pspemu.hle.HleEmulatorState;
 
 class Syscall : ISyscall {
 	HleEmulatorState hleEmulatorState;
+
+	static public class Function {
+		string info;
+		uint magic = 0x12_00_13_00;
+		void delegate(Function) callback;
+		
+		this(void delegate(Function) callback, string info) {
+			this.callback = callback;
+			this.info = info;
+		}
+	}
 	
 	public this(HleEmulatorState hleEmulatorState) {
 		this.hleEmulatorState = hleEmulatorState;
@@ -36,9 +47,12 @@ class Syscall : ISyscall {
 	public void syscall(CpuThreadBase cpuThread, int syscallNum) {
 		static string szToString(char* s) { return cast(string)s[0..std.c.string.strlen(s)]; }
 
-		void callModuleFunction(Module.Function* moduleFunction, string libraryName, string functionName) {
+		void callModuleFunction(Module.Function* moduleFunction, string libraryName = "<unsetted:libraryName>", string functionName = "<unsetted:functionName>") {
 			if (moduleFunction is null) {
 				throw(new Exception(std.string.format("Syscall.opCall.callModuleFunction: Invalid Module.Function (%s::%s)", libraryName, functionName)));
+			}
+			if (moduleFunction.func is null) {
+				throw(new Exception(std.string.format("function is null")));
 			}
 			moduleFunction.func(cpuThread);
 		}
@@ -70,6 +84,35 @@ class Syscall : ISyscall {
 		//writefln("syscall(%08X)", syscallNum);
 		
 		switch (syscallNum) {
+			// Special syscalls for this emulator:
+			case 0x1000: { // _pspemuHLECall
+				uint PC = registers.PC;
+				auto moduleFunction = memory.tread!(Module.Function *)(PC);
+				if (moduleFunction is null) throw(new Exception("Module function not implemented"));
+				//writefln("%s", cast(void *)moduleFunction);
+				registers.pcSet = registers.RA;
+				try {
+					callModuleFunction(moduleFunction);
+				} catch (Throwable o) {
+					if (cast(HaltException)o) throw(o);
+					throw(new Exception(std.string.format("%s: %s", moduleFunction.toString, o)));
+				}
+			} break;
+			
+			// Special syscalls for this emulator:
+			case 0x1001: { // _pspemuHLECall2
+				uint PC = registers.PC;
+				auto functionToCall = memory.tread!(Syscall.Function)(PC);
+				//if (functionToCall.magic != Function.init.magic) {
+				if (functionToCall.magic != 0x12_00_13_00) {
+					writefln("#FUNC:%08X", cast(uint)cast(void *)functionToCall);
+					throw(new Exception("Invalid function call magic"));
+				}
+				.writefln("INFO: %s", functionToCall.info);
+				functionToCall.callback(functionToCall);
+				throw(new Exception("_pspemuHLECall2"));
+			} break;
+
 			case 0x206d: callLibrary("ThreadManForUser", "sceKernelCreateThread"); break;
 			case 0x206f: callLibrary("ThreadManForUser", "sceKernelStartThread"); break;
 			case 0x2071: callLibrary("ThreadManForUser", "sceKernelExitThread"); break;
@@ -85,7 +128,7 @@ class Syscall : ISyscall {
 			break;
 			default:
 				writefln("syscall(%08X)", syscallNum);
-				throw(new Exception("Unknown syscall"));
+				throw(new Exception(std.string.format("Unknown syscall (%08X)", syscallNum)));
 			break;
 		}
 	}

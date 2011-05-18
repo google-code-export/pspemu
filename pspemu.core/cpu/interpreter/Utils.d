@@ -2,8 +2,7 @@ module pspemu.core.cpu.interpreter.Utils;
 
 enum Advance { NO, YES }
 
-public import pspemu.utils.Math;
-
+public import pspemu.utils.MathUtils;
 
 // $rd = cast(uint)registers.R[instruction.RD]
 // #rt = cast( int)registers.R[instruction.RT]
