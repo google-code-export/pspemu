@@ -9,6 +9,7 @@ import pspemu.core.cpu.CpuThreadBase;
 import pspemu.core.cpu.Registers;
 
 import pspemu.core.exceptions.HaltException;
+import pspemu.core.exceptions.NotImplementedException;
 
 import pspemu.core.cpu.interpreted.ops.Alu;
 import pspemu.core.cpu.interpreted.ops.Memory;
@@ -16,6 +17,7 @@ import pspemu.core.cpu.interpreted.ops.Branch;
 import pspemu.core.cpu.interpreted.ops.Special;
 import pspemu.core.cpu.interpreted.ops.Jump;
 import pspemu.core.cpu.interpreted.ops.Fpu;
+import pspemu.core.cpu.interpreted.ops.VFpu;
 
 import pspemu.core.cpu.tables.Table;
 import pspemu.core.cpu.tables.SwitchGen;
@@ -39,6 +41,7 @@ class CpuThreadInterpreted : CpuThreadBase {
 	mixin TemplateCpu_JUMP;
 	mixin TemplateCpu_SPECIAL;
 	mixin TemplateCpu_FPU;
+	mixin TemplateCpu_VFPU;
     //void OP_UNK() { writefln("Unknown!!!"); }
     
     /+

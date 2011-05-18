@@ -12,6 +12,8 @@ import pspemu.core.cpu.Registers;
 import pspemu.core.ThreadState;
 import pspemu.core.EmulatorState;
 
+import pspemu.hle.HleEmulatorState;
+
 static string classInfoBaseName(ClassInfo ci) {
 	auto index = ci.name.lastIndexOf('.');
 	if (index == -1) index = 0; else index++;
@@ -20,6 +22,8 @@ static string classInfoBaseName(ClassInfo ci) {
 }
 
 abstract class Module {
+	public HleEmulatorState hleEmulatorState;
+	
 	public CpuThreadBase currentCpuThread() {
 		return thisThreadCpuThreadBase;
 	}
@@ -35,6 +39,12 @@ abstract class Module {
 	public Registers currentRegisters() {
 		return currentThreadState.registers;
 	}
+
+	/*
+	public HleEmulatorState currentHleEmulatorState() {
+		return currentEmulatorState;
+	}
+	*/
 	
 	static struct Function {
 		Module pspModule;

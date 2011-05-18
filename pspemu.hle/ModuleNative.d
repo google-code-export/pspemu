@@ -4,10 +4,19 @@ import std.stdio;
 import std.conv;
 import std.traits;
 
-import pspemu.hle.Module;
-import pspemu.core.cpu.CpuThreadBase;
-import pspemu.core.cpu.Registers;
-import pspemu.core.ThreadState;
+public import pspemu.utils.Math;
+public import pspemu.utils.MemoryPartition;
+public import pspemu.utils.UniqueIdFactory;
+
+public import pspemu.core.exceptions.HaltException;
+public import pspemu.core.exceptions.NotImplementedException;
+
+public import pspemu.hle.kd.Types;
+public import pspemu.hle.Module;
+public import pspemu.core.cpu.CpuThreadBase;
+public import pspemu.core.cpu.Registers;
+public import pspemu.core.ThreadState;
+public import pspemu.core.EmulatorState;
 
 static Module.Nid currentExecutingNid;
 
