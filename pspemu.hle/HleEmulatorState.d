@@ -127,54 +127,11 @@ class HleEmulatorState : ISyscall {
 				//throw(new Exception("sceKernelStartThread"));
 				
 			} break;
-			/*
-			case 0x20bf:
-				// int sceKernelUtilsMt19937Init (SceKernelUtilsMt19937Context *ctx, u32 seed)
-				
-				void* ctx  = get_argument_ptr!void(0);
-				uint  seed = get_argument_int(1);
-				
-				Mt19937 gen;
-				gen.seed(seed);
-				*(cast(Mt19937 *)ctx) = gen;
-				
-			break;
-			case 0x20c0:
-				Mt19937* ctx  = get_argument_ptr!Mt19937(0);
-				set_return_value(ctx.front);
-				ctx.popFront();
-				
-			
-				// u32 sceKernelUtilsMt19937UInt (SceKernelUtilsMt19937Context *ctx)
-				// callLibrary("UtilsForUser",     "sceKernelUtilsMt19937UInt"); break;
-			break;
-			*/
 			case 0x20bf: callLibrary("UtilsForUser",     "sceKernelUtilsMt19937Init"); break;
 			case 0x20c0: callLibrary("UtilsForUser",     "sceKernelUtilsMt19937UInt"); break;
-
-			case 0x213a:
-				// int sceDisplaySetMode (int mode, int width, int height)
-				//callLibrary("sceDisplay",       "sceDisplaySetMode");
-				int mode   = get_argument_int(0);
-				int width  = get_argument_int(1);
-				int height = get_argument_int(2);
-				writefln("sceDisplaySetMode(%d, %d, %d)", get_argument_int(0), get_argument_int(1), get_argument_int(2));
-				emulatorState.display.sceDisplaySetMode(mode, width, height);
-			break;
-			case 0x2147:
-				// callLibrary("sceDisplay",       "sceDisplayWaitVblankStart");
-				emulatorState.display.vblankStartCondition.wait();
-				//writefln("sceDisplayWaitVblankStart");
-			break;
-			case 0x213f:
-				//callLibrary("sceDisplay",       "sceDisplaySetFrameBuf");
-				// int sceDisplaySetFrameBuf(void * topaddr, int bufferwidth, int pixelformat, int sync)
-				int topaddr      = get_argument_int(0);
-				int bufferwidth  = get_argument_int(1);
-				int pixelformat  = get_argument_int(2);
-				int sync         = get_argument_int(3);
-				emulatorState.display.sceDisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, sync);
-			break;
+			case 0x2147: callLibrary("sceDisplay",       "sceDisplayWaitVblankStart"); break;
+			case 0x213a: callLibrary("sceDisplay",       "sceDisplaySetMode"); break; 
+			case 0x213f: callLibrary("sceDisplay",       "sceDisplaySetFrameBuf"); break;
 			case 0x2150:
 				//callLibrary("sceCtrl", "sceCtrlPeekBufferPositive");
 				
