@@ -19,12 +19,21 @@ unittest {
 
 int main() {
 	auto emulator = new Emulator();
-	auto moduleLoader = emulator.hleEmulatorState.moduleLoader; 
+	auto moduleLoader = emulator.hleEmulatorState.moduleLoader;
+	
+	uint CODE_PTR_EXIT_THREAD = 0x08000000;
+	
+	emulator.hleEmulatorState.memoryPartition.allocLow(1024);
+	emulator.emulatorState.memory.twrite!uint(CODE_PTR_EXIT_THREAD, 0x0000000C | (0x2071 << 6));
+	
+
 	//moduleLoader.load(new BufferedFile(r"C:\projects\pspemu31\bin\minifire.elf", FileMode.In), "minifire.elf");
 	//moduleLoader.load(new BufferedFile(r"C:\projects\pspemu31\bin\HelloJpcsp.pbp", FileMode.In), "HelloJpcsp.pbp");
-	moduleLoader.load(new BufferedFile(r"C:\projects\pspemu31\bin\HelloWorldPSP.pbp", FileMode.In), "HelloWorldPSP.pbp");
+	//moduleLoader.load(new BufferedFile(r"C:\projects\pspemu31\bin\HelloWorldPSP.pbp", FileMode.In), "HelloWorldPSP.pbp");
 	//moduleLoader.load(new BufferedFile(r"C:\projects\pspemu31\bin\ortho.pbp", FileMode.In), "ortho.pbp");
-	
+	//moduleLoader.load(new BufferedFile(r"C:\projects\pspemu31\bin\lines.pbp", FileMode.In), "lines.pbp");
+	//moduleLoader.load(new BufferedFile(r"C:\projects\pspemu31\bin\text.elf", FileMode.In), "text.elf");
+	moduleLoader.load(new BufferedFile(r"C:\projects\pspemu31\bin\cube.pbp", FileMode.In), "cube.pbp");
 	
 	writefln("%08X", moduleLoader.PC);
 	//auto stack = emulator.hleEmulatorState.memoryPartition.alloc(0x8000);
@@ -41,7 +50,7 @@ int main() {
 	
 		registers.SP = SP;
 		registers.K0 = registers.SP;
-		registers.RA = 0x08000000;
+		registers.RA = CODE_PTR_EXIT_THREAD;
 		registers.A0 = 1;
 		registers.A1 = emulator.hleEmulatorState.allocBytes(cast(ubyte[])"EBOOT.PBP" ~ '\0');
 	}

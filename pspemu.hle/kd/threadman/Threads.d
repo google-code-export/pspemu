@@ -14,10 +14,10 @@ template ThreadManForUser_Threads() {
 		mixin(registerd!(0x446D8DE6, sceKernelCreateThread));
 		mixin(registerd!(0xF475845D, sceKernelStartThread));
 		mixin(registerd!(0xAA73C935, sceKernelExitThread));
-		/+
-		mixin(registerd!(0x809CE29B, sceKernelExitDeleteThread));
 		mixin(registerd!(0x9ACE131E, sceKernelSleepThread));
 		mixin(registerd!(0x82826F70, sceKernelSleepThreadCB));
+		/+
+		mixin(registerd!(0x809CE29B, sceKernelExitDeleteThread));
 		mixin(registerd!(0x9FA03CD3, sceKernelDeleteThread));
 		mixin(registerd!(0x293B45B8, sceKernelGetThreadId));
 		mixin(registerd!(0x17C1684E, sceKernelReferThreadStatus));
@@ -70,7 +70,9 @@ template ThreadManForUser_Threads() {
 		newThreadState.registers.copyFrom(currentRegisters);
 		newThreadState.registers.pcSet = entry;
 		newThreadState.registers.SP = hleEmulatorState.memoryPartition.allocHigh(stackSize).high - 4;
-		writefln("threadNewSP: %08X", newThreadState.registers.SP);
+		newThreadState.registers.RA = 0x08000000;
+		newThreadState.name = name;
+		writefln("sceKernelCreateThread(name:'%s', SP:0x%08X)", name, newThreadState.registers.SP);
 		
 		
 		return hleEmulatorState.uniqueIdFactory.add("thread", newThreadState);
@@ -128,6 +130,9 @@ template ThreadManForUser_Threads() {
 		newThreadState.registers.A1 = argp;
 		
 		auto newCpuThread = currentCpuThread.createCpuThread(newThreadState);
+		
+		writefln("sceKernelStartThread(%d, %d, %08X)", thid, arglen, argp);
+
 		/*
 		newCpuThread.executeBefore = delegate() {
 			writefln("started new thread");
@@ -177,7 +182,41 @@ template ThreadManForUser_Threads() {
 	 * @param status - Exit status.
 	 */
 	void sceKernelExitThread(int status) {
+		writefln("sceKernelExitThread(%d)", status);
 		throw(new HaltException(std.string.format("sceKernelExitDeleteThread(%d)", status)));
+	}
+	
+	/**
+	 * Sleep thread
+	 *
+	 * @return < 0 on error.
+	 */
+	int sceKernelSleepThread() {
+		currentCpuThread.executedInstructionsCount += 1000;
+		writefln("sceKernelSleepThread()");
+		while (currentCpuThread.running) {
+			Thread.sleep(1);
+		}
+		return 0;
+	}
+
+	/**
+	 * Sleep thread but service any callbacks as necessary
+	 *
+	 * @par Example:
+	 * <code>
+	 *     // Once all callbacks have been setup call this function
+	 *     sceKernelSleepThreadCB();
+	 * </code>
+	 */
+	int sceKernelSleepThreadCB() {
+		currentCpuThread.executedInstructionsCount += 1000;
+		writefln("sceKernelSleepThreadCB()");
+		while (currentCpuThread.running) {
+			//processCallbacks();
+			Thread.sleep(1);
+		}
+		return 0;
 	}
 
 	/+
@@ -418,36 +457,6 @@ template ThreadManForUser_Threads() {
 	 */
 	SceUID sceKernelGetThreadId() {
 		return threadManager.currentThread.thid;
-	}
-
-	/**
-	 * Sleep thread
-	 *
-	 * @return < 0 on error.
-	 */
-	int sceKernelSleepThread() {
-		// Sets the position of the thread to the syscall again.
-		// Sets the thread as waiting.
-		// Switch to another thread immediately.
-		return threadManager.currentThread.pauseAndYield("sceKernelSleepThread", (PspThread pausedThread) {
-			//writefln("sceKernelSleepThread");
-		});
-	}
-
-	/**
-	 * Sleep thread but service any callbacks as necessary
-	 *
-	 * @par Example:
-	 * <code>
-	 *     // Once all callbacks have been setup call this function
-	 *     sceKernelSleepThreadCB();
-	 * </code>
-	 */
-	int sceKernelSleepThreadCB() {
-		// Ditto.
-		return threadManager.currentThread.pauseAndYield("sceKernelSleepThreadCB", (PspThread pausedThread) {
-			processCallbacks();
-		});
 	}
 
 	/**

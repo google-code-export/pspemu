@@ -14,7 +14,7 @@ class EmulatorState {
 	
 	this() {
 		this.memory  = new Memory();
-		this.gpu     = new Gpu(new GpuOpengl(), this.memory);
 		this.display = new Display(memory);
+		this.gpu     = new Gpu(this, new GpuOpengl());
 	}
 }

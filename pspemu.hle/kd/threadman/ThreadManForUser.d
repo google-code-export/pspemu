@@ -2,6 +2,8 @@ module pspemu.hle.kd.threadman.ThreadManForUser; // kd/threadman.prx (sceThreadM
 
 import pspemu.hle.ModuleNative;
 
+import core.thread;
+
 import std.stdio;
 
 import pspemu.hle.kd.threadman.Threads;

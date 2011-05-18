@@ -179,7 +179,9 @@ class GpuOpengl : GpuImplAbstract {
 		
 		debug (DEBUG_CLEAR_MODE) if (state.clearingMode) writefln("--");
 
+		//writefln("draw[1]");
 		drawBegin();
+		//writefln("draw[2]");
 		{
 			switch (type) {
 				// Special primitive that doesn't have equivalent in Open
@@ -485,6 +487,7 @@ template OpenglUtils() {
 	
 	void drawBeginNormal() {
 		void prepareTexture() {
+			//writefln("prepareTexture[1]");
 			if (!glEnableDisable(GL_TEXTURE_2D, state.textureMappingEnabled)) {
 				version (VERSION_ENABLED_STATE_CORTOCIRCUIT) return;
 			}
@@ -502,9 +505,12 @@ template OpenglUtils() {
 				glScalef(state.texture.scale.u, state.texture.scale.v, 1);
 			}
 			
+			//writefln("prepareTexture[2]");
 			glEnable(GL_TEXTURE_2D);
 			getTexture(state.texture, state.clut).bind();
 			//writefln("tex0:%s", state.textureMipmaps[0]);
+			
+			//writefln("prepareTexture[3]");
 
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (state.texture.filterMin == TextureFilter.GU_LINEAR) ? GL_LINEAR : GL_NEAREST);
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (state.texture.filterMag == TextureFilter.GU_LINEAR) ? GL_LINEAR : GL_NEAREST);
@@ -513,6 +519,8 @@ template OpenglUtils() {
 
 			//glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0); // 2.0 in scale_2x
 			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, TextureEnvModeTranslate[state.texture.effect]);
+			
+			//writefln("prepareTexture[4]");
 		}
 		
 		void prepareBlend() {
@@ -520,7 +528,7 @@ template OpenglUtils() {
 				version (VERSION_ENABLED_STATE_CORTOCIRCUIT) return;
 			}
 
-			glBlendEquation(BlendEquationTranslate[state.blendEquation]);
+			glBlendEquationEXT(BlendEquationTranslate[state.blendEquation]);
 			glBlendFunc(BlendFuncSrcTranslate[state.blendFuncSrc], BlendFuncDstTranslate[state.blendFuncDst]);
 			glBlendColor(
 				state.fixColorDst.r,
@@ -736,19 +744,25 @@ template OpenglUtils() {
 		glMaterialf(GL_FRONT, GL_SHININESS, state.specularPower);
 		glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, state.textureEnviromentColor.ptr);
 
-
+		//writefln("drawBeginNormal[1]");
 		prepareStencil();
+		//writefln("drawBeginNormal[1a]");
 		prepareScissor();
+		//writefln("drawBeginNormal[1b]");
 		prepareBlend();
+		//writefln("drawBeginNormal[2]");
 		prepareCulling();
 		prepareTexture();
 		prepareLogicOp();
+		//writefln("drawBeginNormal[3]");
 		prepareAlphaTest();
 		prepareDepthTest();
 		prepareDepthWrite();
+		//writefln("drawBeginNormal[4]");
 		prepareFog();
 		prepareColors();
 		prepareLighting();
+		//writefln("drawBeginNormal[5]");
 		//glDisable(GL_COLOR_MATERIAL);
 	}
 
@@ -761,12 +775,17 @@ template OpenglUtils() {
 			}
 		}
 
+		//writefln("drawBegin[1]");
 		if (state.clearingMode) {
+			//writefln("drawBegin[1a]");
 			drawBeginClear();
 		} else {
+			//writefln("drawBegin[1b]");
 			drawBeginNormal();
 		}
+		//writefln("drawBegin[2]");
 		drawBeginCommon();
+		//writefln("drawBegin[3]");
 	}
 	
 	void drawEnd() {

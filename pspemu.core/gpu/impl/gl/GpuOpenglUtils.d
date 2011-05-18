@@ -48,6 +48,7 @@ template OpenglBase() {
 
 	// http://www.opengl.org/resources/code/samples/win32_tutorial/wglinfo.c
 	void openglInit() {
+		//DerelictGL.loadClassicVersions(GLVersion.GL21);
 		DerelictGL.load();
 
 		hwnd = CreateOpenGLWindow(512, 272, /*PFD_TYPE_RGBA*/ 0, 0);
@@ -57,6 +58,8 @@ template OpenglBase() {
 		hrc = cast(HANDLE)wglCreateContext(hdc);
 		openglMakeCurrent();
 
+		DerelictGL.loadExtensions();
+		DerelictGL.loadClassicVersions(GLVersion.GL21);
 		//glInit();
 		//assert(glActiveTexture !is null);
 

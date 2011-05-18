@@ -319,7 +319,7 @@ template Gpu_Draw() {
 				)
 			);
 		} catch (Throwable o) {
-			writefln("gpu.impl.draw Error");
+			writefln("gpu.impl.draw Error: %s", o);
 			//throw(o);
 		}
 		debug (DEBUG_DRAWING) writefln("PRIM(0x%08X, %d, %d) : microseconds:%d", gpu.state.drawBuffer.address, primitiveType, vertexCount, microSecondsTick - microSecondsStart);

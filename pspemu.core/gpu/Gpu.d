@@ -18,6 +18,8 @@ import pspemu.utils.Utils;
 import pspemu.utils.MathUtils;
 //import pspemu.utils.Logger;
 
+import pspemu.core.EmulatorState;
+
 import pspemu.core.Memory;
 import pspemu.core.gpu.Commands;
 import pspemu.core.gpu.Types;
@@ -43,7 +45,9 @@ import pspemu.core.exceptions.HaltException;
 
 class Gpu {
 	//bool componentInitialized;
+	bool running = true;
 	
+	EmulatorState emulatorState;
 	Memory   memory;
 	GpuImpl  impl;
 	GpuState state;
@@ -53,10 +57,16 @@ class Gpu {
 
 	TaskQueue externalActions;
 	
-	this(GpuImpl impl, Memory memory) {
+	this(EmulatorState emulatorState, GpuImpl impl) {
+		this.emulatorState = emulatorState;
 		this.impl   = impl;
-		this.memory = memory;
+		this.memory = emulatorState.memory;
 		this.reset();
+		
+		emulatorState.display.onStop += delegate() {
+			running = false;
+		};
+
 	}
 
 	void reset() {
@@ -189,7 +199,7 @@ class Gpu {
 				implInitialized = true;
 			}
 			//componentInitialized = true;
-			while (true) {
+			while (running) {
 				//writefln("displayLists.readAvailable");
 				while (displayLists.readAvailable) {
 					impl.startDisplayList();
@@ -248,16 +258,20 @@ class Gpu {
 		 */
 		void sceGeListSync(DisplayList* displayList, int syncType) {
 			// While this displayList has more items to read.
+			//writefln("sceGeListSync[1]");
 			try {
 				//InfiniteLoop!(512) loop;
 				while (displayList.hasMore) {
+					//writefln("sceGeListSync[2] : %d", displayList.hasMore);
 					//loop.increment();
 					WaitAndCheck;
 				}
 			} catch {
 			}
 
+			//writefln("sceGeListSync[3]");
 			performBufferOp(BufferOperation.STORE);
+			//writefln("sceGeListSync[4]");
 		}
 		
 		/**
@@ -266,9 +280,11 @@ class Gpu {
 		void sceGeDrawSync(int syncType) {
 			// While we have display lists queued
 			// Or if we are currently executing a displayList
+			//writefln("sceGeDrawSync [1]");
 			try {
 				//InfiniteLoop!(512) loop;
 				while (displayLists.readAvailable || executingDisplayList) {
+					//writefln("sceGeDrawSync [2] %d, %d", displayLists.readAvailable, executingDisplayList);
 					/*
 					loop.increment({
 						writefln("  executingDisplayList: %s", executingDisplayList);
@@ -280,22 +296,26 @@ class Gpu {
 			} catch {
 			}
 			
+			//writefln("sceGeDrawSync [3]");
+			
 			performBufferOp(BufferOperation.STORE);
+			
+			//writefln("sceGeDrawSync [4]");
 		}
 	}
 
-	//bool inDrawingThread() { return Thread.getThis == thread; }
+	bool inDrawingThread() { return Thread.getThis == thread; }
 
 	void WaitAndCheck(uint count = 1) {
-		//if (!running) throw(new Exception("Gpu Stopping Execution"));
-		//if (inDrawingThread) externalActions();
+		if (!running) throw(new Exception("Gpu Stopping Execution"));
+		if (inDrawingThread) externalActions();
 		if (count > 0) sleep(count);
 	}
 
 	void externalActionAdd(TaskQueue.Task task) {
 		externalActions.add(task);
-		//if (inDrawingThread) externalActions(); else externalActions.waitEmpty();
-		externalActions.waitEmpty();
+		if (inDrawingThread) externalActions(); else externalActions.waitEmpty();
+		//externalActions.waitEmpty();
 	}
 	
 	void loadBuffer(ScreenBuffer* buffer) {
@@ -343,20 +363,28 @@ class Gpu {
 	}
 	
 	void performBufferOp(BufferOperation bufferOperation, BufferType bufferType = BufferType.ALL) {
+		//writefln("performBufferOp[1]");
 		if (bufferOperation == BufferOperation.LOAD) {
 			if (state.drawBuffer.storeAddress) {
 				debug (DEBUG_WARNING_PERFORM_BUFFER_OP) writefln("WARNING! performBufferOp(LOAD) has state.drawBuffer.mustStore. It wasn't stored yet!");
 				//return;
 			}
+			//writefln("performBufferOp[2]");
 			if (bufferType & BufferType.COLOR) loadBuffer(&state.drawBuffer);
+			//writefln("performBufferOp[3]");
 			if (bufferType & BufferType.DEPTH) loadBuffer(&state.depthBuffer);
+			//writefln("performBufferOp[4]");
 		} else {
 			if (state.drawBuffer.loadAddress) {
 				debug (DEBUG_WARNING_PERFORM_BUFFER_OP) writefln("WARNING! performBufferOp(STORE) has state.drawBuffer.mustLoad. It wasn't stored yet!");
 			}
+			//writefln("performBufferOp[2]");
 			if (bufferType & BufferType.COLOR) storeBuffer(&state.drawBuffer);
+			//writefln("performBufferOp[3]");
 			if (bufferType & BufferType.DEPTH) storeBuffer(&state.depthBuffer);
+			//writefln("performBufferOp[4]");
 		}
+		//writefln("performBufferOp[5]");
 	}
 
 	mixin ExternalInterface;

@@ -45,12 +45,14 @@ abstract class CpuThreadBase {
 	//static CpuThreadBase[Thread] cpuThreadBasePerThread;
 	
 	ulong executedInstructionsCount;
+	__gshared long lastThreadId = 0;
 	
 	public this(ThreadState threadState) {
 		this.threadState = threadState;
 		this.memory = this.threadState.emulatorState.memory;
 		this.registers = this.threadState.registers;
 		this.threadState.nativeThread = new Thread(&run);
+		this.threadState.nativeThread.name = std.string.format("PSP_CPU_THREAD#%d('%s')", lastThreadId++, threadState.name);
 		
 		threadState.emulatorState.display.onStop += delegate() {
 			running = false;
@@ -69,7 +71,6 @@ abstract class CpuThreadBase {
 	protected void run() {
 		thisThreadCpuThreadBase = this;
 		//cpuThreadBasePerThread[Thread.getThis] = this;
-		writefln("nativeThread");
 		if (executeBefore != null) executeBefore();
 		execute();
 	}
@@ -77,7 +78,7 @@ abstract class CpuThreadBase {
 	public void thisThreadWaitCyclesAtLeast(int count = 100) {
 		while (true) {
 			Thread.yield();
-			if (this.executedInstructionsCount >= 100) break;
+			if (this.executedInstructionsCount >= count) break;
 		}
 	}
 
@@ -105,8 +106,10 @@ abstract class CpuThreadBase {
     
     void execute() {
     	try {
+    		writefln("NATIVE_THREAD: START (%s)", Thread.getThis().name);
+    		
 	    	while (running) {
-	    		if (this.registers.PC <= 0x08800100) throw(new Exception("Invalid address for executing"));
+	    		//if (this.registers.PC <= 0x08800100) throw(new Exception("Invalid address for executing"));
 	    		//writefln("PC: %08X", this.registers.PC);
 
 		    	this.instruction.v = memory.tread!(uint)(this.registers.PC);
@@ -121,6 +124,8 @@ abstract class CpuThreadBase {
 	    	writefln("at 0x%08X", this.registers.PC);
 	    	writefln("%s", exception);
 	    	writefln("%s", this);
+	    } finally {
+			writefln("NATIVE_THREAD: END (%s)", Thread.getThis().name);
 	    }
     }
     
