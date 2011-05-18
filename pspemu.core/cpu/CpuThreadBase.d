@@ -1,4 +1,4 @@
-module pspemu.core.cpu.CpuBase;
+module pspemu.core.cpu.CpuThreadBase;
 
 import std.stdio;
 import core.thread;
@@ -34,12 +34,15 @@ string genSwitchAll() {
 	} 
 }
 
-abstract class CpuBase {
+public CpuThreadBase thisThreadCpuThreadBase;
+
+abstract class CpuThreadBase {
 	ThreadState threadState;
 	Memory memory;
 	Registers registers;
 	Instruction instruction;
 	bool running = true;
+	//static CpuThreadBase[Thread] cpuThreadBasePerThread;
 	
 	ulong executedInstructionsCount;
 	
@@ -61,9 +64,11 @@ abstract class CpuBase {
 	
 	public void delegate() executeBefore;
 	
-	abstract public CpuBase createCpuThread(ThreadState threadState);
+	abstract public CpuThreadBase createCpuThread(ThreadState threadState);
 	
 	public void run() {
+		thisThreadCpuThreadBase = this;
+		//cpuThreadBasePerThread[Thread.getThis] = this;
 		writefln("nativeThread");
 		if (executeBefore != null) executeBefore();
 		execute();

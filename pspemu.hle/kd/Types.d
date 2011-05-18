@@ -1,6 +1,10 @@
-module pspemu.hle.Types;
+module pspemu.hle.kd.Types;
 
 import std.datetime;
+
+alias ubyte u8;
+alias ushort u16;
+alias uint u32;
 
 alias long d_time;
 

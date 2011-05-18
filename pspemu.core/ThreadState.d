@@ -6,7 +6,7 @@ import std.stdio;
 
 import pspemu.core.EmulatorState;
 import pspemu.core.cpu.Registers;
-import pspemu.core.cpu.CpuBase;
+import pspemu.core.cpu.CpuThreadBase;
 
 class ThreadState {
 	public EmulatorState emulatorState;

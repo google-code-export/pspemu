@@ -1,11 +1,11 @@
-module pspemu.core.cpu.interpreter.CpuExecuteThreadInterpreted;
+module pspemu.core.cpu.interpreter.CpuThreadInterpreted;
 
 import std.stdio;
 import std.math;
 
 import pspemu.core.ThreadState;
 
-import pspemu.core.cpu.CpuBase;
+import pspemu.core.cpu.CpuThreadBase;
 import pspemu.core.cpu.Registers;
 
 import pspemu.core.exceptions.HaltException;
@@ -24,13 +24,13 @@ import pspemu.core.cpu.interpreter.Utils;
 
 //import pspemu.utils.Utils;
 
-class CpuExecuteThreadInterpreted : CpuBase {
+class CpuThreadInterpreted : CpuThreadBase {
 	public this(ThreadState threadState) {
 		super(threadState);
 	}
 	
-	public CpuBase createCpuThread(ThreadState threadState) {
-		return new CpuExecuteThreadInterpreted(threadState);
+	public CpuThreadBase createCpuThread(ThreadState threadState) {
+		return new CpuThreadInterpreted(threadState);
 	}
 
 	mixin TemplateCpu_ALU;

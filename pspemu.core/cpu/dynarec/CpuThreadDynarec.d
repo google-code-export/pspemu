@@ -1,19 +1,19 @@
-module pspemu.core.cpu.dynarec.CpuExecuteThreadDynarec;
+module pspemu.core.cpu.dynarec.CpuThreadDynarec;
 
 import pspemu.core.cpu.dynarec.EmiterMipsToX86;
 import pspemu.core.cpu.dynarec.EmiterX86;
 import pspemu.core.Memory;
 import pspemu.core.ThreadState;
 import pspemu.core.cpu.Registers;
-import pspemu.core.cpu.CpuBase;
+import pspemu.core.cpu.CpuThreadBase;
 
-class CpuExecuteThreadDynarec : CpuBase {
+class CpuThreadDynarec : CpuThreadBase {
 	public this(ThreadState threadState) {
 		super(threadState);
 	}
 	
-	public CpuBase createCpuThread(ThreadState threadState) {
-		return new CpuExecuteThreadDynarec(threadState);
+	public CpuThreadBase createCpuThread(ThreadState threadState) {
+		return new CpuThreadDynarec(threadState);
 	}
 	
 	/*

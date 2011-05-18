@@ -1,8 +1,8 @@
 module pspemu.core.cpu.ISyscall;
 
 import pspemu.core.ThreadState;
-import pspemu.core.cpu.CpuBase;
+import pspemu.core.cpu.CpuThreadBase;
 
 interface ISyscall {
-	public void syscall(CpuBase cpuBase, int syscallNum);
+	public void syscall(CpuThreadBase cpuThreadBase, int syscallNum);
 }

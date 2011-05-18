@@ -1,25 +1,21 @@
 module pspemu.hle.ModuleManager;
 
+import std.stdio;
+
 import pspemu.hle.Module;
+import pspemu.hle.ModuleNative;
 
 //public import pspemu.All;
 class ModuleManager {
-	/+
 	/**
 	 * A list of modules loaded.
 	 */
 	private Module[string] loadedModules;
 
-	Cpu cpu;
-
-	this(Cpu cpu) {
-		this.cpu = cpu;
-	}
-	
 	string delegate() getCurrentThreadName;
 
 	void reset() {
-		Logger.log(Logger.Level.DEBUG, "ModuleManager", "reset()");
+		//Logger.log(Logger.Level.DEBUG, "ModuleManager", "reset()");
 		foreach (loadedModule; loadedModules) loadedModule.shutdownModule();
 		loadedModules = null;
 		getCurrentThreadName = null;
@@ -35,9 +31,9 @@ class ModuleManager {
 	 */
 	Module getName(string moduleName) {
 		if (moduleName !in loadedModules) {
-			auto loadedModule = cast(Module)(Module.getModule(moduleName).create);
-			loadedModule.cpu = cpu;
-			loadedModule.moduleManager = this;
+			auto loadedModule = cast(Module)(ModuleNative.getModule(moduleName).create);
+			//loadedModule.cpu = cpu;
+			//loadedModule.moduleManager = this;
 			loadedModule.init();
 			loadedModules[moduleName] = loadedModule;
 		}
@@ -61,5 +57,4 @@ class ModuleManager {
 	 * Alias for getting a module.
 	 */
 	alias getName opIndex;
-	+/
 }
