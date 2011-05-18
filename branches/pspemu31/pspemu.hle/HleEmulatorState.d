@@ -12,11 +12,13 @@ import pspemu.core.exceptions.HaltException;
 
 import pspemu.core.cpu.ISyscall;
 import pspemu.core.cpu.Registers;
-import pspemu.core.cpu.CpuBase;
+import pspemu.core.cpu.CpuThreadBase;
 
 import pspemu.utils.MemoryPartition;
 import pspemu.utils.UniqueIdFactory;
 
+import pspemu.hle.Module;
+import pspemu.hle.ModuleNative;
 import pspemu.hle.ModuleManager;
 import pspemu.hle.ModuleLoader;
 
@@ -41,7 +43,18 @@ class HleEmulatorState : ISyscall {
 		throw(new Exception("Not implemented"));
 	}
 
-	public void syscall(CpuBase cpuThread, int syscallNum) {
+	public void syscall(CpuThreadBase cpuThread, int syscallNum) {
+		static string szToString(char* s) { return cast(string)s[0..std.c.string.strlen(s)]; }
+
+		void callModuleFunction(Module.Function* moduleFunction) {
+			if (moduleFunction is null) throw(new Exception("Syscall.opCall.callModuleFunction: Invalid Module.Function"));
+			moduleFunction.func(cpuThread);
+		}
+
+		void callLibrary(string libraryName, string functionName) {
+			callModuleFunction(moduleManager[libraryName].getFunctionByName(functionName));
+		}
+		
 		auto threadState = cpuThread.threadState;
 		auto registers = threadState.registers;
 		auto memory = threadState.emulatorState.memory;
@@ -114,6 +127,7 @@ class HleEmulatorState : ISyscall {
 				//throw(new Exception("sceKernelStartThread"));
 				
 			} break;
+			/*
 			case 0x20bf:
 				// int sceKernelUtilsMt19937Init (SceKernelUtilsMt19937Context *ctx, u32 seed)
 				
@@ -134,6 +148,10 @@ class HleEmulatorState : ISyscall {
 				// u32 sceKernelUtilsMt19937UInt (SceKernelUtilsMt19937Context *ctx)
 				// callLibrary("UtilsForUser",     "sceKernelUtilsMt19937UInt"); break;
 			break;
+			*/
+			case 0x20bf: callLibrary("UtilsForUser",     "sceKernelUtilsMt19937Init"); break;
+			case 0x20c0: callLibrary("UtilsForUser",     "sceKernelUtilsMt19937UInt"); break;
+
 			case 0x213a:
 				// int sceDisplaySetMode (int mode, int width, int height)
 				//callLibrary("sceDisplay",       "sceDisplaySetMode");
