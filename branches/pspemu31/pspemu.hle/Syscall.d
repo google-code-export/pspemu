@@ -31,7 +31,6 @@ class Syscall : ISyscall {
 
 	static public class Function {
 		string info;
-		uint magic = 0x12_00_13_00;
 		void delegate(Function) callback;
 		
 		this(void delegate(Function) callback, string info) {
@@ -71,6 +70,9 @@ class Syscall : ISyscall {
 		uint get_argument_int(int index) {
 			return registers.R[4 + index];
 		}
+		float get_argument_float(int index) {
+			return registers.F[0 + index];
+		}
 		string get_argument_str(int index) {
 			return to!string(cast(char *)memory.getPointerOrNull(get_argument_int(index)));	
 		}
@@ -103,11 +105,6 @@ class Syscall : ISyscall {
 			case 0x1001: { // _pspemuHLECall2
 				uint PC = registers.PC;
 				auto functionToCall = memory.tread!(Syscall.Function)(PC);
-				//if (functionToCall.magic != Function.init.magic) {
-				if (functionToCall.magic != 0x12_00_13_00) {
-					writefln("#FUNC:%08X", cast(uint)cast(void *)functionToCall);
-					throw(new Exception("Invalid function call magic"));
-				}
 				.writefln("INFO: %s", functionToCall.info);
 				functionToCall.callback(functionToCall);
 				throw(new Exception("_pspemuHLECall2"));
@@ -126,6 +123,25 @@ class Syscall : ISyscall {
 				
 				set_return_value(+1);
 			break;
+			case 0x1010: writefln("EMIT(int):%d", cast(int)get_argument_int(0)); break;
+			case 0x1011: writefln("EMIT(float):%f", get_argument_float(0)); break;
+			case 0x1012: writefln("EMIT(comment):'%s'", get_argument_str(0)); break;
+			/*
+			void emitString(char *v) {
+				asm("syscall 0x1012");
+			}
+			
+			void emitComment(char *v) {
+				asm("syscall 0x1012");
+			}
+			
+			void emitMemoryBlock(void *address, unsigned int size) {
+				asm("syscall 0x1013");
+			}
+			
+			void emitHex(void *address, unsigned int size) {
+				asm("syscall 0x1014");
+			*/
 			default:
 				writefln("syscall(%08X)", syscallNum);
 				throw(new Exception(std.string.format("Unknown syscall (%08X)", syscallNum)));

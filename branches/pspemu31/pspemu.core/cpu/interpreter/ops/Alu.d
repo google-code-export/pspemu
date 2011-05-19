@@ -4,6 +4,8 @@ import pspemu.core.cpu.interpreter.Utils;
 
 alias CpuExpression CE;
 
+//version = VERSION_SHIFT_ASM;
+
 // http://pspemu.googlecode.com/svn/branches/old/src/core/cpu.d
 // http://pspemu.googlecode.com/svn/branches/old/util/gen/impl/SPECIAL
 // http://pspemu.googlecode.com/svn/branches/old/util/gen/impl/MISC

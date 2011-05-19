@@ -2,9 +2,10 @@ module pspemu.hle.kd.Types;
 
 import std.datetime;
 
-alias ubyte u8;
+alias ubyte  u8;
 alias ushort u16;
-alias uint u32;
+alias uint   u32;
+alias ulong  u64;
 
 alias long d_time;
 
@@ -33,54 +34,6 @@ alias int SceMode;
 alias SceInt64 SceOff;
 alias SceInt64 SceIores;
 
-// std.date.getUTCtime has milliseconds resolution. milliseconds -> microseconds
-d_time tick_to_dtime(ulong  tick ) { return cast(d_time)(tick / 1_000); }
-ulong  dtime_to_tick(d_time dtime) { return (dtime * 1_000); }
-
-/* Date and time. */
-struct ScePspDateTime {
-	ushort	year;
-	ushort 	month;
-	ushort 	day;
-	ushort 	hour;
-	ushort 	minute;
-	ushort 	second;
-	uint 	microsecond;
-
-	ulong tick() {
-		throw(new Exception("Not implemented"));
-		/*
-		auto dtime = std.date.parse(std.string.format("%04d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minute, second));
-		return (cast(ulong)dtime * 1_000) + microsecond;
-		*/
-	}
-	
-	bool parse(d_time dtime) {
-		return parse(dtime_to_tick(dtime));
-	}
-
-	bool parse(ulong tick) {
-		throw(new Exception("Not implemented"));
-		/*
-		std.date.Date date;
-		
-		date.parse(toUTCString(tick_to_dtime(tick)));
-		
-		year        = cast(ushort)date.year;
-		month       = cast(ushort)date.month;
-		day         = cast(ushort)date.day;
-		hour        = cast(ushort)date.hour;
-		minute      = cast(ushort)date.minute;
-		second      = cast(ushort)date.second;
-		microsecond = cast(uint  )(tick % 1_000_000);
-
-		return true;
-		*/
-	}
-	
-	static assert (this.sizeof == 16);
-}
-
 alias uint SceKernelThreadEntry;
 alias uint SceKernelCallbackFunction;
 
@@ -97,12 +50,6 @@ struct SceKernelEventFlagInfo {
 	int 		numWaitThreads;
 }
 
-/** 64-bit system clock type. */
-struct SceKernelSysClock {
-	SceUInt32   low;
-	SceUInt32   hi;
-}
-
 struct SceKernelEventFlagOptParam {
 	SceSize 	size;
 }
@@ -116,6 +63,13 @@ struct SceKernelMppInfo {
 	int      numSendWaitThreads;
 	int      numReceiveWaitThreads;
 }
+
+/** 64-bit system clock type. */
+struct SceKernelSysClock {
+	SceUInt32   low;
+	SceUInt32   hi;
+}
+
 
 enum PspKernelErrorCodes {
 	SCE_KERNEL_ERROR_OK	 = 0,	

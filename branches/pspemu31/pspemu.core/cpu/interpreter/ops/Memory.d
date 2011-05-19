@@ -2,7 +2,7 @@ module pspemu.core.cpu.interpreted.ops.Memory;
 
 import std.stdio;
 
-//debug = DEBUG_SB;
+debug = DEBUG_SB;
 
 template TemplateCpu_MEMORY() {
 	mixin TemplateCpu_MEMORY_Utils;
@@ -48,8 +48,14 @@ template TemplateCpu_MEMORY() {
 
 	// SWL -- Store Word Left
 	// SWR -- Store Word Right
-	void OP_SWL() { memory.twrite!(ushort)(registers[instruction.RS] + instruction.IMM - 1, (registers[instruction.RT] >> 16) & 0xFFFF); registers.pcAdvance(4); }
-	void OP_SWR() { memory.twrite!(ushort)(registers[instruction.RS] + instruction.IMM - 0, (registers[instruction.RT] >>  0) & 0xFFFF); registers.pcAdvance(4); }
+	void OP_SWL() {
+		memory.twrite!(ushort)(registers[instruction.RS] + instruction.IMM - 1, (registers[instruction.RT] >> 16) & 0xFFFF);
+		registers.pcAdvance(4);
+	}
+	void OP_SWR() {
+		memory.twrite!(ushort)(registers[instruction.RS] + instruction.IMM - 0, (registers[instruction.RT] >>  0) & 0xFFFF);
+		registers.pcAdvance(4);
+	}
 
 	// CACHE
 	void OP_CACHE() {
@@ -61,14 +67,19 @@ template TemplateCpu_MEMORY() {
 template TemplateCpu_MEMORY_Utils() {
 	void LOAD(T)() {
 		registers[instruction.RT] = cast(uint)memory.tread!(T)(registers[instruction.RS] + instruction.OFFSET);
+		static if (is(T == short)) {
+			//writefln("%d", registers[instruction.RT]);
+		}
 		registers.pcAdvance(4);
 	}
 
 	void STORE(T)() {
 		static if (is(T == ubyte)) {
 			debug (DEBUG_SB) {
+				writef("PC(%08X): ", registers.PC);
 				writef("%08X: ", registers[instruction.RS] + instruction.OFFSET);
-				for (int n = -4; n <= 4; n++) writef("%02X", memory[registers[instruction.RS] + instruction.OFFSET + n]);
+				//for (int n = -4; n <= 4; n++) writef("%02X", memory[registers[instruction.RS] + instruction.OFFSET + n]);
+				writef("%02X", memory[registers[instruction.RS] + instruction.OFFSET + 0]);
 				writef(" -> ");
 			}
 		}
@@ -78,7 +89,8 @@ template TemplateCpu_MEMORY_Utils() {
 
 		static if (is(T == ubyte)) {
 			debug (DEBUG_SB) {
-				for (int n = -4; n <= 4; n++) writef("%02X", memory[registers[instruction.RS] + instruction.OFFSET + n]);
+				//for (int n = -4; n <= 4; n++) writef("%02X", memory[registers[instruction.RS] + instruction.OFFSET + n]);
+				writef("%02X'%s'", memory[registers[instruction.RS] + instruction.OFFSET + 0], cast(char)memory[registers[instruction.RS] + instruction.OFFSET + 0]);
 				writefln("");
 			}
 		}

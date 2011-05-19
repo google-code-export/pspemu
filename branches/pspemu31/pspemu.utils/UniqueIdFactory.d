@@ -5,13 +5,17 @@ alias uint UID;
 class UniqueIdFactory {
 	UniqueIdTypeFactory[string] factoryPerType;
 	
-	public UID add(string type, Object value) {
-		if ((type in factoryPerType) is null) factoryPerType[type] = new UniqueIdTypeFactory(type);
-		return factoryPerType[type].newUid(value);
+	public UID add(T)(T value) {
+		if ((T.stringof in factoryPerType) is null) factoryPerType[T.stringof] = new UniqueIdTypeFactory(T.stringof);
+		return factoryPerType[T.stringof].newUid(value);
 	}
 	
-	public T get(T)(string type, UID uid) {
-		return factoryPerType[type].get!(T)(uid);
+	public T get(T)(UID uid) {
+		return factoryPerType[T.stringof].get!(T)(uid);
+	}
+	
+	public void remove(T)(UID uid) {
+		factoryPerType[T.stringof].remove(uid);
 	}
 }
 
@@ -32,5 +36,9 @@ class UniqueIdTypeFactory {
 
 	public T get(T)(UID uid) {
 		return cast(T)values[uid];
+	}
+	
+	public void remove(UID uid) {
+		values.remove(uid);
 	}
 }

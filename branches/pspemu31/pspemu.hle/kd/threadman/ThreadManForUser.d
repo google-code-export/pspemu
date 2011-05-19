@@ -5,8 +5,10 @@ import pspemu.hle.ModuleNative;
 import core.thread;
 
 import std.stdio;
+import std.math;
 
 import pspemu.hle.kd.threadman.Threads;
+import pspemu.hle.kd.threadman.Semaphores;
 import pspemu.hle.kd.threadman.Types;
 
 //debug = DEBUG_THREADS;
@@ -17,17 +19,17 @@ import pspemu.hle.kd.threadman.Types;
  */
 class ThreadManForUser : ModuleNative {
 	mixin ThreadManForUser_Threads;
-	//mixin ThreadManForUser_Semaphores;
+	mixin ThreadManForUser_Semaphores;
 
 	void initModule() {
 		initModule_Threads();
-		//initModule_Semaphores();
+		initModule_Semaphores();
 		//moduleManager.getCurrentThreadName = { return threadManager.currentThread.name; };
 	}
 
 	void initNids() {
 		initNids_Threads();
-		//initNids_Semaphores();
+		initNids_Semaphores();
 		//mixin(registerd!(0xBC6FEBC5, sceKernelReferSemaStatus));
 
 		mixin(registerd!(0xE81CAF8F, sceKernelCreateCallback));

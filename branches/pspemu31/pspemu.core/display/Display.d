@@ -25,6 +25,7 @@ class Display {
 	uint bufferwidth;
 	uint pixelformat;
 	uint sync;
+	uint VBLANK_COUNT;
 	
 	this(Memory memory) {
 		this.memory = memory;
@@ -121,6 +122,7 @@ class Display {
 			SDL_FreeSurface(display);
 
 			this.vblankStartCondition.notifyAll();
+			VBLANK_COUNT++;
 			
 			SDL_Delay(1000 / 60);
 		}
