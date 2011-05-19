@@ -11,6 +11,9 @@ import core.sync.mutex;
 import core.sync.condition;
 
 import pspemu.utils.Event;
+import pspemu.utils.CircularList;
+
+import pspemu.hle.kd.ctrl.Types;
 
 class Display {
 	public Memory memory;
@@ -59,7 +62,12 @@ class Display {
 		vblankStartCondition.wait();
 	}
 	
+	SceCtrlData sceCtrlData;
+	CircularList!(SceCtrlData) sceCtrlDataFrames;
+	
 	protected void run() {
+		sceCtrlDataFrames = new CircularList!(SceCtrlData)();
+		
 		environment["SDL_VIDEO_WINDOW_POS"] = "";
 		environment["SDL_VIDEO_CENTERED"] = "1";
 		
@@ -83,11 +91,39 @@ class Display {
 			return ((1 << nbits) - 1) << disp;
 		}
 		
+		bool[SDLK_LAST] keyIsPressed;
+		
+		PspCtrlButtons[SDLK_LAST] buttonMask;
+		
+		buttonMask[SDLK_UP    ] = PspCtrlButtons.PSP_CTRL_UP;
+		buttonMask[SDLK_DOWN  ] = PspCtrlButtons.PSP_CTRL_DOWN; 
+		buttonMask[SDLK_LEFT  ] = PspCtrlButtons.PSP_CTRL_LEFT;
+		buttonMask[SDLK_RIGHT ] = PspCtrlButtons.PSP_CTRL_RIGHT;
+		buttonMask[SDLK_w     ] = PspCtrlButtons.PSP_CTRL_TRIANGLE;
+		buttonMask[SDLK_a     ] = PspCtrlButtons.PSP_CTRL_SQUARE;
+		buttonMask[SDLK_s     ] = PspCtrlButtons.PSP_CTRL_CROSS;
+		buttonMask[SDLK_d     ] = PspCtrlButtons.PSP_CTRL_CIRCLE;
+		buttonMask[SDLK_q     ] = PspCtrlButtons.PSP_CTRL_LTRIGGER;
+		buttonMask[SDLK_e     ] = PspCtrlButtons.PSP_CTRL_RTRIGGER;
+		buttonMask[SDLK_RETURN] = PspCtrlButtons.PSP_CTRL_START;
+		buttonMask[SDLK_SPACE ] = PspCtrlButtons.PSP_CTRL_SELECT;
+		
 		while (running) {
 			SDL_Event event;
 			SDL_PollEvent(&event);
+			//SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 			switch (event.type) {
-				case SDL_KEYUP, SDL_QUIT:
+				case SDL_KEYDOWN, SDL_KEYUP: {
+					bool Pressed = (event.type == SDL_KEYDOWN);
+					int sym = event.key.keysym.sym;
+
+					keyIsPressed[sym] = Pressed;
+					sceCtrlData.SetPressedButton(buttonMask[sym], Pressed);
+
+					//sceCtrlData.x = cast(float)sceCtrlData.IsPressedButton2(PspCtrlButtons.PSP_CTRL_LEFT, PspCtrlButtons.PSP_CTRL_RIGHT);
+					//sceCtrlData.y = cast(float)sceCtrlData.IsPressedButton2(PspCtrlButtons.PSP_CTRL_UP  , PspCtrlButtons.PSP_CTRL_DOWN );
+				} break;
+				case SDL_QUIT:
 					onStop();
 				break;
 				default:
@@ -120,9 +156,31 @@ class Display {
 			SDL_Flip(screen);
 			
 			SDL_FreeSurface(display);
-
+			
 			this.vblankStartCondition.notifyAll();
 			VBLANK_COUNT++;
+			
+			if (sceCtrlData.IsPressedButton(PspCtrlButtons.PSP_CTRL_LEFT)) {
+				sceCtrlData.x = sceCtrlData.x - 0.1;
+			} else if (sceCtrlData.IsPressedButton(PspCtrlButtons.PSP_CTRL_RIGHT)) {
+				sceCtrlData.x = sceCtrlData.x + 0.1;
+			} else {
+				sceCtrlData.x = sceCtrlData.x / 10.0;
+			}
+
+			if (sceCtrlData.IsPressedButton(PspCtrlButtons.PSP_CTRL_UP)) {
+				sceCtrlData.y = sceCtrlData.y - 0.1;
+			} else if (sceCtrlData.IsPressedButton(PspCtrlButtons.PSP_CTRL_DOWN)) {
+				sceCtrlData.y = sceCtrlData.y + 0.1;
+			} else {
+				sceCtrlData.y = sceCtrlData.y / 10.0;
+			}
+			
+			//writefln("%.4f, %.4f", sceCtrlData.x, sceCtrlData.y);
+			
+			sceCtrlData.TimeStamp++;
+			//.writefln("%s", sceCtrlData);
+			sceCtrlDataFrames.enqueue(sceCtrlData);
 			
 			SDL_Delay(1000 / 60);
 		}

@@ -13,6 +13,8 @@ import pspemu.core.cpu.Registers;
 import pspemu.core.ThreadState;
 import pspemu.core.EmulatorState;
 
+import pspemu.utils.Logger;
+
 import pspemu.hle.HleEmulatorState;
 
 static string classInfoBaseName(ClassInfo ci) {
@@ -25,24 +27,24 @@ static string classInfoBaseName(ClassInfo ci) {
 abstract class Module {
 	public HleEmulatorState hleEmulatorState;
 	
-	static public CpuThreadBase currentCpuThread() {
+	@property static public CpuThreadBase currentCpuThread() {
 		return thisThreadCpuThreadBase;
 	}
 
-	static public ThreadState currentThreadState() {
+	@property static public ThreadState currentThreadState() {
 		return currentCpuThread.threadState;
 	}
 	
-	static public EmulatorState currentEmulatorState() {
+	@property static public EmulatorState currentEmulatorState() {
 		return currentThreadState.emulatorState;
 	}
 
-	static public Registers currentRegisters() {
+	@property static public Registers currentRegisters() {
 		return currentThreadState.registers;
 	}
 	
 	static public void writefln(T...)(T args) {
-		.writefln("PC(0x%08X) :: %s ::%s", currentRegisters.PC, Thread.getThis.name, std.string.format(args));
+		Logger.log(Logger.Level.TRACE, "Module", std.string.format("PC(0x%08X) :: %s ::%s", currentRegisters.PC, Thread.getThis.name, std.string.format(args)));
 	}
 
 	/*

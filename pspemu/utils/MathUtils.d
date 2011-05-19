@@ -21,7 +21,7 @@ T max(T)(T l, T r) { return (l > r) ? l : r; }
 T xabs(T)(T v) { return (v >= 0) ? v : -v; }
 T sign(T)(T v) { if (v == 0) return 0; return (v > 0) ? 1 : -1; }
 
-T clamp(T)(T v, T l = 1.0, T r = 1.0) {
+T clamp(T)(T v, T l = 0, T r = 1) {
 	if (v < l) v = l;
 	if (v > r) v = r;
 	return v;

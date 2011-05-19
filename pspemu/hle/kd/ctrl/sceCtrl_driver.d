@@ -3,6 +3,8 @@ module pspemu.hle.kd.ctrl.sceCtrl_driver; // kd/ctrl.prx (sceController_Service)
 //debug = DEBUG_SYSCALL;
 //debug = DEBUG_CONTROLLER;
 
+import std.stdio;
+
 import pspemu.hle.Module;
 
 //import pspemu.models.IController;
@@ -25,14 +27,9 @@ class sceCtrl_driver : ModuleNative {
 	}
 
 	void readBufferedFrames(SceCtrlData* pad_data, int count = 1, bool positive = true) {
-		SceCtrlData empty;
-		with (empty) {
-			Ly = Lx = 127;
-		}
 		for (int n = 0; n < count; n++) {
-			//pad_data[n] = currentEmulatorState.controller.frameRead(n);
-			pad_data[n] = empty;
-
+			pad_data[n] = currentEmulatorState().display.sceCtrlDataFrames.readFromTail(-(n + 1));
+			
 			debug (DEBUG_CONTROLLER) {
 				writefln("readBufferedFrames: %s", pad_data[n]);
 			}
