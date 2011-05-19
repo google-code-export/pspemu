@@ -32,7 +32,7 @@ int main(string[] args) {
 	try { std.file.mkdirRecurse(ApplicationPaths.exe ~ "/pspfs/ms0/PSP/PHOTO"); } catch { }
 	try { std.file.mkdirRecurse(ApplicationPaths.exe ~ "/pspfs/ms0/PSP/SAVEDATA"); } catch { }
 
-	auto emulator = new Emulator();
+	Emulator emulator = new Emulator();
 	auto moduleLoader = emulator.hleEmulatorState.moduleLoader;
 	
 	uint CODE_PTR_EXIT_THREAD = 0x08000000;
@@ -98,6 +98,8 @@ int main(string[] args) {
 		registers.A0 = 1;
 		registers.A1 = 0x08100000 + 4;
 	}
+	
+	
 	
 	writefln("GP: %08X", GP);
 	writefln("PC: %08X", PC);
