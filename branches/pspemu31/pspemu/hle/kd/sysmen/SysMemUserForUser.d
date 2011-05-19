@@ -50,12 +50,12 @@ class SysMemUserForUser : ModuleNative {
 
 	// @TODO: Unknown.
 	void sceKernelSetCompiledSdkVersion(uint param) {
-		writefln("sceKernelSetCompiledSdkVersion: 0x%08X", param);
+		.writefln("sceKernelSetCompiledSdkVersion: 0x%08X", param);
 	}
 
 	// @TODO: Unknown.
 	void sceKernelSetCompilerVersion(uint param) {
-		writefln("sceKernelSetCompilerVersion: 0x%08X", param);
+		.writefln("sceKernelSetCompilerVersion: 0x%08X", param);
 	}
 
 	// @TODO: Unknown.

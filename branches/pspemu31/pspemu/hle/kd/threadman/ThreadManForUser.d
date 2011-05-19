@@ -11,6 +11,8 @@ import pspemu.hle.kd.threadman.Threads;
 import pspemu.hle.kd.threadman.Semaphores;
 import pspemu.hle.kd.threadman.Types;
 
+import pspemu.utils.Logger;
+
 //debug = DEBUG_THREADS;
 //debug = DEBUG_SYSCALL;
 

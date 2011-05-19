@@ -11,10 +11,14 @@ class EmulatorState {
 	public Display  display;
 	public Gpu      gpu;
 	public ISyscall syscall;
+	public bool     running = true;
 	
 	this() {
 		this.memory  = new Memory();
 		this.display = new Display(memory);
 		this.gpu     = new Gpu(this, new GpuOpengl());
+		this.display.onStop += delegate() {
+			running = false;
+		};
 	}
 }

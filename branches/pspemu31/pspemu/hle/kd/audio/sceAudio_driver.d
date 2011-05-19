@@ -52,6 +52,9 @@ class sceAudio_driver : ModuleNative {
 
 	void initModule() {
 		audio = new Audio;
+		currentEmulatorState().display.onStop += delegate() {
+			audio.stop();
+		};
 	}
 
 	void shutdownModule() {
@@ -91,31 +94,7 @@ class sceAudio_driver : ModuleNative {
 		unimplemented();
 	}
 
-	/**
-	 * Output audio of the specified channel
-	 *
-	 * @param channel - The channel number.
-	 * @param vol - The volume.
-	 * @param buf - Pointer to the PCM data to output.
-	 *
-	 * @return 0 on success, an error if less than 0.
-	 */
-	int sceAudioOutput(int channel, int vol, void* buf) {
-		unimplemented();
-		return -1;
-	}
-
-	/**
-	  * Output panned audio of the specified channel (blocking)
-	  *
-	  * @param channel  - The channel number.
-	  * @param leftvol  - The left volume.
-	  * @param rightvol - The right volume.
-	  * @param buf      - Pointer to the PCM data to output.
-	  *
-	  * @return 0 on success, an error if less than 0.
-	  */
-	int sceAudioOutputPannedBlocking(int channel, int leftvol, int rightvol, void* buf) {
+	int _sceAudioOutputPannedBlocking(int channel, int leftvol, int rightvol, void *buf, bool blocking) {
 		// Invalid channel.
 		if (!validChannelIndex(channel)) {
 			Logger.log(Logger.Level.WARNING, "sceAudio_driver", "sceAudioOutputPannedBlocking.invalidChannel!");
@@ -130,19 +109,39 @@ class sceAudio_driver : ModuleNative {
 		float toFloat(short sample) { return cast(float)sample / cast(float)(0x8000 - 1); }
 		
 		auto samples_short = (cast(short*)buf)[0..cchannel.dataCount];
-
-		currentThreadState().waitingBlock(delegate() {
+		
+		auto writeDelegate = delegate() {
 			try {
 				audio.writeWait(channel, cchannel.numchannels, samples_short, volumef(leftvol), volumef(rightvol));
 			} catch (Throwable o) {
 				Logger.log(Logger.Level.ERROR, "sceAudio_driver", "sceAudioOutputPannedBlocking: %s", o);
 			}
 			playing = false;
-		});
+		};
+
+		if (blocking) {
+			currentThreadState().waitingBlock(writeDelegate);
+		} else {
+			(new Thread(writeDelegate)).start();
+		}
 		
 		return 0;
 	}
 
+	/**
+	  * Output panned audio of the specified channel (blocking)
+	  *
+	  * @param channel  - The channel number.
+	  * @param leftvol  - The left volume.
+	  * @param rightvol - The right volume.
+	  * @param buf      - Pointer to the PCM data to output.
+	  *
+	  * @return 0 on success, an error if less than 0.
+	  */
+	int sceAudioOutputPannedBlocking(int channel, int leftvol, int rightvol, void* buf) {
+		return _sceAudioOutputPannedBlocking(channel, leftvol, rightvol, buf, /*blocking = */ true);
+	}
+	
 	/**
 	 * Output panned audio of the specified channel
 	 *
@@ -154,8 +153,20 @@ class sceAudio_driver : ModuleNative {
 	 * @return 0 on success, an error if less than 0.
 	 */
 	int sceAudioOutputPanned(int channel, int leftvol, int rightvol, void *buf) {
-		unimplemented();
-		return -1;
+		return _sceAudioOutputPannedBlocking(channel, leftvol, rightvol, buf, /*blocking = */ false);
+	}
+	
+	/**
+	 * Output audio of the specified channel
+	 *
+	 * @param channel - The channel number.
+	 * @param vol - The volume.
+	 * @param buf - Pointer to the PCM data to output.
+	 *
+	 * @return 0 on success, an error if less than 0.
+	 */
+	int sceAudioOutput(int channel, int vol, void* buf) {
+		return sceAudioOutputPanned(channel, vol, vol, buf);
 	}
 
 	/**

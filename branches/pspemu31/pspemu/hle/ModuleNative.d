@@ -7,6 +7,7 @@ import std.traits;
 public import pspemu.utils.MathUtils;
 public import pspemu.utils.MemoryPartition;
 public import pspemu.utils.UniqueIdFactory;
+public import pspemu.utils.Logger;
 
 public import pspemu.core.exceptions.HaltException;
 public import pspemu.core.exceptions.NotImplementedException;
@@ -209,6 +210,7 @@ string getModuleMethodDelegate(alias func, uint nid = 0)() {
 	r ~= "delegate void(CpuThreadBase cpuThread) { ";
 	{
 		//r ~= "currentExecutingNid = " ~ to!string(nid) ~ ";";
+		r ~= "Logger.log(Logger.Level.TRACE, \"Module\", \"" ~ functionName ~ "\");";
 		r ~= "setReturnValue = true;";
 		r ~= "current_vparam = 0;";
 		string parametersString = _parametersString;

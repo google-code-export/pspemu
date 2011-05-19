@@ -28,7 +28,7 @@ string genSwitchAll() {
 				PspInstructions_SPECIAL
 			)
 		};
-		//pragma(msg, mixin(str));
+		pragma(msg, mixin(str));
 		return mixin(str);
 	} else {
 		return import("cached_switch_all.dcode");

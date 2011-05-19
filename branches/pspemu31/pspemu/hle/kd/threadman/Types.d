@@ -1,6 +1,6 @@
 module pspemu.hle.kd.threadman.Types;
 
-import pspemu.hle.kd.Types;
+public import pspemu.hle.kd.Types;
 
 enum PspThreadStatus {
 	PSP_THREAD_RUNNING = 1,

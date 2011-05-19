@@ -6,6 +6,7 @@ import std.stdio;
 
 import std.datetime;
 import std.stream;
+import std.file;
 import std.string;
 import std.conv;
 
@@ -204,7 +205,7 @@ class IoFileMgrForKernel : ModuleNative {
 			openedDirectories[uid] = new DirectoryIterator(dirname);
 			return uid;
 		} catch (Throwable o) {
-			writefln("sceIoDopen: %s", o);
+			.writefln("sceIoDopen: %s", o);
 			return -1;
 		}
 	}
@@ -262,7 +263,7 @@ class IoFileMgrForKernel : ModuleNative {
 			fscurdir = path;
 			return 0;
 		} catch (Throwable o) {
-			writefln("sceIoChdir: %s", o);
+			.writefln("sceIoChdir: %s", o);
 			return -1;
 		}
 	}
@@ -312,7 +313,7 @@ class IoFileMgrForKernel : ModuleNative {
 			stream.close();
 			return 0;
 		} catch (Throwable o) {
-			writefln("sceIoClose(%d) : %s", fd, o);
+			.writefln("sceIoClose(%d) : %s", fd, o);
 			return -1;
 		}
 	}
@@ -363,29 +364,32 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @param flags - Libc styled flags that are or'ed together
 	 * @param mode  - File access mode.
 	 *
-	 * @return A non-negative integer is a valid fd, anything else an error
+	 * @return A non-negative integer is a valid fd, anything else is an error
 	 */
 	SceUID sceIoOpen(/*const*/ string file, int flags, SceMode mode) {
 		string fileIni = file;
+		VFS vfs;
+		FileMode fmode;
 		try {
-			FileMode fmode;
-
 			if (flags & PSP_O_RDONLY) fmode |= FileMode.In;
 			if (flags & PSP_O_WRONLY) fmode |= FileMode.Out;
 			if (flags & PSP_O_APPEND) fmode |= FileMode.Append;
 			if (flags & PSP_O_CREAT ) fmode |= FileMode.OutNew;
 			
-			.writefln("Open: Flags:%08X, Mode:%03o, File:'%s'", flags, mode, file);
+			//.writefln("Open: Flags:%08X, Mode:%03o, File:'%s'", flags, mode, file);
 			
 			SceUID fd = 0; foreach (fd_cur; openedStreams.keys) if (fd < fd_cur) fd = fd_cur;
 			//fd++;
 			fd += 10;
-			auto vfs = locateParentAndUpdateFile(file);
-			openedStreams[fd] = vfs.open(file, fmode, octal!777);
+			vfs = locateParentAndUpdateFile(file);
+			//.writefln("%d", fmode);
+			openedStreams[fd] = vfs.open(file, fmode, mode);
 			return fd;
 		} catch (Throwable o) {
-			writefln("sceIoOpen('%s') exception: %s", fileIni, o);
+			Logger.log(Logger.Level.INFO, "IoFileMgrForKernel", "sceIoOpen failed to open '%s' for '%d'", file, fmode);
+			//.writefln("sceIoOpen('%s') exception: %s", fileIni, o);
 			return -1;
+			//return 0;
 		}
 	}
 
@@ -506,7 +510,7 @@ class IoFileMgrForKernel : ModuleNative {
 			fillStats(stat, fentry.stats);
 			return 0;
 		} catch (Throwable e) {
-			writefln("ERROR: STAT(%s)!! FAILED: %s", fileIni, e);
+			Logger.log(Logger.Level.DEBUG, "IoFileMgrForKernel", "ERROR: STAT(%s)!! FAILED: %s", fileIni, e);
 			return -1;
 		}
 	}

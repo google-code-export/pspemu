@@ -19,27 +19,15 @@ class Logger {
 	}
 
 	__gshared static Message[] messages;
-	__gshared static Level currentLogLevel = Level.INFO;
+	//__gshared static Level currentLogLevel = Level.INFO;
+	__gshared static Level currentLogLevel = Level.TRACE;
 
-	/*
-	static void log(Level level, string component, string text)() {
-		wstring text;
-		void put(dchar c) { text ~= c; }
-		std.format.doFormat(&put, _arguments, _argptr);
-		auto message = Message(std.c.time.time(null), level, component, text);
-		messages ~= message;
-		//if (level >= Level.WARNING) {
-		if (level >= Level.INFO) {
-		//if (level >= Level.DEBUG) {
-			message.print();
-		}
-	}
-	*/
-	
 	static void log(T...)(Level level, string component, T args) {
 		if (level >= currentLogLevel) {
 			auto message = Message(std.c.time.time(null), level, component, std.string.format(args));
 			messages ~= message;
+			if (component == "sceAudio_driver") return;
+			//if (component == "Module") return;
 			message.print();
 		}
 	}

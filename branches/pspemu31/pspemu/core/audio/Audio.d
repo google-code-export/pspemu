@@ -337,7 +337,9 @@ class Audio {
 	this() {
 		foreach (n, ref channel; channels) channel = new Channel(n);
 		foreach (ref buffer; buffers) buffer = new Buffer();
-		(thread = new Thread(&playThread)).start();
+		thread = new Thread(&playThread);
+		thread.name = "AUDIO THREAD";
+		thread.start();
 	}
 
 	void stop() {
@@ -384,7 +386,9 @@ class Audio {
 		} catch (Throwable o) {
 			writefln("Audio.playThread: %s", o);
 		} finally {
-			enforcemm(waveOutClose(waveOutHandle));
+			writefln("Audio.stop()[1]");
+			//enforcemm(waveOutClose(waveOutHandle));
+			writefln("Audio.stop()[2]");
 		}
 	}
 	
