@@ -69,7 +69,8 @@ template ThreadManForUser_Threads() {
 		auto newThreadState = new ThreadState(currentEmulatorState, new Registers());
 		newThreadState.registers.copyFrom(currentRegisters);
 		newThreadState.registers.pcSet = entry;
-		newThreadState.registers.SP = hleEmulatorState.memoryPartition.allocHigh(stackSize).high - 4;
+		newThreadState.registers.SP = hleEmulatorState.memoryPartition.allocHigh(stackSize, 0x10).high;
+		
 		newThreadState.registers.RA = 0x08000000;
 		newThreadState.name = name;
 		writefln("sceKernelCreateThread(name:'%s', SP:0x%08X)", name, newThreadState.registers.SP);

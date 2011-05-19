@@ -77,6 +77,15 @@ abstract class CpuThreadBase : InstructionHandler {
 	    		//writefln("PC: %08X", this.registers.PC);
 
 		    	this.instruction.v = memory.tread!(uint)(this.registers.PC);
+		    	
+				/*
+		    	if (this.registers.PC == 0x089020DC) {
+		    		writefln("a0=%d", this.registers.A0);
+		    		writefln("a1=%d", this.registers.A1);
+		    		writefln("a2=%d", this.registers.A2);
+		    	}
+				*/
+		    	
 		    	processSingle(instruction);
 		    	//writefln("  %08X", this.instruction.v);
 		    	executedInstructionsCount++;

@@ -2,7 +2,7 @@ module pspemu.core.cpu.interpreted.ops.Memory;
 
 import std.stdio;
 
-debug = DEBUG_SB;
+//debug = DEBUG_SB;
 
 template TemplateCpu_MEMORY() {
 	mixin TemplateCpu_MEMORY_Utils;

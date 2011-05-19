@@ -23,6 +23,11 @@ int main(int argc, char** argv) {
 	sprintf(buffer, "%d", (u32)100000);
 	emitString(buffer);
 	pspDebugScreenPrintf("%s\n", buffer);
+
+	sprintf(buffer, "%lld", (u64)9);
+	emitString(buffer);
+	pspDebugScreenPrintf("%s\n", buffer);
+
 	
 	sprintf(buffer, "%lld", (u64)100000);
 	emitString(buffer);

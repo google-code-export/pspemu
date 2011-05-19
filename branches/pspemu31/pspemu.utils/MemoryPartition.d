@@ -131,7 +131,7 @@ class MemoryPartition {
 	public MemoryPartition allocLow(uint size, uint alignment = 1) {
 		prepareChilds();
 
-		foreach (childKey; childsByLow.keys) {
+		foreach (childKey; childsByLow.keys.sort) {
 			auto child = childsByLow[childKey];
 			if (!child.used && child.length > size) {
 				uint childLow = child.low;
@@ -153,7 +153,7 @@ class MemoryPartition {
 	public MemoryPartition allocHigh(uint size, uint alignment = 1) {
 		prepareChilds();
 
-		foreach (childKey; childsByHigh.keys.reverse) {
+		foreach (childKey; childsByHigh.keys.sort.reverse) {
 			auto child = childsByHigh[childKey];
 			if (!child.used && child.length > size) {
 				uint childHigh = child.high;

@@ -42,14 +42,15 @@ int main() {
 	//moduleLoader.load(r"C:\projects\pspemu31\tests_ex\fpu\fputest.elf");
 	//moduleLoader.load(r"C:\projects\pspemu31\tests_ex\threads\test.elf");
 	//moduleLoader.load(r"C:\projects\pspemu31\tests_ex\threads\thread_start.elf");
-	moduleLoader.load(r"C:\projects\pspemu31\tests_ex\string\string.elf");
+	//moduleLoader.load(r"tests_ex\string\string.elf");
+	//std.file.write("memory.dump", emulator.emulatorState.memory.mainMemory);
 	
 	writefln("%08X", moduleLoader.PC);
 	//auto stack = emulator.hleEmulatorState.memoryPartition.alloc(0x8000);
 	// @HACK:
 	auto PC = moduleLoader.PC;
 	uint GP = moduleLoader.GP;
-	auto SP = emulator.hleEmulatorState.memoryPartition.allocHigh(0x8000).high - 4;
+	auto SP = emulator.hleEmulatorState.memoryPartition.allocHigh(0x8000, 0x10).high;
 
 	//auto thid = threadManForUser.sceKernelCreateThread("Main Thread", PC, 32, 0x8000, 0, null);
 	with (emulator.mainCpuThread) {
@@ -69,6 +70,10 @@ int main() {
 	writefln("SP: %08X", SP);
 
 	writefln("%s", emulator.hleEmulatorState.memoryPartition);
+
+	emulator.emulatorState.display.onStop += delegate() {
+		//std.file.write("memory.dump", emulator.emulatorState.memory.mainMemory);
+	};
 	
 	emulator.startDisplay();
 	emulator.startGpu();
