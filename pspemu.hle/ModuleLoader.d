@@ -6,6 +6,8 @@ module pspemu.hle.ModuleLoader;
 
 import std.stdio;
 import std.stream;
+import std.file;
+import std.path;
 
 import pspemu.formats.elf.Elf;
 import pspemu.formats.elf.ElfDwarf;
@@ -18,6 +20,34 @@ import pspemu.utils.ExceptionUtils;
 
 import pspemu.hle.ModuleManager;
 import pspemu.hle.Syscall;
+
+import pspemu.core.cpu.Instruction;
+import pspemu.core.cpu.InstructionHandler;
+
+class InstructionCounter : InstructionHandler {
+	uint[string] counts;
+
+	void OP_DISPATCH(string name) {
+		if (name !in counts) counts[name] = 0;
+		counts[name]++;
+	}
+	
+	void count(Stream stream) {
+		Instruction instruction;
+		while (!stream.eof) {
+			stream.read(instruction.v);
+			processSingle(instruction);
+		}
+	}
+	
+	void dump() {
+		writefln("InstructionCounter {");
+		foreach (name; counts.keys.sort) {
+			writefln("  %s=%d", name, counts[name]);
+		}
+		writefln("}");
+	}
+}
 
 class ModuleLoader {
 	enum ModuleFlags : ushort {
@@ -88,6 +118,10 @@ class ModuleLoader {
 		this.moduleManager   = moduleManager;
 	}
 	
+	public void load(string fullPath) {
+		load(new BufferedFile(fullPath), std.path.basename(fullPath));
+	}
+	
 	public void load(Stream stream, string name = "<unknown>") {
 		while (true) {
 			auto magics = new SliceStream(stream, 0, 4);
@@ -119,6 +153,8 @@ class ModuleLoader {
 		this.exportsStream = getMemorySliceRelocated(moduleInfo.exportsStart, moduleInfo.exportsEnd);
 		
 		processImports();
+		
+		countInstructions();
 	}
 	
 	Syscall.Function[] funcs;
@@ -209,6 +245,15 @@ class ModuleLoader {
 		return new SliceStream(memoryStream, getRelocatedAddress(from), getRelocatedAddress(to));
 	}
 
+	void countInstructions() {
+		try {
+			auto counter = new InstructionCounter;
+			counter.count(elf.SectionStream(".text"));
+			counter.dump();
+		} catch (Throwable o) {
+			writefln("Can't count instructions: '%s'", o.toString);
+		}
+	}
 
 	/+
 	void loadDwarfInformation() {
@@ -237,15 +282,7 @@ class ModuleLoader {
 		return false;
 	}
 
-	void count() {
-		try {
-			auto counter = new InstructionCounter;
-			counter.count(elf.SectionStream(".text"));
-			counter.dump();
-		} catch (Object o) {
-			writefln("Can't count instructions: '%s'", o.toString);
-		}
-	}
+
 	+/
 }
 

@@ -24,6 +24,8 @@ import pspemu.core.cpu.tables.SwitchGen;
 import pspemu.core.cpu.tables.DummyGen;
 import pspemu.core.cpu.interpreter.Utils;
 
+//version = VERSION_SHIFT_ASM;
+
 //import pspemu.utils.Utils;
 
 class CpuThreadInterpreted : CpuThreadBase {
@@ -42,35 +44,4 @@ class CpuThreadInterpreted : CpuThreadBase {
 	mixin TemplateCpu_SPECIAL;
 	mixin TemplateCpu_FPU;
 	mixin TemplateCpu_VFPU;
-    //void OP_UNK() { writefln("Unknown!!!"); }
-    
-    /+
-	mixin(DummyGenUnk());
-    //mixin(DummyGen(PspInstructions_ALU));
-    //mixin(DummyGen(PspInstructions_BCU));
-    //mixin(DummyGen(PspInstructions_LSU));
-    //mixin(DummyGen(PspInstructions_FPU));
-    mixin(DummyGen(PspInstructions_COP0));
-    mixin(DummyGen(PspInstructions_VFPU_IMP));
-    //mixin(DummyGen(PspInstructions_VFPU));
-    //mixin(DummyGen(PspInstructions_SPECIAL));
-    
-    
-    void execute() {
-    	try {
-	    	while (running) {
-		    	this.instruction.v = memory.tread!(uint)(this.registers.PC);
-		    	//writefln("  %08X", this.instruction.v);
-		    	mixin(genSwitchAll());
-		    	executedInstructionsCount++;
-		    }
-	    	writefln("!running: %s", this);
-	    } catch (HaltException haltException) {
-	    	writefln("halted thread: %s", this);
-	    } catch (Exception exception) {
-	    	writefln("%s", exception);
-	    	writefln("%s", this);
-	    }
-    }
-    +/
 }

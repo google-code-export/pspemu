@@ -9,10 +9,17 @@ import pspemu.core.cpu.Registers;
 import pspemu.core.cpu.CpuThreadBase;
 
 class ThreadState {
+	public bool waiting;
 	public EmulatorState emulatorState;
 	public Registers registers;
 	public Thread nativeThread;
 	public string name;
+	
+	public void waitingBlock(void delegate() callback) {
+		waiting = true;
+		callback();
+		waiting = false;
+	}
 	
 	public this(EmulatorState emulatorState, Registers registers) {
 		this.emulatorState = emulatorState;

@@ -42,7 +42,7 @@ abstract class Module {
 	}
 	
 	static public void writefln(T...)(T args) {
-		//.writefln("PC(0x%08X) :: %s ::%s", currentRegisters.PC, Thread.getThis.name, std.string.format(args));
+		.writefln("PC(0x%08X) :: %s ::%s", currentRegisters.PC, Thread.getThis.name, std.string.format(args));
 	}
 
 	/*

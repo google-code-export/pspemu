@@ -16,17 +16,17 @@ template ThreadManForUser_Threads() {
 		mixin(registerd!(0xAA73C935, sceKernelExitThread));
 		mixin(registerd!(0x9ACE131E, sceKernelSleepThread));
 		mixin(registerd!(0x82826F70, sceKernelSleepThreadCB));
+		mixin(registerd!(0xEA748E31, sceKernelChangeCurrentThreadAttr));
+		mixin(registerd!(0xCEADEB47, sceKernelDelayThread));
 		/+
 		mixin(registerd!(0x809CE29B, sceKernelExitDeleteThread));
 		mixin(registerd!(0x9FA03CD3, sceKernelDeleteThread));
 		mixin(registerd!(0x293B45B8, sceKernelGetThreadId));
 		mixin(registerd!(0x17C1684E, sceKernelReferThreadStatus));
 		mixin(registerd!(0x278C0DF5, sceKernelWaitThreadEnd));
-		mixin(registerd!(0xCEADEB47, sceKernelDelayThread));
 		mixin(registerd!(0x68DA9E36, sceKernelDelayThreadCB));
 		mixin(registerd!(0x383F7BCC, sceKernelTerminateDeleteThread));
 		mixin(registerd!(0x71BC9871, sceKernelChangeThreadPriority));
-		mixin(registerd!(0xEA748E31, sceKernelChangeCurrentThreadAttr));
 		mixin(registerd!(0xD59EAD2F, sceKernelWakeupThread));
 		mixin(registerd!(0x9944F31F, sceKernelSuspendThread));
 		mixin(registerd!(0x840E8133, sceKernelWaitThreadEndCB));
@@ -75,7 +75,7 @@ template ThreadManForUser_Threads() {
 		writefln("sceKernelCreateThread(name:'%s', SP:0x%08X)", name, newThreadState.registers.SP);
 		
 		
-		return hleEmulatorState.uniqueIdFactory.add("thread", newThreadState);
+		return hleEmulatorState.uniqueIdFactory.add(newThreadState);
 		
 		/*
 		auto pspThread = new PspThread(threadManager);
@@ -124,7 +124,7 @@ template ThreadManForUser_Threads() {
 	 * @param argp   - Pointer to the arguments.
 	 */
 	int sceKernelStartThread(SceUID thid, SceSize arglen, /*void**/ uint argp) {
-		auto newThreadState = hleEmulatorState.uniqueIdFactory.get!(ThreadState)("thread", thid);
+		auto newThreadState = hleEmulatorState.uniqueIdFactory.get!(ThreadState)(thid);
 		
 		newThreadState.registers.A0 = arglen;
 		newThreadState.registers.A1 = argp;
@@ -192,11 +192,12 @@ template ThreadManForUser_Threads() {
 	 * @return < 0 on error.
 	 */
 	int sceKernelSleepThread() {
-		currentCpuThread.executedInstructionsCount += 1000;
-		writefln("sceKernelSleepThread()");
-		while (currentCpuThread.running) {
-			Thread.sleep(1);
-		}
+		currentCpuThread.threadState.waitingBlock({
+			writefln("sceKernelSleepThread()");
+			while (currentCpuThread.running) {
+				Thread.sleep(1);
+			}
+		});
 		return 0;
 	}
 
@@ -210,14 +211,48 @@ template ThreadManForUser_Threads() {
 	 * </code>
 	 */
 	int sceKernelSleepThreadCB() {
-		currentCpuThread.executedInstructionsCount += 1000;
-		writefln("sceKernelSleepThreadCB()");
-		while (currentCpuThread.running) {
-			//processCallbacks();
-			Thread.sleep(1);
-		}
+		currentCpuThread.threadState.waitingBlock({
+			writefln("sceKernelSleepThreadCB()");
+			while (currentCpuThread.running) {
+				//processCallbacks();
+				Thread.sleep(dur!("msecs")(1));
+			}
+		});
 		return 0;
 	}
+	
+	/**
+	 * Modify the attributes of the current thread.
+	 *
+	 * @param unknown - Set to 0.
+	 * @param attr    - The thread attributes to modify.  One of ::PspThreadAttributes.
+	 *
+	 * @return < 0 on error.
+	 */
+	int sceKernelChangeCurrentThreadAttr(int unknown, SceUInt attr) {
+		writefln("UNIMPLEMENTED: sceKernelChangeCurrentThreadAttr(%d, %d)", unknown, attr);
+		//threadManager.currentThread.info.attr = attr;
+		return 0;
+	}
+
+	/**
+	 * Delay the current thread by a specified number of microseconds
+	 *
+	 * @param delay - Delay in microseconds.
+	 *
+	 * @par Example:
+	 * <code>
+	 *     sceKernelDelayThread(1000000); // Delay for a second
+	 * </code>
+	 */
+	int sceKernelDelayThread(SceUInt delay) {
+		currentCpuThread.threadState.waitingBlock({
+			writefln("sceKernelDelayThread(%d)", delay);
+			Thread.sleep(dur!("usecs")(delay));
+		});
+		return 0;
+	}
+
 
 	/+
 	/** 
@@ -299,19 +334,6 @@ template ThreadManForUser_Threads() {
 		return 0;
 	}
 	
-	/**
-	 * Modify the attributes of the current thread.
-	 *
-	 * @param unknown - Set to 0.
-	 * @param attr    - The thread attributes to modify.  One of ::PspThreadAttributes.
-	 *
-	 * @return < 0 on error.
-	 */
-	int sceKernelChangeCurrentThreadAttr(int unknown, SceUInt attr) {
-		threadManager.currentThread.info.attr = attr;
-		return 0;
-	}
-
 	/** 
 	 * Wait until a thread has ended.
 	 *
@@ -376,24 +398,6 @@ template ThreadManForUser_Threads() {
 		return -1;
 	}
 		
-	/**
-	 * Delay the current thread by a specified number of microseconds
-	 *
-	 * @param delay - Delay in microseconds.
-	 *
-	 * @par Example:
-	 * <code>
-	 *     sceKernelDelayThread(1000000); // Delay for a second
-	 * </code>
-	 */
-	int sceKernelDelayThread(SceUInt delay) {
-		mixin(changeAfterTimerPausedMicroseconds);
-
-		return threadManager.currentThread.pauseAndYield("sceKernelDelayThread", (PspThread pausedThread) {
-			if (!paused) pausedThread.resumeAndReturn(0);
-		});
-	}
-
 	/**
 	 * Delay the current thread by a specified number of microseconds and handle any callbacks.
 	 *

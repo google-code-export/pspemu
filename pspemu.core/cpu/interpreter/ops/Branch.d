@@ -26,8 +26,8 @@ template TemplateCpu_BRANCH() {
 	// BGEZL -- Branch on greater than or equal to zero likely
 	// Branches if the two registers are equal
 	// if $s == $t .pcAdvance (offset << 2)); else .pcAdvance (4);
-	void OP_BEQ () { mixin(BRANCH(Likely.NO , Link.NO , "registers[instruction.RS] == registers[instruction.RT]")); }
-	void OP_BEQL() { mixin(BRANCH(Likely.YES, Link.NO , "registers[instruction.RS] == registers[instruction.RT]")); }
+	void OP_BEQ () { mixin(BRANCH(Likely.NO , Link.NO , "(cast(int)registers[instruction.RS]) == (cast(int)registers[instruction.RT])")); }
+	void OP_BEQL() { mixin(BRANCH(Likely.YES, Link.NO , "(cast(int)registers[instruction.RS]) == (cast(int)registers[instruction.RT])")); }
 
 	// BGEZ -- Branch on greater than or equal to zero
 	// BGEZAL -- Branch on greater than or equal to zero and link
@@ -64,6 +64,6 @@ template TemplateCpu_BRANCH() {
 	// BNE -- Branch on not equal
 	// Branches if the two registers are not equal
 	// if $s != $t advance_pc (offset << 2)); else advance_pc (4);
-	void OP_BNE () { mixin(BRANCH(Likely.NO , Link.NO , "registers[instruction.RS] != registers[instruction.RT]")); }
-	void OP_BNEL() { mixin(BRANCH(Likely.YES, Link.NO , "registers[instruction.RS] != registers[instruction.RT]")); }
+	void OP_BNE () { mixin(BRANCH(Likely.NO , Link.NO , "(cast(int)registers[instruction.RS]) != (cast(int)registers[instruction.RT])")); }
+	void OP_BNEL() { mixin(BRANCH(Likely.YES, Link.NO , "(cast(int)registers[instruction.RS]) != (cast(int)registers[instruction.RT])")); }
 }

@@ -45,9 +45,7 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	 * Number of vertical blank pulses up to now
 	 */
 	uint sceDisplayGetVcount() {
-		unimplemented();
-		//return currentEmulatorState.display.VBLANK_COUNT;
-		return -1;
+		return currentEmulatorState.display.VBLANK_COUNT;
 	}
 
 	int _sceDisplayWaitVblankStart(bool _processCallbacks) {

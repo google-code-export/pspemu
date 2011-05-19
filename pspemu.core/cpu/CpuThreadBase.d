@@ -13,34 +13,15 @@ import pspemu.core.cpu.tables.DummyGen;
 import pspemu.core.cpu.Instruction;
 import pspemu.core.cpu.Registers;
 
-string genSwitchAll() {
-	static if (false) {
-		const string str = q{
-			genSwitch(
-				PspInstructions_ALU ~
-				PspInstructions_BCU ~
-				PspInstructions_LSU ~
-				PspInstructions_FPU ~
-				PspInstructions_COP0 ~
-				PspInstructions_VFPU_IMP ~
-				//PspInstructions_VFPU ~
-				PspInstructions_SPECIAL
-			)
-		};
-		pragma(msg, mixin(str));
-		return mixin(str);
-	} else {
-		return import("cached_switch_all.dcode");
-	} 
-}
+import pspemu.core.cpu.InstructionHandler;
 
 public CpuThreadBase thisThreadCpuThreadBase;
 
-abstract class CpuThreadBase {
+abstract class CpuThreadBase : InstructionHandler {
+	Instruction instruction;
 	ThreadState threadState;
 	Memory memory;
 	Registers registers;
-	Instruction instruction;
 	bool running = true;
 	//static CpuThreadBase[Thread] cpuThreadBasePerThread;
 	
@@ -78,32 +59,15 @@ abstract class CpuThreadBase {
 	public void thisThreadWaitCyclesAtLeast(int count = 100) {
 		while (true) {
 			Thread.yield();
+			// Not running.
+			if (!this.threadState.nativeThread.isRunning) break;
+			
+			if (this.threadState.waiting) break;
+			
 			if (this.executedInstructionsCount >= count) break;
 		}
 	}
 
-	
-	/*
-	void opDispatch(string name)() {
-		
-	}
-	*/
-
-	void OP_DISPATCH(string name) {
-		writefln("OP_DISPATCH(%s)", name);
-		throw(new Exception("Invalid operation: " ~ name));
-	}
-	
-	mixin(DummyGenUnk());
-    mixin(DummyGen(PspInstructions_ALU));
-    mixin(DummyGen(PspInstructions_BCU));
-    mixin(DummyGen(PspInstructions_LSU));
-    mixin(DummyGen(PspInstructions_FPU));
-    mixin(DummyGen(PspInstructions_COP0));
-    mixin(DummyGen(PspInstructions_VFPU_IMP));
-    //mixin(DummyGen(PspInstructions_VFPU));
-    mixin(DummyGen(PspInstructions_SPECIAL));
-    
     void execute() {
     	try {
     		writefln("NATIVE_THREAD: START (%s)", Thread.getThis().name);
@@ -113,8 +77,8 @@ abstract class CpuThreadBase {
 	    		//writefln("PC: %08X", this.registers.PC);
 
 		    	this.instruction.v = memory.tread!(uint)(this.registers.PC);
+		    	processSingle(instruction);
 		    	//writefln("  %08X", this.instruction.v);
-		    	mixin(genSwitchAll());
 		    	executedInstructionsCount++;
 		    }
 	    	writefln("!running: %s", this);
