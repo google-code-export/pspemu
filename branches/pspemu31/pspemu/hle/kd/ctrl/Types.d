@@ -1,5 +1,8 @@
 module pspemu.hle.kd.ctrl.Types; // kd/ctrl.prx (sceController_Service)
 
+import std.string;
+import pspemu.utils.MathUtils;
+
 /**
  * Enumeration for the digital controller buttons.
  *
@@ -51,11 +54,43 @@ struct SceCtrlLatch {
 
 /** Returned controller data */
 struct SceCtrlData {
-	uint 	TimeStamp; /// The current read frame.
-	uint 	Buttons;   /// Bit mask containing zero or more of ::PspCtrlButtons.
-	ubyte 	Lx;        /// Analogue stick, X axis.
-	ubyte 	Ly;        /// Analogue stick, Y axis.
-	ubyte 	Rsrv[6];   /// Reserved.
+	uint 	TimeStamp = 0; /// The current read frame.
+	uint 	Buttons = 0;   /// Bit mask containing zero or more of ::PspCtrlButtons.
+	ubyte 	Lx = 127;      /// Analogue stick, X axis.
+	ubyte 	Ly = 127;      /// Analogue stick, Y axis.
+	ubyte 	Rsrv[6];       /// Reserved.
+	
+	public bool IsPressedButton(PspCtrlButtons pspCtrlButton) {
+		return (Buttons & pspCtrlButton) != 0;
+	}
+
+	public int IsPressedButton2(PspCtrlButtons pspCtrlButton1, PspCtrlButtons pspCtrlButton2) {
+		if (IsPressedButton(pspCtrlButton1)) return -1;
+		if (IsPressedButton(pspCtrlButton2)) return +1;
+		return 0;
+	}
+	
+	public void SetPressedButton(PspCtrlButtons pspCtrlButton, bool Pressed) {
+		if (Pressed) {
+			Buttons |= pspCtrlButton; 
+		} else {
+			Buttons &= ~pspCtrlButton;
+		}
+	}
+	
+	static string component(string v) {
+		return 
+			"@property real " ~ v ~ "() { return cast(real)(L" ~ v ~ " - 127) / 127; }"
+			"@property real " ~ v ~ "(real value) { int v = (cast(int)(value * 127) + 127); L" ~ v ~ " = cast(ubyte)clamp(v, 0, 255); return " ~ v ~ "; }"
+		;
+	}
+	
+	mixin(component("x"));
+	mixin(component("y"));
+	
+	string toString() {
+		return std.string.format("SceCtrlData(TimeStamp=%d, Buttons=%032b, x=%.3f, y=%.3f)", TimeStamp, Buttons, x, y);
+	}
 
 	static assert(this.sizeof == 16);
 }

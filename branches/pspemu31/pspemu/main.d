@@ -5,6 +5,8 @@ import pspemu.utils.Path;
 
 import std.stdio;
 import std.stream;
+import std.file;
+import std.path;
 
 import pspemu.tests.MemoryPartitionTests;
 
@@ -12,6 +14,7 @@ import pspemu.Emulator;
 
 import pspemu.hle.kd.iofilemgr.IoFileMgrForUser;
 import pspemu.hle.ModuleNative;
+import pspemu.hle.ModuleLoader;
 
 void doUnittest() {
 	(new MemoryPartitionTests()).test();
@@ -24,16 +27,20 @@ unittest {
 int main(string[] args) {
 	ApplicationPaths.initialize(args);
 	
-	try { std.file.mkdirRecurse(ApplicationPaths.exe ~ "/pspfs/flash0/font"); } catch { }
-	try { std.file.mkdirRecurse(ApplicationPaths.exe ~ "/pspfs/flash0/kd"); } catch { }
-	try { std.file.mkdirRecurse(ApplicationPaths.exe ~ "/pspfs/flash0/vsh"); } catch { }
-	try { std.file.mkdirRecurse(ApplicationPaths.exe ~ "/pspfs/flash1"); } catch { }
-	try { std.file.mkdirRecurse(ApplicationPaths.exe ~ "/pspfs/ms0/PSP/GAME/virtual"); } catch { }
-	try { std.file.mkdirRecurse(ApplicationPaths.exe ~ "/pspfs/ms0/PSP/PHOTO"); } catch { }
-	try { std.file.mkdirRecurse(ApplicationPaths.exe ~ "/pspfs/ms0/PSP/SAVEDATA"); } catch { }
-
+	void requireDirectory(string directory) {
+		try { std.file.mkdirRecurse(ApplicationPaths.exe ~ "/" ~ directory); } catch { }
+	}
+	
+	requireDirectory("pspfs/flash0/font");
+	requireDirectory("pspfs/flash0/kd");
+	requireDirectory("pspfs/flash0/vsh");
+	requireDirectory("pspfs/flash1");
+	requireDirectory("pspfs/ms0/PSP/GAME/virtual");
+	requireDirectory("pspfs/ms0/PSP/PHOTO");
+	requireDirectory("pspfs/ms0/PSP/SAVEDATA");
+	
 	Emulator emulator = new Emulator();
-	auto moduleLoader = emulator.hleEmulatorState.moduleLoader;
+	ModuleLoader moduleLoader = emulator.hleEmulatorState.moduleLoader;
 	
 	uint CODE_PTR_EXIT_THREAD = 0x08000000;
 	
@@ -45,32 +52,44 @@ int main(string[] args) {
 		memory.write(cast(uint)(memory.position + 4));
 		memory.writeString("ms0:/PSP/GAME/virtual/EBOOT.PBP\0");
 	}
+	
+	void loadModule(string pspModulePath) {
+		moduleLoader.load(pspModulePath);
+		emulator.hleEmulatorState.moduleManager.get!(IoFileMgrForUser)().setVirtualDir(std.path.basename(pspModulePath));
+	}
+	
+
 
 	//emulator.emulatorState.memory.twrite!uint(CODE_PTR_EXIT_THREAD + 4, CODE_PTR_EXIT_THREAD + 8);
 	//emulator.emulatorState.memory.twrite(CODE_PTR_EXIT_THREAD + 8, cast(ubyte[])"ms0:/PSP/GAME/virtual/EBOOT.PBP" ~ '\0');
 	
 
-	//moduleLoader.load(r"C:\projects\pspemu31\bin\minifire.elf");
-	//moduleLoader.load(r"C:\projects\pspemu31\bin\HelloJpcsp.pbp");
-	//moduleLoader.load(r"C:\projects\pspemu31\bin\HelloWorldPSP.pbp");
-	//moduleLoader.load(r"C:\projects\pspemu31\bin\ortho.pbp");
-	//moduleLoader.load(r"C:\projects\pspemu31\bin\lines.pbp");
-	//moduleLoader.load(r"C:\projects\pspemu31\bin\text.elf");
-	//moduleLoader.load(r"C:\projects\pspemu31\bin\cube.pbp");
-	//moduleLoader.load(r"C:\projects\pspemu31\bin\blend.pbp");
-	//moduleLoader.load(r"C:\projects\pspemu31\bin\vfpu_nehe01.pbp");
-	//moduleLoader.load(r"C:\projects\pspemu31\bin\vfpu_nehe02.pbp");
-	//moduleLoader.load(r"C:\projects\pspemu31\bin\zbufferfog.elf");
-	//moduleLoader.load(r"C:\projects\pspemu31\bin\rtctest.pbp");
-	//moduleLoader.load(r"C:\projects\pspemu31\tests_ex\fpu\fputest.elf");
-	//moduleLoader.load(r"C:\projects\pspemu31\tests_ex\threads\test.elf");
-	//moduleLoader.load(r"C:\projects\pspemu31\tests_ex\threads\thread_start.elf");
-	//moduleLoader.load(r"tests_ex\string\string.elf");
+	//loadModule(r"C:\projects\pspemu31\bin\minifire.elf");
+	//loadModule(r"C:\projects\pspemu31\bin\HelloJpcsp.pbp");
+	//loadModule(r"C:\projects\pspemu31\bin\HelloWorldPSP.pbp");
+	//loadModule(r"C:\projects\pspemu31\bin\ortho.pbp");
+	//loadModule(r"C:\projects\pspemu31\bin\lines.pbp");
+	//loadModule(r"C:\projects\pspemu31\bin\text.elf");
+	//loadModule(r"C:\projects\pspemu31\bin\cube.pbp");
+	//loadModule(r"C:\projects\pspemu31\bin\blend.pbp");
+	//loadModule(r"C:\projects\pspemu31\bin\vfpu_nehe01.pbp");
+	//loadModule(r"C:\projects\pspemu31\bin\vfpu_nehe02.pbp");
+	//loadModule(r"C:\projects\pspemu31\bin\zbufferfog.elf");
+	//loadModule(r"C:\projects\pspemu31\bin\rtctest.pbp");
+	//loadModule(r"C:\projects\pspemu31\tests_ex\fpu\fputest.elf");
+	//loadModule(r"C:\projects\pspemu31\tests_ex\threads\test.elf");
+	//loadModule(r"C:\projects\pspemu31\tests_ex\threads\thread_start.elf");
+	//loadModule(r"tests_ex\string\string.elf");
 	//std.file.write("memory.dump", emulator.emulatorState.memory.mainMemory);
 
-	//moduleLoader.load(r"C:\projects\pspemu31\games\cavestory\EBOOT.PBP");
-	//moduleLoader.load(r"C:\projects\pspemu31\demos\nehe\vfpu_nehe10.pbp");
-	moduleLoader.load(r"C:\projects\pspemu31\demos\nehe\vfpu_nehe06.pbp");
+	//loadModule(r"C:\projects\pspemu31\demos\nehe\vfpu_nehe10.pbp");
+	//loadModule(r"C:\projects\pspemu31\demos\nehe\vfpu_nehe06.pbp");
+	//loadModule(r"C:\projects\pspemu31\demos\nehe\vfpu_nehe07.pbp");
+	//loadModule(r"C:\projects\pspemu31\demos\audio.prx");
+	loadModule(r"C:\projects\pspemu31\demos\polyphonic.elf");
+	
+	//loadModule(r"C:\projects\pspemu31\demos\nehe\vfpu_nehe08.pbp");
+	//loadModule(r"C:\projects\pspemu31\games\cavestory\EBOOT.PBP");
 	
 	emulator.hleEmulatorState.moduleManager.get!(IoFileMgrForUser)().setVirtualDir(r"C:\projects\pspemu31\demos\nehe");
 	
@@ -98,8 +117,6 @@ int main(string[] args) {
 		registers.A0 = 1;
 		registers.A1 = 0x08100000 + 4;
 	}
-	
-	
 	
 	writefln("GP: %08X", GP);
 	writefln("PC: %08X", PC);
