@@ -9,6 +9,9 @@ import pspemu.utils.MathUtils;
 import pspemu.hle.kd.Types;
 import pspemu.hle.kd.threadman.Types;
 
+import pspemu.core.EmulatorState;
+import pspemu.core.exceptions.HaltException;
+
 import core.sync.condition;
 import core.sync.mutex;
 
@@ -28,12 +31,14 @@ class PspSemaphore {
 		updatedCountCondition.notify();
 	}
 	
-	public void waitSignal(int expectedValueAtLeast, uint timeout) {
+	public void waitSignal(EmulatorState emulatorState, int expectedValueAtLeast, uint timeout) {
 		// @TODO: ignored timeout
 		info.numWaitThreads++;
 		{
 			while (info.currentCount < expectedValueAtLeast) {
-				updatedCountCondition.wait();
+				// @TODO This should be done with a set of mutexs, and a wait for any.
+				if (!emulatorState.running) throw(new HaltException("Halt"));
+				updatedCountCondition.wait(dur!"msecs"(1));
 			}
 			info.currentCount -= expectedValueAtLeast;
 		}
@@ -143,7 +148,7 @@ template ThreadManForUser_Semaphores() {
 	int sceKernelWaitSema(SceUID semaid, int signal, SceUInt* timeout) {
 		auto semaphore = hleEmulatorState.uniqueIdFactory.get!PspSemaphore(semaid);
 		currentCpuThread.threadState.waitingBlock({
-			semaphore.waitSignal(signal, (timeout !is null) ? *timeout : 0);
+			semaphore.waitSignal(currentEmulatorState, signal, (timeout !is null) ? *timeout : 0);
 		});
 		return 0;
 	}

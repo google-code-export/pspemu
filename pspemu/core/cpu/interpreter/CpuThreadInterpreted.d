@@ -39,7 +39,7 @@ class CpuThreadInterpreted : CpuThreadBase {
 	
 	public void OP_UNK() {
 		registers.pcAdvance(4);
-		writefln("OP_UNK");
+		writefln("Thread(%d): OP_UNK", threadState.thid);
 	}
 
 	mixin TemplateCpu_ALU;

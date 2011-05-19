@@ -3,10 +3,14 @@ module pspemu.main;
 import pspemu.core.EmulatorState;
 import pspemu.utils.Path;
 
+import core.thread;
+
 import std.stdio;
+import std.c.stdlib;
 import std.stream;
 import std.file;
 import std.path;
+import std.process;
 
 import pspemu.tests.MemoryPartitionTests;
 
@@ -55,7 +59,7 @@ int main(string[] args) {
 	
 	void loadModule(string pspModulePath) {
 		moduleLoader.load(pspModulePath);
-		emulator.hleEmulatorState.moduleManager.get!(IoFileMgrForUser)().setVirtualDir(std.path.basename(pspModulePath));
+		emulator.hleEmulatorState.moduleManager.get!(IoFileMgrForUser)().setVirtualDir(std.path.dirname(pspModulePath));
 	}
 	
 
@@ -64,7 +68,7 @@ int main(string[] args) {
 	//emulator.emulatorState.memory.twrite(CODE_PTR_EXIT_THREAD + 8, cast(ubyte[])"ms0:/PSP/GAME/virtual/EBOOT.PBP" ~ '\0');
 	
 
-	//loadModule(r"C:\projects\pspemu31\bin\minifire.elf");
+	//loadModule(r"C:\projects\pspemu31\demos\minifire.elf");
 	//loadModule(r"C:\projects\pspemu31\bin\HelloJpcsp.pbp");
 	//loadModule(r"C:\projects\pspemu31\bin\HelloWorldPSP.pbp");
 	//loadModule(r"C:\projects\pspemu31\bin\ortho.pbp");
@@ -82,16 +86,21 @@ int main(string[] args) {
 	//loadModule(r"tests_ex\string\string.elf");
 	//std.file.write("memory.dump", emulator.emulatorState.memory.mainMemory);
 
-	//loadModule(r"C:\projects\pspemu31\demos\nehe\vfpu_nehe10.pbp");
+	//loadModule(r"C:\projects\pspemu31\demos\nehe\vfpu_nehe08.pbp");
+	//loadModule(r"C:\projects\pspemu31\demos\nehe\vfpu_nehe09.pbp");
 	//loadModule(r"C:\projects\pspemu31\demos\nehe\vfpu_nehe06.pbp");
 	//loadModule(r"C:\projects\pspemu31\demos\nehe\vfpu_nehe07.pbp");
-	//loadModule(r"C:\projects\pspemu31\demos\audio.prx");
-	loadModule(r"C:\projects\pspemu31\demos\polyphonic.elf");
+	//loadModule(r"C:\projects\pspemu31\demos\sound.prx");
+	//loadModule(r"C:\projects\pspemu31\demos\polyphonic.elf");
+	//loadModule(r"C:\projects\pspemu31\demos\cwd.elf");
+	//loadModule(r"C:\projects\pspemu31\demos\threadstatus.elf");
+	
 	
 	//loadModule(r"C:\projects\pspemu31\demos\nehe\vfpu_nehe08.pbp");
+	//loadModule(r"C:\projects\pspemu31\games\TrigWars\EBOOT.PBP");
 	//loadModule(r"C:\projects\pspemu31\games\cavestory\EBOOT.PBP");
-	
-	emulator.hleEmulatorState.moduleManager.get!(IoFileMgrForUser)().setVirtualDir(r"C:\projects\pspemu31\demos\nehe");
+	loadModule(r"C:\projects\pspemu31\demos\nehe\vfpu_nehe10.pbp");
+	//loadModule(r"C:\projects\pspemu31\demos_ex\sdl\main.elf");
 	
 	writefln("ModuleNative.registeredModules:");
 	foreach (k, moduleName; ModuleNative.registeredModules) {
@@ -126,6 +135,12 @@ int main(string[] args) {
 
 	emulator.emulatorState.display.onStop += delegate() {
 		//std.file.write("memory.dump", emulator.emulatorState.memory.mainMemory);
+	};
+
+	// @TODO: This is a hack because some threads are not closing. I have to investigate this. 
+	emulator.emulatorState.display.onStop += delegate() {
+		Thread.sleep(dur!("msecs")(100));
+		std.c.stdlib.exit(0);
 	};
 	
 	emulator.startDisplay();

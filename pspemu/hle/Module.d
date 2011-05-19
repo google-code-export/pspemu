@@ -35,17 +35,20 @@ abstract class Module {
 		return currentCpuThread.threadState;
 	}
 	
-	@property static public EmulatorState currentEmulatorState() {
-		return currentThreadState.emulatorState;
+	@property public EmulatorState currentEmulatorState() {
+		//return currentThreadState.emulatorState;
+		return hleEmulatorState.emulatorState;
 	}
 
 	@property static public Registers currentRegisters() {
 		return currentThreadState.registers;
 	}
 	
+	/*
 	static public void writefln(T...)(T args) {
 		Logger.log(Logger.Level.TRACE, "Module", std.string.format("PC(0x%08X) :: %s ::%s", currentRegisters.PC, Thread.getThis.name, std.string.format(args)));
 	}
+	*/
 
 	/*
 	public HleEmulatorState currentHleEmulatorState() {

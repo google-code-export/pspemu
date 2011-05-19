@@ -261,7 +261,7 @@ class ModuleLoader {
 			counter.count(elf.SectionStream(".text"));
 			counter.dump();
 		} catch (Throwable o) {
-			writefln("Can't count instructions: '%s'", o.toString);
+			.writefln("Can't count instructions: '%s'", o.toString);
 		}
 	}
 

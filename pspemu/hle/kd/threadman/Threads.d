@@ -1,5 +1,11 @@
 module pspemu.hle.kd.threadman.Threads;
 
+import pspemu.hle.kd.threadman.Types;
+import pspemu.core.ThreadState;
+import pspemu.hle.ModuleNative;
+
+import pspemu.utils.Logger;
+
 template ThreadManForUser_Threads() {
 	/**
 	 * Thread Manager
@@ -18,11 +24,11 @@ template ThreadManForUser_Threads() {
 		mixin(registerd!(0x82826F70, sceKernelSleepThreadCB));
 		mixin(registerd!(0xEA748E31, sceKernelChangeCurrentThreadAttr));
 		mixin(registerd!(0xCEADEB47, sceKernelDelayThread));
+		mixin(registerd!(0x293B45B8, sceKernelGetThreadId));
+		mixin(registerd!(0x17C1684E, sceKernelReferThreadStatus));
 		/+
 		mixin(registerd!(0x809CE29B, sceKernelExitDeleteThread));
 		mixin(registerd!(0x9FA03CD3, sceKernelDeleteThread));
-		mixin(registerd!(0x293B45B8, sceKernelGetThreadId));
-		mixin(registerd!(0x17C1684E, sceKernelReferThreadStatus));
 		mixin(registerd!(0x278C0DF5, sceKernelWaitThreadEnd));
 		mixin(registerd!(0x68DA9E36, sceKernelDelayThreadCB));
 		mixin(registerd!(0x383F7BCC, sceKernelTerminateDeleteThread));
@@ -37,7 +43,7 @@ template ThreadManForUser_Threads() {
 		+/
 	}
 	
-/**
+	/**
 	 * Create a thread
 	 *
 	 * @par Example:
@@ -66,17 +72,30 @@ template ThreadManForUser_Threads() {
 		void*  option       = get_argument_ptr!void(5);
 		*/
 
-		auto newThreadState = new ThreadState(currentEmulatorState, new Registers());
+		ThreadState newThreadState = new ThreadState(currentEmulatorState, new Registers());
 		newThreadState.registers.copyFrom(currentRegisters);
 		newThreadState.registers.pcSet = entry;
-		newThreadState.registers.SP = hleEmulatorState.memoryPartition.allocHigh(stackSize, 0x10).high;
+		auto stackMemoryPartition = hleEmulatorState.memoryPartition.allocHigh(stackSize, 0x10);
+		newThreadState.registers.SP = stackMemoryPartition.high;
 		
 		newThreadState.registers.RA = 0x08000000;
 		newThreadState.name = name;
-		writefln("sceKernelCreateThread(name:'%s', SP:0x%08X)", name, newThreadState.registers.SP);
+		newThreadState.thid = hleEmulatorState.uniqueIdFactory.add(newThreadState);
 		
+		Logger.log(Logger.Level.INFO, "ThreadManForUser.Threads", "sceKernelCreateThread(thid:'%d', name:'%s', SP:0x%08X)", newThreadState.thid, name, newThreadState.registers.SP);
 		
-		return hleEmulatorState.uniqueIdFactory.add(newThreadState);
+		newThreadState.sceKernelThreadInfo.attr = attr;
+		newThreadState.sceKernelThreadInfo.name[0..name.length] = name;
+		newThreadState.sceKernelThreadInfo.initPriority = initPriority;
+		newThreadState.sceKernelThreadInfo.currentPriority = initPriority;
+		newThreadState.sceKernelThreadInfo.gpReg = cast(void *)currentRegisters().GP;
+		newThreadState.sceKernelThreadInfo.stackSize = stackSize;
+		newThreadState.sceKernelThreadInfo.stack = cast(void *)stackMemoryPartition.low;
+		newThreadState.sceKernelThreadInfo.entry = entry;
+		newThreadState.sceKernelThreadInfo.size = SceKernelThreadInfo.sizeof;
+		newThreadState.sceKernelThreadInfo.status = PspThreadStatus.PSP_THREAD_STOPPED;
+		
+		return newThreadState.thid;
 		
 		/*
 		auto pspThread = new PspThread(threadManager);
@@ -125,14 +144,14 @@ template ThreadManForUser_Threads() {
 	 * @param argp   - Pointer to the arguments.
 	 */
 	int sceKernelStartThread(SceUID thid, SceSize arglen, /*void**/ uint argp) {
-		auto newThreadState = hleEmulatorState.uniqueIdFactory.get!(ThreadState)(thid);
+		ThreadState newThreadState = hleEmulatorState.uniqueIdFactory.get!(ThreadState)(thid);
 		
 		newThreadState.registers.A0 = arglen;
 		newThreadState.registers.A1 = argp;
 		
-		auto newCpuThread = currentCpuThread.createCpuThread(newThreadState);
+		CpuThreadBase newCpuThread = currentCpuThread().createCpuThread(newThreadState);
 		
-		writefln("sceKernelStartThread(%d, %d, %08X)", thid, arglen, argp);
+		//writefln("sceKernelStartThread(%d, %d, %08X)", thid, arglen, argp);
 
 		/*
 		newCpuThread.executeBefore = delegate() {
@@ -142,8 +161,11 @@ template ThreadManForUser_Threads() {
 		
 		newCpuThread.start();
 
+		newThreadState.sceKernelThreadInfo.status = PspThreadStatus.PSP_THREAD_RUNNING;
+
 		// newCpuThread could access parent's stack because it has some cycles at the start.
-		newCpuThread.thisThreadWaitCyclesAtLeast(100);
+		newCpuThread.thisThreadWaitCyclesAtLeast(1_000_000);
+		
 		
 		// @TODO
 		
@@ -183,8 +205,19 @@ template ThreadManForUser_Threads() {
 	 * @param status - Exit status.
 	 */
 	void sceKernelExitThread(int status) {
-		writefln("sceKernelExitThread(%d)", status);
+		//writefln("sceKernelExitThread(%d)", status);
 		throw(new HaltException(std.string.format("sceKernelExitDeleteThread(%d)", status)));
+	}
+
+	int _sceKernelSleepThreadCB(bool CallBack) {
+		currentCpuThread.threadState.waitingBlock({
+			//.writefln("sceKernelSleepThreadCB()");
+			while (currentEmulatorState().running) {
+				Thread.sleep(dur!("msecs")(1));
+			}
+			throw(new HaltException("Halt"));
+		});
+		return 0;
 	}
 	
 	/**
@@ -193,15 +226,9 @@ template ThreadManForUser_Threads() {
 	 * @return < 0 on error.
 	 */
 	int sceKernelSleepThread() {
-		currentCpuThread.threadState.waitingBlock({
-			writefln("sceKernelSleepThread()");
-			while (currentCpuThread.running) {
-				Thread.sleep(1);
-			}
-		});
-		return 0;
+		return _sceKernelSleepThreadCB(false);
 	}
-
+	
 	/**
 	 * Sleep thread but service any callbacks as necessary
 	 *
@@ -212,14 +239,7 @@ template ThreadManForUser_Threads() {
 	 * </code>
 	 */
 	int sceKernelSleepThreadCB() {
-		currentCpuThread.threadState.waitingBlock({
-			writefln("sceKernelSleepThreadCB()");
-			while (currentCpuThread.running) {
-				//processCallbacks();
-				Thread.sleep(dur!("msecs")(1));
-			}
-		});
-		return 0;
+		return _sceKernelSleepThreadCB(true);
 	}
 	
 	/**
@@ -248,12 +268,54 @@ template ThreadManForUser_Threads() {
 	 */
 	int sceKernelDelayThread(SceUInt delay) {
 		currentCpuThread.threadState.waitingBlock({
-			writefln("sceKernelDelayThread(%d)", delay);
-			Thread.sleep(dur!("usecs")(delay));
+			//writefln("sceKernelDelayThread(%d)", delay);
+			
+			while (delay > 0) {
+				// @TODO This should be done with a set of mutexs, and a wait for any.
+				if (!currentEmulatorState.running) throw(new HaltException("Halt"));
+				Thread.sleep(dur!("usecs")(1000));
+				delay -= 1000;
+			}
 		});
 		return 0;
 	}
 
+	/** 
+	 * Get the current thread Id
+	 *
+	 * @return The thread id of the calling thread.
+	 */
+	SceUID sceKernelGetThreadId() {
+		return currentThreadState().thid;
+	}
+	
+/** 
+	 * Get the status information for the specified thread.
+	 * 
+	 * @param thid - Id of the thread to get status
+	 * @param info - Pointer to the info structure to receive the data.
+	 * Note: The structures size field should be set to
+	 * sizeof(SceKernelThreadInfo) before calling this function.
+	 *
+	 * @par Example:
+	 * <code>
+	 *     SceKernelThreadInfo status;
+	 *     status.size = sizeof(SceKernelThreadInfo);
+	 *     if (sceKernelReferThreadStatus(thid, &status) == 0) { Do something... }
+	 * </code>
+	 *
+	 * @return 0 if successful, otherwise the error code.
+	 */
+	int sceKernelReferThreadStatus(SceUID thid, SceKernelThreadInfo* info) {
+		if (thid < 0) return -1;
+		ThreadState threadState = hleEmulatorState.uniqueIdFactory.get!(ThreadState)(thid);
+		if (threadState is null) return -1;
+		if (info        is null) return -2;
+
+		*info = threadState.sceKernelThreadInfo;
+		
+		return 0;
+	}
 
 	/+
 	/** 
@@ -416,52 +478,6 @@ template ThreadManForUser_Threads() {
 			processCallbacks();
 			if (!paused) pausedThread.resumeAndReturn(0);
 		});
-	}
-
-	/** 
-	 * Get the status information for the specified thread.
-	 * 
-	 * @param thid - Id of the thread to get status
-	 * @param info - Pointer to the info structure to receive the data.
-	 * Note: The structures size field should be set to
-	 * sizeof(SceKernelThreadInfo) before calling this function.
-	 *
-	 * @par Example:
-	 * <code>
-	 *     SceKernelThreadInfo status;
-	 *     status.size = sizeof(SceKernelThreadInfo);
-	 *     if (sceKernelReferThreadStatus(thid, &status) == 0) { Do something... }
-	 * </code>
-	 *
-	 * @return 0 if successful, otherwise the error code.
-	 */
-	int sceKernelReferThreadStatus(SceUID thid, SceKernelThreadInfo* info) {
-		if (thid < 0) return -1;
-		auto thread = getThreadFromId(thid);
-		if (thread is null) return -1;
-		if (info   is null) return -2;
-
-		//if (size < threadManager.currentThread.info)
-		
-		ubyte[] copyFrom = TA(threadManager.currentThread.info);
-		ubyte[] copyTo   = (cast(ubyte*)info)[0..info.size];
-
-		uint copyLength = pspemu.utils.Utils.min(copyFrom.length, copyTo.length);
-
-		uint restoreSize = info.size;
-		copyTo[0..copyLength] = copyFrom[0..copyLength];
-		info.size = restoreSize;
-
-		return 0;
-	}
-
-	/** 
-	 * Get the current thread Id
-	 *
-	 * @return The thread id of the calling thread.
-	 */
-	SceUID sceKernelGetThreadId() {
-		return threadManager.currentThread.thid;
 	}
 
 	/**
