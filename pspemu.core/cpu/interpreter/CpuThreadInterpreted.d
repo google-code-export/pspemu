@@ -36,6 +36,11 @@ class CpuThreadInterpreted : CpuThreadBase {
 	public CpuThreadBase createCpuThread(ThreadState threadState) {
 		return new CpuThreadInterpreted(threadState);
 	}
+	
+	public void OP_UNK() {
+		registers.pcAdvance(4);
+		writefln("OP_UNK");
+	}
 
 	mixin TemplateCpu_ALU;
 	mixin TemplateCpu_MEMORY;

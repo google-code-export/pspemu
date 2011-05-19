@@ -70,6 +70,50 @@ struct SceKernelSysClock {
 	SceUInt32   hi;
 }
 
+ulong systime_to_tick(SysTime systime) {
+	return convert!("hnsecs", "usecs")(systime.stdTime - unixTimeToStdTime(0));
+}
+
+SysTime tick_to_systime(ulong ticks) {
+	return SysTime(convert!("usecs", "hnsecs")(ticks) + unixTimeToStdTime(0), UTC());
+}
+
+/* Date and time. */
+struct ScePspDateTime {
+	ushort	year;
+	ushort 	month;
+	ushort 	day;
+	ushort 	hour;
+	ushort 	minute;
+	ushort 	second;
+	uint 	microsecond;
+
+	ulong tick() {
+		return systime_to_tick(SysTime(DateTime(year, month, day, hour, minute, second), UTC())) + microsecond;
+	}
+
+	bool parse(DateTime datetime) {
+		return parse(SysTime(datetime));
+	}
+	
+	bool parse(SysTime systime) {
+		year        = cast(ushort)systime.year;
+		month       = cast(ushort)systime.month;
+		day         = cast(ushort)systime.day;
+		hour        = cast(ushort)systime.hour;
+		minute      = cast(ushort)systime.minute;
+		second      = cast(ushort)systime.second;
+		microsecond = cast(uint  )systime.fracSec.usecs;
+
+		return true;
+	}
+
+	bool parse(ulong tick) {
+		return parse(tick_to_systime(tick));
+	}
+	
+	static assert (this.sizeof == 16);
+}
 
 enum PspKernelErrorCodes {
 	SCE_KERNEL_ERROR_OK	 = 0,	

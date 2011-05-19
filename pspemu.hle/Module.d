@@ -74,7 +74,7 @@ abstract class Module {
 			initNids();
 			initModule();
 		} catch (Throwable o) {
-			writefln("Error initializing module: '%s'", o);
+			.writefln("Error initializing module: '%s'", o);
 			throw(o);
 		}
 	}
