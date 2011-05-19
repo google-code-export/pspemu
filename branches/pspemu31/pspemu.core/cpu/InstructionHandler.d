@@ -14,8 +14,8 @@ import pspemu.core.cpu.Instruction;
 import pspemu.core.cpu.Registers;
 
 string genSwitchAll() {
-	//static if (false) {
-	static if (true) {
+	static if (false) {
+	//static if (true) {
 		const string str = q{
 			genSwitch(
 				PspInstructions_ALU ~

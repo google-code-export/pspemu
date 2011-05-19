@@ -18,6 +18,7 @@ import pspemu.utils.StructUtils;
 import pspemu.utils.StreamUtils;
 import pspemu.utils.ExceptionUtils;
 
+import pspemu.hle.Module;
 import pspemu.hle.ModuleManager;
 import pspemu.hle.Syscall;
 
@@ -180,7 +181,16 @@ class ModuleLoader {
 				auto callStream = getMemorySlice(moduleImport.callAddress, moduleImport.callAddress + moduleImport.func_count * 8);
 				//writefln("%08X", moduleImport.callAddress);
 				
-				auto pspModule = nullOnException(moduleManager[moduleImportName]);
+				Module pspModule;
+				try {
+					pspModule = moduleManager[moduleImportName];
+				} catch (Throwable o) {
+					writefln("ERROR LOADING MODULE '%s': %s", moduleImportName, o);
+				}
+				
+				if (pspModule is null) {
+					writefln("MODULE '%s' NOT FOUND", moduleImportName);
+				}
 
 				while (!nidStream.eof) {
 					uint nid = read!(uint)(nidStream);
