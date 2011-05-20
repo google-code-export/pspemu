@@ -13,27 +13,6 @@ class MemorySegment {
 		bool inside(Block that) { return (this.low >= that.low) && (this.high <= that.high); }
 	}
 	
-	unittest {
-		// overlap
-		assert(Block(10, 20).overlap(Block(10, 20)) == true );
-		assert(Block(10, 20).overlap(Block( 5, 15)) == true );
-		assert(Block(10, 20).overlap(Block(15, 25)) == true );
-		assert(Block(10, 20).overlap(Block( 0,  9)) == false);
-		assert(Block(10, 20).overlap(Block(21, 22)) == false);
-		assert(Block(10, 20).overlap(Block( 0, 10)) == false);
-		assert(Block(10, 20).overlap(Block(20, 22)) == false);
-
-		// inside
-		assert(Block( 0, 15).inside(Block(10, 20)) == false);
-		assert(Block(15, 25).inside(Block(10, 20)) == false);
-		assert(Block( 5, 20).inside(Block(10, 20)) == false);
-		assert(Block(10, 25).inside(Block(10, 20)) == false);
-		assert(Block(10, 20).inside(Block(10, 20)) == true );
-		assert(Block(10, 15).inside(Block(10, 20)) == true );
-		assert(Block(15, 20).inside(Block(10, 20)) == true );
-		assert(Block(11, 19).inside(Block(10, 20)) == true );
-	}
-
 	MemorySegment parent;
 	MemorySegment[] childs;
 
@@ -98,27 +77,40 @@ class MemorySegment {
 		return child;
 	}
 
-	MemorySegment allocByHigh(uint size, string name = "<unknown>") {
+	/**
+	 * Allocs a stack.
+	 *
+	 * @param  size       Size of the stack to alloc.
+	 * @param  name       Name of the stack.
+	 * @param  alignment  Bytes to align the stack to.
+	 *
+	 * @return  A segment
+	 */
+	MemorySegment allocByHigh(uint size, string name = "<unknown>", uint alignment = 1) {
 		foreach (block; availableBlocks.reverse) {
-			if (block.size >= size) return (this += new MemorySegment(block.high - size, block.high, name));
+			uint decrement = previousAlignedDecrement(block.high, alignment);
+			if (block.size >= size + decrement) return (this += new MemorySegment(block.high - size - decrement, block.high - decrement, name));
 		}
-		throw(new Exception(std.string.format("Can't alloc size=%d on %s", size, this)));
+		throw(new Exception(std.string.format("Can't allocByHigh size=%d on %s", size, this)));
 	}
 
-	MemorySegment allocByLow(uint size, string name = "<unknown>", uint min = 0) {
+	/**
+	 * Allocs a heap.
+	 *
+	 * @param
+	 */
+	MemorySegment allocByLow(uint size, string name = "<unknown>", uint maxDesiredAddress = 0, uint alignment = 1) {
 		foreach (block; availableBlocks) {
-			if (block.low < min) continue;
-			if (block.size >= size) return (this += new MemorySegment(block.low, block.low + size, name));
+			if (block.low < maxDesiredAddress) continue;
+			uint increment = nextAlignedIncrement(block.low, alignment);
+			if (block.size >= size + increment) return (this += new MemorySegment(block.low + increment, block.low + increment + size, name));
 		}
 
 		// Ok. We didn't find an available segment. But we will try without the min check.
-		if (min != 0) {
-			return allocByLow(size, name, 0);
+		if (maxDesiredAddress != 0) {
+			return allocByLow(size, name, 0, alignment);
 		}
-		// Too bad.
-		else {
-			throw(new Exception(std.string.format("Can't alloc size=%d on %s", size, this)));
-		}
+		throw(new Exception(std.string.format("Can't allocByLow size=%d on %s", size, this)));
 	}
 
 	MemorySegment allocByAddr(uint base, uint size, string name = "<unknown>") {
@@ -173,3 +165,26 @@ class MemorySegment {
 		}
 	}
 }
+
+/*
+unittest {
+	// overlap
+	assert(Block(10, 20).overlap(Block(10, 20)) == true );
+	assert(Block(10, 20).overlap(Block( 5, 15)) == true );
+	assert(Block(10, 20).overlap(Block(15, 25)) == true );
+	assert(Block(10, 20).overlap(Block( 0,  9)) == false);
+	assert(Block(10, 20).overlap(Block(21, 22)) == false);
+	assert(Block(10, 20).overlap(Block( 0, 10)) == false);
+	assert(Block(10, 20).overlap(Block(20, 22)) == false);
+
+	// inside
+	assert(Block( 0, 15).inside(Block(10, 20)) == false);
+	assert(Block(15, 25).inside(Block(10, 20)) == false);
+	assert(Block( 5, 20).inside(Block(10, 20)) == false);
+	assert(Block(10, 25).inside(Block(10, 20)) == false);
+	assert(Block(10, 20).inside(Block(10, 20)) == true );
+	assert(Block(10, 15).inside(Block(10, 20)) == true );
+	assert(Block(15, 20).inside(Block(10, 20)) == true );
+	assert(Block(11, 19).inside(Block(10, 20)) == true );
+}
+*/

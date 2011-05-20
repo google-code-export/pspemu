@@ -13,6 +13,8 @@ import pspemu.core.cpu.tables.DummyGen;
 import pspemu.core.cpu.Instruction;
 import pspemu.core.cpu.Registers;
 
+import pspemu.utils.Logger;
+
 import pspemu.core.cpu.InstructionHandler;
 
 public CpuThreadBase thisThreadCpuThreadBase;
@@ -33,7 +35,7 @@ abstract class CpuThreadBase : InstructionHandler {
 		this.memory = this.threadState.emulatorState.memory;
 		this.registers = this.threadState.registers;
 		this.threadState.nativeThread = new Thread(&run);
-		this.threadState.nativeThread.name = std.string.format("PSP_CPU_THREAD#%d('%s')", lastThreadId++, threadState.name);
+		this.threadState.nativeThread.name = std.string.format("PspCpuThread#%d('%s')", lastThreadId++, threadState.name);
 		
 		threadState.emulatorState.display.onStop += delegate() {
 			running = false;
@@ -67,46 +69,42 @@ abstract class CpuThreadBase : InstructionHandler {
 			if (this.executedInstructionsCount >= count) break;
 		}
 	}
-
+	
     void execute() {
-    	try {
-    		writefln("NATIVE_THREAD: START (%s)", Thread.getThis().name);
-    		
-	    	while (running) {
-	    		//if (this.registers.PC <= 0x08800100) throw(new Exception("Invalid address for executing"));
-	    		//writefln("PC: %08X", this.registers.PC);
-
-		    	this.instruction.v = memory.tread!(uint)(this.registers.PC);
-		    	
-				/*
-		    	if (this.registers.PC == 0x089020DC) {
-		    		writefln("a0=%d", this.registers.A0);
-		    		writefln("a1=%d", this.registers.A1);
-		    		writefln("a2=%d", this.registers.A2);
-		    	}
-				*/
-		    	
-		    	processSingle(instruction);
-		    	//writefln("  %08X", this.instruction.v);
-		    	executedInstructionsCount++;
+    	threadState.emulatorState.cpuThreadRunningBlock({
+	    	try {
+				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: START (%s)", Thread.getThis().name);
+	    		
+		    	while (running) {
+		    		//if (this.registers.PC <= 0x08800100) throw(new Exception("Invalid address for executing"));
+		    		//writefln("THREAD(%s) : PC: %08X", Thread.getThis().name, this.registers.PC);
+	
+			    	this.instruction.v = memory.tread!(uint)(this.registers.PC);
+			    	
+					/*
+			    	if (this.registers.PC == 0x089020DC) {
+			    		writefln("a0=%d", this.registers.A0);
+			    		writefln("a1=%d", this.registers.A1);
+			    		writefln("a2=%d", this.registers.A2);
+			    	}
+					*/
+			    	
+			    	processSingle(instruction);
+			    	//writefln("  %08X", this.instruction.v);
+			    	executedInstructionsCount++;
+			    }
+				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "!running: %s", this);
+		    } catch (HaltException haltException) {
+				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "halted thread: %s", this);
+		    } catch (Exception exception) {
+		    	.writefln("at 0x%08X", this.registers.PC);
+		    	.writefln("%s", exception);
+		    	.writefln("%s", this);
+		    } finally {
+				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: END (%s)", Thread.getThis().name);
 		    }
-	    	writefln("!running: %s", this);
-	    } catch (HaltException haltException) {
-	    	writefln("halted thread: %s", this);
-	    } catch (Exception exception) {
-	    	writefln("at 0x%08X", this.registers.PC);
-	    	writefln("%s", exception);
-	    	writefln("%s", this);
-	    } finally {
-			writefln("NATIVE_THREAD: END (%s)", Thread.getThis().name);
-	    }
-    }
-    
-
-	/*    
-    void execute() {
-    }
-    */
+		});
+    }  
 
     string toString() {
     	return "CpuBase(" ~ threadState.toString() ~ ")";

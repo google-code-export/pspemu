@@ -122,7 +122,9 @@ class sceAudio_driver : ModuleNative {
 		if (blocking) {
 			currentThreadState().waitingBlock(writeDelegate);
 		} else {
-			(new Thread(writeDelegate)).start();
+			Thread audioNonBlockingThread = new Thread(writeDelegate);
+			audioNonBlockingThread.name = "audioNonBlockingThread";
+			audioNonBlockingThread.start();
 		}
 		
 		return 0;

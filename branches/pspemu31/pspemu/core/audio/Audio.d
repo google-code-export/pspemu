@@ -338,7 +338,7 @@ class Audio {
 		foreach (n, ref channel; channels) channel = new Channel(n);
 		foreach (ref buffer; buffers) buffer = new Buffer();
 		thread = new Thread(&playThread);
-		thread.name = "AUDIO THREAD";
+		thread.name = "AudioThread";
 		thread.start();
 	}
 

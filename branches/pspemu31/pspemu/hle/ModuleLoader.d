@@ -259,7 +259,7 @@ class ModuleLoader {
 		try {
 			auto counter = new InstructionCounter;
 			counter.count(elf.SectionStream(".text"));
-			counter.dump();
+			//counter.dump();
 		} catch (Throwable o) {
 			.writefln("Can't count instructions: '%s'", o.toString);
 		}

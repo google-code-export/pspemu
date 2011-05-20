@@ -27,6 +27,22 @@ T clamp(T)(T v, T l = 0, T r = 1) {
 	return v;
 }
 
+T nextAlignedValue(T)(T value, T alignment) {
+	return value + nextAlignedIncrement(value, alignment);
+}
+
+T nextAlignedIncrement(T)(T value, T alignment) {
+	return (alignment - (value % alignment)) % alignment;
+}
+
+T previousAlignedValue(T)(T value, T alignment) {
+	return value - previousAlignedDecrement(value, alignment);
+}
+
+T previousAlignedDecrement(T)(T value, T alignment) {
+	return value % alignment;
+}
+
 struct TVector(Type, int Size = 4) {
 	union {
 		Type[Size] v;
