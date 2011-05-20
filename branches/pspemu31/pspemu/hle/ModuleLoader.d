@@ -13,13 +13,13 @@ import pspemu.formats.elf.Elf;
 import pspemu.formats.elf.ElfDwarf;
 import pspemu.formats.Pbp;
 
-import pspemu.utils.MemoryPartition;
 import pspemu.utils.StructUtils;
 import pspemu.utils.StreamUtils;
 import pspemu.utils.ExceptionUtils;
 
 import pspemu.hle.Module;
 import pspemu.hle.ModuleManager;
+import pspemu.hle.MemoryManager;
 import pspemu.hle.Syscall;
 
 import pspemu.core.cpu.Instruction;
@@ -103,7 +103,7 @@ class ModuleLoader {
 	}
 
 	Stream memoryStream;
-	MemoryPartition memoryPartition;
+	MemoryManager memoryManager;
 	ModuleManager moduleManager;
 	Elf elf;
 	ElfDwarf dwarf;
@@ -113,10 +113,10 @@ class ModuleLoader {
 	ModuleImport[] moduleImports;
 	ModuleExport[] moduleExports;
 
-	public this(Stream memoryStream, MemoryPartition memoryPartition, ModuleManager moduleManager) {
-		this.memoryStream    = memoryStream;
-		this.memoryPartition = memoryPartition;
-		this.moduleManager   = moduleManager;
+	public this(Stream memoryStream, MemoryManager memoryManager, ModuleManager moduleManager) {
+		this.memoryStream  = memoryStream;
+		this.memoryManager = memoryManager;
+		this.moduleManager = moduleManager;
 	}
 	
 	public void load(string fullPath) {
@@ -145,7 +145,7 @@ class ModuleLoader {
 		}
 		
 		this.elf = new Elf(stream);
-		this.elf.allocateMemory(memoryPartition);
+		this.elf.allocateMemory(memoryManager);
 		this.elf.writeToMemory(memoryStream);
 
 		readInplace(moduleInfo, this.elf.SectionStream(".rodata.sceModuleInfo"));

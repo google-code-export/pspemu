@@ -2,6 +2,12 @@ module pspemu.hle.kd.sysmem.Types;
 
 public import pspemu.hle.kd.Types;
 
+enum PspPartition : int {
+	Kernel0 = 0,
+	Kernel1 = 1,
+	User    = 2,
+}
+
 /** Specifies the type of allocation used for memory blocks. */
 enum PspSysMemBlockTypes {
 	/** Allocate from the lowest available address. */
