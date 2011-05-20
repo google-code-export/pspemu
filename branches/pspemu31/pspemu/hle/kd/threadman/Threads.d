@@ -24,13 +24,13 @@ template ThreadManForUser_Threads() {
 		mixin(registerd!(0x82826F70, sceKernelSleepThreadCB));
 		mixin(registerd!(0xEA748E31, sceKernelChangeCurrentThreadAttr));
 		mixin(registerd!(0xCEADEB47, sceKernelDelayThread));
+		mixin(registerd!(0x68DA9E36, sceKernelDelayThreadCB));
 		mixin(registerd!(0x293B45B8, sceKernelGetThreadId));
 		mixin(registerd!(0x17C1684E, sceKernelReferThreadStatus));
 		/+
 		mixin(registerd!(0x809CE29B, sceKernelExitDeleteThread));
 		mixin(registerd!(0x9FA03CD3, sceKernelDeleteThread));
 		mixin(registerd!(0x278C0DF5, sceKernelWaitThreadEnd));
-		mixin(registerd!(0x68DA9E36, sceKernelDelayThreadCB));
 		mixin(registerd!(0x383F7BCC, sceKernelTerminateDeleteThread));
 		mixin(registerd!(0x71BC9871, sceKernelChangeThreadPriority));
 		mixin(registerd!(0xD59EAD2F, sceKernelWakeupThread));
@@ -256,17 +256,7 @@ template ThreadManForUser_Threads() {
 		return 0;
 	}
 
-	/**
-	 * Delay the current thread by a specified number of microseconds
-	 *
-	 * @param delay - Delay in microseconds.
-	 *
-	 * @par Example:
-	 * <code>
-	 *     sceKernelDelayThread(1000000); // Delay for a second
-	 * </code>
-	 */
-	int sceKernelDelayThread(SceUInt delay) {
+	int _sceKernelDelayThread(SceUInt delay, bool callbacks) {
 		currentCpuThread.threadState.waitingBlock({
 			//writefln("sceKernelDelayThread(%d)", delay);
 			
@@ -278,6 +268,34 @@ template ThreadManForUser_Threads() {
 			}
 		});
 		return 0;
+	}
+
+	/**
+	 * Delay the current thread by a specified number of microseconds
+	 *
+	 * @param delay - Delay in microseconds.
+	 *
+	 * @par Example:
+	 * <code>
+	 *     sceKernelDelayThread(1000000); // Delay for a second
+	 * </code>
+	 */
+	int sceKernelDelayThread(SceUInt delay) {
+		return _sceKernelDelayThread(delay, /*callbacks = */false);
+	}
+	
+	/**
+	 * Delay the current thread by a specified number of microseconds and handle any callbacks.
+	 *
+	 * @param delay - Delay in microseconds.
+	 *
+	 * @par Example:
+	 * <code>
+	 *     sceKernelDelayThread(1000000); // Delay for a second
+	 * </code>
+	 */
+	int sceKernelDelayThreadCB(SceUInt delay) {
+		return _sceKernelDelayThread(delay, /*callbacks = */true);
 	}
 
 	/** 
@@ -461,25 +479,6 @@ template ThreadManForUser_Threads() {
 		return -1;
 	}
 		
-	/**
-	 * Delay the current thread by a specified number of microseconds and handle any callbacks.
-	 *
-	 * @param delay - Delay in microseconds.
-	 *
-	 * @par Example:
-	 * <code>
-	 *     sceKernelDelayThread(1000000); // Delay for a second
-	 * </code>
-	 */
-	int sceKernelDelayThreadCB(SceUInt delay) {
-		mixin(changeAfterTimerPausedMicroseconds);
-
-		return threadManager.currentThread.pauseAndYield("sceKernelDelayThreadCB", (PspThread pausedThread) {
-			processCallbacks();
-			if (!paused) pausedThread.resumeAndReturn(0);
-		});
-	}
-
 	/**
 	 * Get the current priority of the thread you are in.
 	 *

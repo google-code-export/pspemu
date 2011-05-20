@@ -4,6 +4,8 @@ module pspemu.hle.kd.loadexec.LoadExecForUser; // kd/loadexec.prx (sceLoadExec)
 
 import pspemu.hle.ModuleNative;
 
+import pspemu.hle.kd.loadexec.Types;
+
 class LoadExecForUser : ModuleNative {
 	void initNids() {
 		mixin(registerd!(0xBD2F1094, sceKernelLoadExec));
@@ -61,18 +63,6 @@ class LoadExecForUser : ModuleNative {
 		//unimplemented();
 		return 0;
 	}
-}
-
-/** Structure to pass to loadexec */
-struct SceKernelLoadExecParam {
-	/** Size of the structure */
-	SceSize     size;
-	/** Size of the arg string */
-	SceSize     args;
-	/** Pointer to the arg string */
-	void *  argp;
-	/** Encryption key ? */
-	const char *    key;
 }
 
 static this() {
