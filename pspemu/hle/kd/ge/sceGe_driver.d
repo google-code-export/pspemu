@@ -8,6 +8,8 @@ import pspemu.core.gpu.Gpu;
 import pspemu.core.gpu.DisplayList;
 import pspemu.hle.ModuleNative;
 
+import pspemu.hle.kd.ge.Types;
+
 class sceGe_driver : ModuleNative {
 	void initNids() {
 		mixin(registerd!(0xE47E40E4, sceGeEdramGetAddr));
@@ -100,7 +102,7 @@ class sceGe_driver : ModuleNative {
 	 * @return A pointer to the base of VRAM.
 	 */
 	uint sceGeEdramGetAddr() {
-		writefln("sceGeEdramGetAddr()");
+		Logger.log(Logger.Level.TRACE, "sceGe_driver", "sceGeEdramGetAddr()");
 		return currentEmulatorState.memory.Segments.frameBuffer.address;
 	}
 
@@ -110,7 +112,7 @@ class sceGe_driver : ModuleNative {
 	 * @return The size of VRAM (in bytes).
 	 */
 	uint sceGeEdramGetSize() {
-		writefln("sceGeEdramGetSize()");
+		Logger.log(Logger.Level.TRACE, "sceGe_driver", "sceGeEdramGetSize()");
 		return currentEmulatorState.memory.Segments.frameBuffer.size;
 	}
 
@@ -140,7 +142,9 @@ class sceGe_driver : ModuleNative {
 		return cast(int)cast(void *)callbackDataPtr;
 		*/
 		//unimplemented();
-		writefln("Not Implemented: sceGeSetCallback");
+
+		Logger.log(Logger.Level.TRACE, "sceGe_driver", "Not Implemented: sceGeSetCallback");
+		//unimplemented();
 		return -1;
 	}
 
@@ -151,7 +155,7 @@ class sceGe_driver : ModuleNative {
 	 * @return < 0 on error
 	 */
 	int sceGeUnsetCallback(int cbid) {
-		writefln("sceGeUnsetCallback()");
+		Logger.log(Logger.Level.TRACE, "sceGe_driver", "sceGeUnsetCallback()");
 		unimplemented();
 		/*
 		auto callbackDataPtr = (cast(PspGeCallbackData*)cbid);
@@ -173,7 +177,7 @@ class sceGe_driver : ModuleNative {
 	 * @return The ID of the queue.
 	 */
 	int sceGeListEnQueue(void* list, void* stall, int cbid, PspGeListArgs *arg) {
-		writefln("sceGeListEnQueue()");
+		Logger.log(Logger.Level.TRACE, "sceGe_driver", "sceGeListEnQueue()");
 		return cast(int)cast(void*)currentEmulatorState.gpu.sceGeListEnQueue(list, stall);
 	}
 	
@@ -214,7 +218,7 @@ class sceGe_driver : ModuleNative {
 	 * @return Unknown. Probably 0 if successful.
 	 */
 	int sceGeListUpdateStallAddr(int qid, void *stall) {
-		writefln("sceGeListUpdateStallAddr()");
+		Logger.log(Logger.Level.TRACE, "sceGe_driver", "sceGeListUpdateStallAddr()");
 		currentEmulatorState.gpu.sceGeListUpdateStallAddr(cast(DisplayList*)qid, stall);
 		return 0;
 	}
@@ -228,7 +232,7 @@ class sceGe_driver : ModuleNative {
 	 * @return ???
 	 */
 	int sceGeListSync(int qid, int syncType) {
-		writefln("sceGeListSync()");
+		Logger.log(Logger.Level.TRACE, "sceGe_driver", "sceGeListSync()");
 		currentEmulatorState.gpu.sceGeListSync(cast(DisplayList*)qid, syncType);
 		return 0;
 	}
@@ -270,36 +274,11 @@ class sceGe_driver : ModuleNative {
 	 * @return ???
 	 */
 	int sceGeDrawSync(int syncType) {
-		writefln("sceGeDrawSync(%d)", syncType);
+		Logger.log(Logger.Level.TRACE, "sceGe_driver", "sceGeDrawSync(%d)", syncType);
 		currentEmulatorState.gpu.sceGeDrawSync(syncType);
-		writefln("/sceGeDrawSync(%d)", syncType);
+		Logger.log(Logger.Level.TRACE, "sceGe_driver", "/sceGeDrawSync(%d)", syncType);
 		return 0;
 	}
-}
-
-/** Stores the state of the GE. */
-struct PspGeContext {
-	uint context[512];
-}
-
-/** Typedef for a GE callback */
-alias void function(int id, void *arg) PspGeCallback;
-
-/** Structure to hold the callback data */
-struct PspGeCallbackData {
-	/** GE callback for the signal interrupt */
-	PspGeCallback signal_func;
-	/** GE callback argument for signal interrupt */
-	void *signal_arg;
-	/** GE callback for the finish interrupt */
-	PspGeCallback finish_func;
-	/** GE callback argument for finish interrupt */
-	void *finish_arg;
-}
-
-struct PspGeListArgs {
-	uint	size;
-	PspGeContext*	context;
 }
 
 static this() {

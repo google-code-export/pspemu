@@ -55,6 +55,7 @@ class Display {
 	
 	public void start() {
 		this.thread = new Thread(&this.run);
+		this.thread.name = "DisplayThread";
 		this.thread.start();
 	}
 	
@@ -119,6 +120,13 @@ class Display {
 
 					keyIsPressed[sym] = Pressed;
 					sceCtrlData.SetPressedButton(buttonMask[sym], Pressed);
+					
+					if (sym == SDLK_F2 && !Pressed) {
+						writefln("Threads(%d):", Thread.getAll.length);
+						foreach (thread; Thread.getAll) {
+							writefln("  - Thread: '%s', running:%d, priority:%d", thread.name, thread.isRunning, thread.priority);
+						}
+					}
 
 					//sceCtrlData.x = cast(float)sceCtrlData.IsPressedButton2(PspCtrlButtons.PSP_CTRL_LEFT, PspCtrlButtons.PSP_CTRL_RIGHT);
 					//sceCtrlData.y = cast(float)sceCtrlData.IsPressedButton2(PspCtrlButtons.PSP_CTRL_UP  , PspCtrlButtons.PSP_CTRL_DOWN );

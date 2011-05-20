@@ -5,6 +5,8 @@ import std.stdio;
 import pspemu.hle.ModuleNative;
 
 class KDebugForKernel : ModuleNative {
+	string outputBuffer = "";
+	
 	void initNids() {
 		mixin(registerd!(0x7CEB2C09, sceKernelRegisterKprintfHandler));
 		mixin(registerd!(0x84F370BC, Kprintf));
@@ -68,7 +70,10 @@ class KDebugForKernel : ModuleNative {
 				output(format[n..n + 1]);
 			}
 		}
-		writef("%s", outstr);
+		outputBuffer ~= outstr;
+		Logger.log(Logger.Level.INFO, "KDebugForKernel", "KPrintf: %s", outstr);
+		//stdout.writef("%s", outstr);
+		//stdout.flush();
 		//unimplemented();
 	}
 }

@@ -49,7 +49,7 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	}
 
 	int _sceDisplayWaitVblankStart(bool _processCallbacks) {
-		writefln("_sceDisplayWaitVblankStart");
+		Logger.log(Logger.Level.TRACE, "sceDisplay_driver", "_sceDisplayWaitVblankStart");
 		currentEmulatorState.display.waitVblank();
 		
 		return 0;
@@ -129,7 +129,7 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	 * @return 0 on success
 	 */
 	int sceDisplaySetFrameBuf(uint topaddr, int bufferwidth, int pixelformat, int sync) {
-		writefln("sceDisplaySetFrameBuf");
+		Logger.log(Logger.Level.TRACE, "sceDisplay_driver", "sceDisplaySetFrameBuf");
 		//currentEmulatorState.display.info = Display.Info(topaddr, bufferwidth, pixelformat, sync);
 		currentEmulatorState.display.sceDisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, sync);
 		return 0;
@@ -146,7 +146,7 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	 * @return 0 on success
 	 */
 	int sceDisplayGetFrameBuf(uint* topaddr, int* bufferwidth, int* pixelformat, int sync) {
-		writefln("sceDisplayGetFrameBuf");
+		Logger.log(Logger.Level.TRACE, "sceDisplay_driver", "sceDisplayGetFrameBuf");
 		*topaddr     = currentEmulatorState.display.topaddr;
 		*bufferwidth = currentEmulatorState.display.bufferwidth;
 		*pixelformat = currentEmulatorState.display.pixelformat;
@@ -167,7 +167,7 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	 * @return ???
 	 */
 	int sceDisplaySetMode(int mode, int width, int height) {
-		writefln("sceDisplaySetMode");
+		Logger.log(Logger.Level.TRACE, "sceDisplay_driver", "sceDisplaySetMode");
 		currentEmulatorState.display.mode   = mode;
 		currentEmulatorState.display.width  = width;
 		currentEmulatorState.display.height = height;
@@ -184,7 +184,7 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	 * @return 0 on success
 	 */
 	int sceDisplayGetMode(int* pmode, int* pwidth, int* pheight) {
-		writefln("sceDisplayGetMode");
+		Logger.log(Logger.Level.TRACE, "sceDisplay_driver", "sceDisplayGetMode");
 		*pmode   = currentEmulatorState.display.mode;
 		*pwidth  = currentEmulatorState.display.width;
 		*pheight = currentEmulatorState.display.height;

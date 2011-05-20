@@ -50,16 +50,17 @@ class SysMemUserForUser : ModuleNative {
 
 	// @TODO: Unknown.
 	void sceKernelSetCompiledSdkVersion(uint param) {
-		.writefln("sceKernelSetCompiledSdkVersion: 0x%08X", param);
+		Logger.log(Logger.Level.TRACE, "SysMemUserForUser", "sceKernelSetCompiledSdkVersion: 0x%08X", param);
 	}
 
 	// @TODO: Unknown.
 	void sceKernelSetCompilerVersion(uint param) {
-		.writefln("sceKernelSetCompilerVersion: 0x%08X", param);
+		Logger.log(Logger.Level.TRACE, "SysMemUserForUser", "sceKernelSetCompilerVersion: 0x%08X", param);
 	}
 
 	// @TODO: Unknown.
 	void sceKernelPrintf(char* text) {
+		Logger.log(Logger.Level.TRACE, "SysMemUserForUser", "sceKernelPrintf");
 		unimplemented();
 	}
 
@@ -78,6 +79,7 @@ class SysMemUserForUser : ModuleNative {
 	 * 0x02070110 on v2.71 unit.
 	 */
 	int sceKernelDevkitVersion() {
+		Logger.log(Logger.Level.TRACE, "SysMemUserForUser", "sceKernelDevkitVersion");
 		return 0x_02_07_01_10;
 	}
 
@@ -89,7 +91,10 @@ class SysMemUserForUser : ModuleNative {
 	 * @return ? on success, less than 0 on error.
 	 */
 	int sceKernelFreePartitionMemory(SceUID blockid) {
-		reinterpret!(MemorySegment)(blockid).free();
+		Logger.log(Logger.Level.TRACE, "SysMemUserForUser", "sceKernelFreePartitionMemory(%d)", blockid);
+		MemorySegment memorySegment = hleEmulatorState.uniqueIdFactory.get!(MemorySegment)(blockid);
+		memorySegment.free();
+		hleEmulatorState.uniqueIdFactory.remove!(MemorySegment)(blockid);
 		return 0;
 	}
 

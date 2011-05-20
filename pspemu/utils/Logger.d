@@ -6,7 +6,7 @@ import std.stdio;
 import std.conv;
 
 class Logger {
-	enum Level : ubyte { TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL }
+	enum Level : ubyte { TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL, NONE }
 
 	struct Message {
 		uint   time;
@@ -20,9 +20,12 @@ class Logger {
 
 	__gshared static Message[] messages;
 	//__gshared static Level currentLogLevel = Level.INFO;
-	__gshared static Level currentLogLevel = Level.TRACE;
+	//__gshared static Level currentLogLevel = Level.TRACE;
+	__gshared static Level currentLogLevel = Level.NONE;
 
 	static void log(T...)(Level level, string component, T args) {
+		if (level == Level.NONE) return;
+		
 		if (level >= currentLogLevel) {
 			auto message = Message(std.c.time.time(null), level, component, std.string.format(args));
 			messages ~= message;

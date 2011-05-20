@@ -4,14 +4,9 @@ http://code.google.com/p/jpcsp/source/browse/trunk/demos/src/fputest/main.c
 Modified to perform automated tests.
 */
 
-//#pragma compile, "%PSPSDK%/bin/psp-gcc" -I. -I"%PSPSDK%/psp/sdk/include" -L. -L"%PSPSDK%/psp/sdk/lib" -D_PSP_FW_VERSION=150 -Wall -g fputest.c ../common/emits.c -lpspsdk -lc -lpspuser -lpspkernel -o fputest.elf
-//#pragma compile, "%PSPSDK%/bin/psp-fixup-imports" fputest.elf
-
 #include <pspkernel.h>
-#include "../common/emits.h"
 
 PSP_MODULE_INFO("fpu test", 0, 1, 1);
-
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
 float __attribute__((noinline)) adds(float x, float y) {
@@ -64,7 +59,7 @@ int __attribute__((noinline)) cvtws(float x, int rm) {
 	return result;
 }
 
-#define CHECK_OP(op, expected) { float f = 0.0; emitString(#op " == " #expected); f = op; emitFloat(f); }
+#define CHECK_OP(op, expected) { float f = 0.0; f = op; Kprintf("%s\n%f\n", #op " == " #expected, f);}
 
 #define RINT_0  0
 #define CAST_1  1

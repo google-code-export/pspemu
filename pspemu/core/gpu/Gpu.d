@@ -43,6 +43,8 @@ import pspemu.core.gpu.ops.Depth;
 
 import pspemu.core.exceptions.HaltException;
 
+import pspemu.utils.Logger;
+
 class Gpu {
 	//bool componentInitialized;
 	bool running = true;
@@ -189,6 +191,7 @@ class Gpu {
 	
 	public void start() {
 		thread = new Thread(&run);
+		thread.name = "GpuThread";
 		thread.start();
 	}
 
@@ -212,14 +215,11 @@ class Gpu {
 				WaitAndCheck;
 			}
 		} catch (HaltException e) {
-			//Logger.log(Logger.Level.DEBUG, "Gpu", "Gpu.run HaltException: %s", e);
-			writefln("Gpu.run HaltException: %s", e);
+			Logger.log(Logger.Level.DEBUG, "Gpu", "Gpu.run HaltException: %s", e);
 		} catch (Throwable e) {
-			//Logger.log(Logger.Level.CRITICAL, "Gpu", "Gpu.run exception: %s", e);
-			writefln("Gpu.run exception: %s", e);
+			Logger.log(Logger.Level.CRITICAL, "Gpu", "Gpu.run exception: %s", e);
 		} finally {
-			//Logger.log(Logger.Level.DEBUG, "Gpu", "Gpu.shutdown");
-			writefln("Gpu.shutdown");
+			Logger.log(Logger.Level.DEBUG, "Gpu", "Gpu.shutdown");
 		}
 	}
 
