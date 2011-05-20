@@ -37,7 +37,7 @@ class PspSemaphore {
 		{
 			while (info.currentCount < expectedValueAtLeast) {
 				// @TODO This should be done with a set of mutexs, and a wait for any.
-				if (!emulatorState.running) throw(new HaltException("Halt"));
+				if (!emulatorState.runningState.running) throw(new HaltException("Halt"));
 				updatedCountCondition.wait(dur!"msecs"(1));
 			}
 			info.currentCount -= expectedValueAtLeast;

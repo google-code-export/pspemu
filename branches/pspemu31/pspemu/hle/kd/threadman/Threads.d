@@ -212,7 +212,7 @@ template ThreadManForUser_Threads() {
 	int _sceKernelSleepThreadCB(bool CallBack) {
 		currentCpuThread.threadState.waitingBlock({
 			//.writefln("sceKernelSleepThreadCB()");
-			while (currentEmulatorState().running) {
+			while (currentEmulatorState().runningState.running) {
 				Thread.sleep(dur!("msecs")(1));
 			}
 			throw(new HaltException("Halt"));
@@ -272,7 +272,7 @@ template ThreadManForUser_Threads() {
 			
 			while (delay > 0) {
 				// @TODO This should be done with a set of mutexs, and a wait for any.
-				if (!currentEmulatorState.running) throw(new HaltException("Halt"));
+				if (!currentEmulatorState.runningState.running) throw(new HaltException("Halt"));
 				Thread.sleep(dur!("usecs")(1000));
 				delay -= 1000;
 			}

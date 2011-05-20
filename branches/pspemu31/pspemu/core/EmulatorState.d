@@ -7,29 +7,31 @@ import pspemu.core.cpu.ISyscall;
 import pspemu.core.gpu.Gpu;
 import pspemu.core.gpu.impl.GpuOpengl;
 import pspemu.core.display.Display;
+import pspemu.core.controller.Controller;
+import pspemu.core.RunningState;
 
 import core.sync.condition;
 import core.sync.mutex;
 
 class EmulatorState {
-	public Memory   memory;
-	public Display  display;
-	public Gpu      gpu;
-	public ISyscall syscall;
-	public bool     running = true;
-	Condition       threadStartedCondition;
-	Condition       threadEndedCondition;
-	uint            threadsRunning = 0;
+	public Memory        memory;
+	public Display       display;
+	public Controller    controller;
+	public Gpu           gpu;
+	public ISyscall      syscall;
+	public RunningState  runningState;
+	Condition            threadStartedCondition;
+	Condition            threadEndedCondition;
+	uint                 threadsRunning = 0;
 	
 	this() {
+		this.runningState           = new RunningState();
 		this.threadStartedCondition = new Condition(new Mutex());
-		this.threadEndedCondition = new Condition(new Mutex());
-		this.memory  = new Memory();
-		this.display = new Display(memory);
-		this.gpu     = new Gpu(this, new GpuOpengl());
-		this.display.onStop += delegate() {
-			running = false;
-		};
+		this.threadEndedCondition   = new Condition(new Mutex());
+		this.memory                 = new Memory();
+		this.display                = new Display(this.runningState, this.memory);
+		this.controller             = new Controller();
+		this.gpu                    = new Gpu(this, new GpuOpengl());
 	}
 	
 	public void reset() {

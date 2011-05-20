@@ -3,7 +3,6 @@
 
 #include <pspkernel.h>
 #include <pspthreadman.h>
-#include <../common/emits.h>
 
 PSP_MODULE_INFO("THREAD TEST", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | THREAD_ATTR_VFPU);
@@ -41,7 +40,7 @@ int main(int argc, char** argv) {
 		asm volatile("addi $2, $0, 0");
 		sceKernelDelayThread(1000);
 	}
-	emitInt(1);
+	Kprintf("1");
 	sceKernelExitGame();
 	return 0;
 }

@@ -17,11 +17,7 @@ import std.c.time;
 import std.md5;
 import std.c.windows.windows;
 
-// BUG: Can't aliase directly std.random.Mt19937 because it's a template struct and currently it doesn't work with cast.
-alias void SceKernelUtilsMt19937Context;
-//alias std.random.Mt19937 SceKernelUtilsMt19937Context;
-
-//extern (Windows) ulong GetTickCount64();
+public import pspemu.hle.kd.utils.Types;
 
 class UtilsForUser : ModuleNative {
 	void initNids() {
@@ -185,16 +181,6 @@ class UtilsForUser : ModuleNative {
 		unimplemented();
 		return -1;
 	}
-}
-
-struct timeval {
-	uint tv_sec;
-	uint tv_usec;
-}
-
-struct timezone {
-	int tz_minuteswest;
-	int tz_dsttime;
 }
 
 static this() {

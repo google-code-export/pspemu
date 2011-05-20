@@ -3,8 +3,6 @@ module pspemu.core.gpu.Gpu;
 // http://hitmen.c02.at/files/yapspd/psp_doc/chap11.html
 
 //debug = DEBUG_GPU_VERBOSE;
-debug = GPU_UNKNOWN_COMMANDS;
-//debug = GPU_UNKNOWN_COMMANDS_STOP;
 //debug = DEBUG_GPU_SHOW_COMMAND;
 
 //debug = DEBUG_WARNING_PERFORM_BUFFER_OP;
@@ -65,7 +63,7 @@ class Gpu {
 		this.memory = emulatorState.memory;
 		this.reset();
 		
-		emulatorState.display.onStop += delegate() {
+		emulatorState.runningState.onStop += delegate() {
 			running = false;
 		};
 
@@ -113,8 +111,7 @@ class Gpu {
 			throw(new Exception("Unimplemented"));
 		}
 		void unimplemented() {
-			debug (GPU_UNKNOWN_COMMANDS) writefln("0x%08X: Unimplemented %s", reinterpret!(uint)(&command), command);
-			debug (GPU_UNKNOWN_COMMANDS_STOP) doassert(0);
+			Logger.log(Logger.Level.WARNING, "Gpu", "0x%08X: Unimplemented %s", reinterpret!(uint)(&command), command);
 		}
 		uint BaseIndex(uint base) { return command.opcode - base; }
 

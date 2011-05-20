@@ -12,7 +12,6 @@
 
 #include <pspkernel.h>
 #include <pspthreadman.h>
-#include <../common/emits.h>
 
 PSP_MODULE_INFO("THREAD TEST", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | THREAD_ATTR_VFPU);
@@ -22,7 +21,7 @@ static int semaphore = 0;
 static int threadFunction(int args, void* argp) {
 	int local_value = *(int *)argp;
 
-	emitInt(local_value);
+	Kprintf("%d\n", local_value);
 
 	sceKernelSignalSema(semaphore, 1);
 	
@@ -50,7 +49,7 @@ int main() {
 	sceKernelWaitSema(semaphore, 2, NULL);
 
 	// After both threads have been executed, we will emit a -1 to check that semaphores work fine.
-	emitInt(-1);
+	Kprintf("%d\n", -1);
 	
 	sceKernelExitGame();
 	

@@ -8,8 +8,8 @@ import std.process;
 //import dfl.all;
 
 class ApplicationPaths {
-	static string executablePath;
-	static string startupPath;
+	__gshared string executablePath;
+	__gshared string startupPath;
 	
 	static void initialize(string[] args) {
 		ApplicationPaths.executablePath = args[0];

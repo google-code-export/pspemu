@@ -3,7 +3,7 @@ module pspemu.formats.Pbp;
 import std.stdio, std.stream, std.string, std.file;
 
 class Pbp {
-	static auto files = ["param.sfo", "icon0.png", "icon1.pmf", "pic0.png", "pic1.png", "snd0.at3", "psp.data", "psar.data"];
+	__gshared auto files = ["param.sfo", "icon0.png", "icon1.pmf", "pic0.png", "pic1.png", "snd0.at3", "psp.data", "psar.data"];
 
 	static protected struct Header {
 		ubyte[4] pmagic   = [0, 'P', 'B', 'P'];

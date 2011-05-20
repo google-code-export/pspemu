@@ -28,7 +28,7 @@ class sceCtrl_driver : ModuleNative {
 
 	void readBufferedFrames(SceCtrlData* pad_data, int count = 1, bool positive = true) {
 		for (int n = 0; n < count; n++) {
-			pad_data[n] = currentEmulatorState().display.sceCtrlDataFrames.readFromTail(-(n + 1));
+			pad_data[n] = currentEmulatorState.controller.readAt(n);
 			
 			debug (DEBUG_CONTROLLER) {
 				writefln("readBufferedFrames: %s", pad_data[n]);

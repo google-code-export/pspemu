@@ -2,6 +2,8 @@ module pspemu.hle.kd.stdio.StdioForUser; // kd/stdio.prx (sceStdio)
 
 import pspemu.hle.ModuleNative;
 
+public import pspemu.hle.kd.stdio.Types;
+
 class StdioForUser : ModuleNative {
 	void initNids() {
 		mixin(registerd!(0x172D316E, sceKernelStdin));
@@ -59,13 +61,6 @@ class StdioForUser : ModuleNative {
 		unimplemented();
 		return -1;
 	}
-}
-
-
-enum : SceUID {
-	STDIN  = -1,
-	STDOUT = -2,
-	STDERR = -3
 }
 
 static this() {
