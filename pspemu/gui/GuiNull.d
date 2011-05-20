@@ -3,8 +3,8 @@ module pspemu.gui.GuiNull;
 import pspemu.gui.GuiBase;
 
 class GuiNull : GuiBase {
-	this(Display display, Controller controller) {
-		super(display, controller);
+	this(EmulatorState emulatorState) {
+		super(emulatorState);
 	}
 
 	public void init() {

@@ -128,9 +128,9 @@ struct PspIoDrvFuncs { extern (C):
 }
 
 struct PspIoDrv {
-	const char* name;     /// The name of the device to add
+	char* name;           /// The name of the device to add
 	u32 dev_type;         /// Device type, this 0x10 is for a filesystem driver
 	u32 unk2;             /// Unknown, set to 0x800
-	const char* name2;    /// This seems to be the same as name but capitalised :/
+	char* name2;          /// This seems to be the same as name but capitalised :/
 	PspIoDrvFuncs* funcs; /// Pointer to a filled out functions table
 }

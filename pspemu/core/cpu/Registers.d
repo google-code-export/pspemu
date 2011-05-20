@@ -47,7 +47,20 @@ final class Registers {
 	uint IC;         // Interrupt controller
 	Fcr0  FCR0; // readonly?
 	Fcr31 FCR31;
-	uint[] CallStack;
+	uint[1024] CallStack;
+	int CallStackPos;
+	
+	void CallStackPush() {
+		if (CallStackPos < CallStack.length - 1) {
+			CallStack[CallStackPos] = PC;
+		}
+		CallStackPos++;
+	}
+	
+	void CallStackPop() {
+		if (CallStackPos > 0) CallStackPos--;
+	}
+	
 	union {
 		uint[32] R;      // GPR | General Purpose Registers
 		struct {
@@ -161,11 +174,13 @@ final class Registers {
 		this.CMP[]  = that.CMP[];
 		this.CLOCKS = that.CLOCKS;
 
+		/*
 		if (that.CallStack.length) {
 			this.CallStack = that.CallStack.dup;
 		} else {
 			this.CallStack = [];
 		}
+		*/
 	}
 	
 	void copyFromVFPU(Registers that) {

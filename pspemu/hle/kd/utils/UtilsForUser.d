@@ -140,11 +140,9 @@ class UtilsForUser : ModuleNative {
 	 * Get the processor clock used since the start of the process
 	 */
 	clock_t sceKernelLibcClock() {
-		/*
-		*/
-		unimplemented();
-		return -1;
-		//return cast(clock_t)cpu.registers.CLOCKS; // @TODO: It's the thread CLOCK not the global CLOCK!
+		// @TODO: It's the thread CLOCK not the global CLOCK!
+		Logger.log(Logger.Level.WARNING, "UtilsForUser", "Not fully implemented sceKernelLibcClock");
+		return cast(uint)currentCpuThread().executedInstructionsCount;
 	}
 
 	/**

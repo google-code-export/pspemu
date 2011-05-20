@@ -17,6 +17,8 @@ import pspemu.utils.Logger;
 
 import pspemu.hle.HleEmulatorState;
 
+import pspemu.hle.kd.loadcore.Types;
+
 static string classInfoBaseName(ClassInfo ci) {
 	auto index = ci.name.lastIndexOf('.');
 	if (index == -1) index = 0; else index++;
@@ -26,6 +28,8 @@ static string classInfoBaseName(ClassInfo ci) {
 
 abstract class Module {
 	public HleEmulatorState hleEmulatorState;
+
+	public SceModule *sceModule;
 	
 	@property static public CpuThreadBase currentCpuThread() {
 		return thisThreadCpuThreadBase;
@@ -42,6 +46,15 @@ abstract class Module {
 
 	@property static public Registers currentRegisters() {
 		return currentThreadState.registers;
+	}
+	
+	void logInfo(T...)(T args) {
+		if (currentThreadState().thid == 5) return;
+		try {
+			Logger.log(Logger.Level.INFO, this.baseName, "nPC(%08X) :: Thread(%d:%s) :: %s", currentThreadState().registers.RA, currentThreadState().thid, currentThreadState().name, std.string.format(args));
+		} catch (Throwable o) {
+			Logger.log(Logger.Level.ERROR, "FORMAT_ERROR", "There was an error formating a logInfo");
+		}
 	}
 	
 	/*

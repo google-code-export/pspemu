@@ -93,6 +93,7 @@ class Syscall : ISyscall {
 				if (moduleFunction is null) throw(new Exception("Module function not implemented"));
 				//writefln("%s", cast(void *)moduleFunction);
 				registers.pcSet = registers.RA;
+				registers.CallStackPos--;
 				try {
 					callModuleFunction(moduleFunction);
 				} catch (Throwable o) {

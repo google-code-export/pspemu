@@ -1,5 +1,7 @@
 module pspemu.core.cpu.interpreter.CpuThreadInterpreted;
 
+version = FASTER_INTERPRETED_CPU;
+
 import std.stdio;
 import std.math;
 
@@ -23,6 +25,14 @@ import pspemu.core.cpu.tables.Table;
 import pspemu.core.cpu.tables.SwitchGen;
 import pspemu.core.cpu.tables.DummyGen;
 import pspemu.core.cpu.interpreter.Utils;
+import pspemu.core.cpu.Instruction;
+import pspemu.core.ThreadState;
+import pspemu.core.Memory;
+
+import pspemu.utils.Logger;
+import core.thread;
+
+import pspemu.core.cpu.InstructionHandler;
 
 //version = VERSION_SHIFT_ASM;
 
@@ -37,16 +47,116 @@ class CpuThreadInterpreted : CpuThreadBase {
 		return new CpuThreadInterpreted(threadState);
 	}
 	
-	public void OP_UNK() {
-		registers.pcAdvance(4);
-		writefln("Thread(%d): OP_UNK", threadState.thid);
+	version (FASTER_INTERPRETED_CPU) {
+		void execute() {
+			CpuThreadBase cpuThread = this.cpuThread;
+    		Instruction instruction;
+    		ThreadState threadState = this.threadState;
+    		Registers registers = this.registers;
+    		Memory memory = this.memory;
+	    		
+			void OP_UNK() {
+				registers.pcAdvance(4);
+				writefln("Thread(%d): OP_UNK", threadState.thid);
+			}
+
+			mixin TemplateCpu_ALU;
+			mixin TemplateCpu_MEMORY;
+			mixin TemplateCpu_BRANCH;
+			mixin TemplateCpu_JUMP;
+			mixin TemplateCpu_SPECIAL;
+			mixin TemplateCpu_FPU;
+			mixin TemplateCpu_VFPU;
+	    	try {
+				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: START (%s)", Thread.getThis().name);
+	    		
+		    	while (running) {
+			    	instruction.v = memory.tread!(uint)(registers.PC);
+			    	
+			    	mixin(genSwitchAll());
+			    	executedInstructionsCount++;
+			    }
+				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "!running: %s", this);
+		    } catch (HaltException haltException) {
+				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "halted thread: %s", this);
+		    } catch (Exception exception) {
+		    	.writefln("at 0x%08X", registers.PC);
+		    	.writefln("%s", exception);
+		    	.writefln("%s", this);
+		    } finally {
+				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: END (%s)", Thread.getThis().name);
+		    }
+	    }
+	} else {
+		void OP_UNK() {
+			registers.pcAdvance(4);
+			writefln("Thread(%d): OP_UNK", threadState.thid);
+		}
+	
+		mixin TemplateCpu_ALU;
+		mixin TemplateCpu_MEMORY;
+		mixin TemplateCpu_BRANCH;
+		mixin TemplateCpu_JUMP;
+		mixin TemplateCpu_SPECIAL;
+		mixin TemplateCpu_FPU;
+		mixin TemplateCpu_VFPU;
 	}
 
-	mixin TemplateCpu_ALU;
-	mixin TemplateCpu_MEMORY;
-	mixin TemplateCpu_BRANCH;
-	mixin TemplateCpu_JUMP;
-	mixin TemplateCpu_SPECIAL;
-	mixin TemplateCpu_FPU;
-	mixin TemplateCpu_VFPU;
+	/+
+	void execute() {
+		CpuThreadBase cpuThread = this.cpuThread;
+
+    	threadState.emulatorState.cpuThreadRunningBlock({
+    		Instruction instruction;
+    		ThreadState threadState = cpuThread.threadState;
+    		Registers registers = cpuThread.registers;
+    		Memory memory = cpuThread.memory;
+    		
+			void OP_UNK() {
+				registers.pcAdvance(4);
+				writefln("Thread(%d): OP_UNK", threadState.thid);
+			}
+
+			mixin TemplateCpu_ALU;
+			mixin TemplateCpu_MEMORY;
+			mixin TemplateCpu_BRANCH;
+			mixin TemplateCpu_JUMP;
+			mixin TemplateCpu_SPECIAL;
+			mixin TemplateCpu_FPU;
+			mixin TemplateCpu_VFPU;
+	    	try {
+				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: START (%s)", Thread.getThis().name);
+	    		
+		    	while (running) {
+		    		//if (this.registers.PC <= 0x08800100) throw(new Exception("Invalid address for executing"));
+		    		//writefln("THREAD(%s) : PC: %08X", Thread.getThis().name, this.registers.PC);
+	
+			    	this.instruction.v = memory.tread!(uint)(this.registers.PC);
+			    	
+					/*
+			    	if (this.registers.PC == 0x089020DC) {
+			    		writefln("a0=%d", this.registers.A0);
+			    		writefln("a1=%d", this.registers.A1);
+			    		writefln("a2=%d", this.registers.A2);
+			    	}
+					*/
+			    	
+			    	mixin(genSwitchAll());
+			    	//processSingle(instruction);
+			    	//writefln("  %08X", this.instruction.v);
+			    	executedInstructionsCount++;
+			    }
+				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "!running: %s", this);
+		    } catch (HaltException haltException) {
+				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "halted thread: %s", this);
+		    } catch (Exception exception) {
+		    	.writefln("at 0x%08X", this.registers.PC);
+		    	.writefln("%s", exception);
+		    	.writefln("%s", this);
+		    } finally {
+				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: END (%s)", Thread.getThis().name);
+		    }
+		});
+    }
+	+/
 }

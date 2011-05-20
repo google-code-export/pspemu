@@ -6,6 +6,8 @@ public import pspemu.hle.kd.ctrl.Types;
 class Controller {
 	CircularList!(SceCtrlData) sceCtrlDataFrames;
 	SceCtrlData sceCtrlData;
+	PspCtrlMode samplingMode;
+	int samplingCycle;
 	
 	this() {
 		sceCtrlDataFrames = new CircularList!(SceCtrlData)();

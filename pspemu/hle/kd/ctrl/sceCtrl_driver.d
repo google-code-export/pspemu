@@ -59,13 +59,15 @@ class sceCtrl_driver : ModuleNative {
 	 */
 	// sceCtrlReadBufferPositive () is blocking and waits for vblank (slower).
 	int sceCtrlReadBufferPositive(SceCtrlData* pad_data, int count) {
+		currentEmulatorState().display.waitVblank();
 		readBufferedFrames(pad_data, count, true);
-		// @TODO: Wait for vblank.
+		logInfo("sceCtrlReadBufferPositive(%d):%s", count, *pad_data);
 		return count;
 	}
 
 	// sceCtrlPeekBufferPositive () is non-blocking (faster)
 	int sceCtrlPeekBufferPositive(SceCtrlData* pad_data, int count) {
+		logInfo("sceCtrlPeekBufferPositive(%d)", count);
 		readBufferedFrames(pad_data, count, true);
 		return count;
 	}
@@ -80,14 +82,10 @@ class sceCtrl_driver : ModuleNative {
 	 * @return The previous cycle setting.
 	 */
 	int sceCtrlSetSamplingCycle(int cycle) {
-		/*
+		logInfo("sceCtrlSetSamplingCycle(%d)", cycle);
 		int previousCycle = currentEmulatorState.controller.samplingCycle;
 		currentEmulatorState.controller.samplingCycle = cycle;
-		if (cycle != 0) writefln("sceCtrlSetSamplingCycle != 0! :: %d", cycle);
 		return previousCycle;
-		*/
-		writefln("NOTIMPLEMENTED: sceCtrlSetSamplingCycle(%d)", cycle);
-		return -1;
 	}
 
 	/**
@@ -102,26 +100,16 @@ class sceCtrl_driver : ModuleNative {
 	 *
 	 * @return The previous mode.
 	 */
-	int sceCtrlSetSamplingMode(int mode) {
-		writefln("NOTIMPLEMENTED: sceCtrlSetSamplingMode(%d)", mode);
-		/*
-		uint previouseMode = cast(int)cpu.controller.samplingMode;
-		cpu.controller.samplingMode = cast(Controller.Mode)mode;
+	PspCtrlMode sceCtrlSetSamplingMode(PspCtrlMode mode) {
+		logInfo("sceCtrlSetSamplingMode(%d)", mode);
+		PspCtrlMode previouseMode = currentEmulatorState.controller.samplingMode;
+		currentEmulatorState.controller.samplingMode = mode;
 		return previouseMode;
-		*/
-		return -1;
 	}
 	
 	SceCtrlLatch lastLatch;
 	
-	/**
-	 * Obtains information about currentLatch.
-	 *
-	 * @param currentLatch - Pointer to SceCtrlLatch to store the result.
-	 *
-	 * @return 
-	 */
-	int sceCtrlReadLatch(SceCtrlLatch* currentLatch) {
+	int _sceCtrlReadLatch(SceCtrlLatch* currentLatch) {
 		SceCtrlData pad;
 		readBufferedFrames(&pad, 1, true);
 		
@@ -134,6 +122,19 @@ class sceCtrl_driver : ModuleNative {
 		lastLatch = *currentLatch;
 
 		return 0;
+	}
+	
+	/**
+	 * Obtains information about currentLatch.
+	 *
+	 * @param currentLatch - Pointer to SceCtrlLatch to store the result.
+	 *
+	 * @return 
+	 */
+	int sceCtrlReadLatch(SceCtrlLatch* currentLatch) {
+		currentEmulatorState().display.waitVblank();
+		logInfo("sceCtrlReadLatch()");
+		return _sceCtrlReadLatch(currentLatch);
 	}
 
 	/**
@@ -144,18 +145,8 @@ class sceCtrl_driver : ModuleNative {
 	 * @return 
 	 */
 	int sceCtrlPeekLatch(SceCtrlLatch* currentLatch) {
-		SceCtrlData pad;
-		readBufferedFrames(&pad, 1, true);
-		
-		currentLatch.uiPress   = cast(PspCtrlButtons)pad.Buttons;
-		currentLatch.uiRelease = cast(PspCtrlButtons)~pad.Buttons;
-		currentLatch.uiMake    = (lastLatch.uiRelease ^ currentLatch.uiRelease) & lastLatch.uiRelease;
-		currentLatch.uiBreak   = (lastLatch.uiPress   ^ currentLatch.uiPress  ) & lastLatch.uiPress;
-
-		//unimplemented_notice();
-		lastLatch = *currentLatch;
-
-		return 0;
+		logInfo("sceCtrlPeekLatch()");
+		return _sceCtrlReadLatch(currentLatch);
 	}
 
 	void sceCtrlSetIdleCancelThresholdFunction() {

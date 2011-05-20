@@ -27,12 +27,12 @@ template ThreadManForUser_Threads() {
 		mixin(registerd!(0x68DA9E36, sceKernelDelayThreadCB));
 		mixin(registerd!(0x293B45B8, sceKernelGetThreadId));
 		mixin(registerd!(0x17C1684E, sceKernelReferThreadStatus));
-		/+
-		mixin(registerd!(0x809CE29B, sceKernelExitDeleteThread));
-		mixin(registerd!(0x9FA03CD3, sceKernelDeleteThread));
-		mixin(registerd!(0x278C0DF5, sceKernelWaitThreadEnd));
-		mixin(registerd!(0x383F7BCC, sceKernelTerminateDeleteThread));
 		mixin(registerd!(0x71BC9871, sceKernelChangeThreadPriority));
+		mixin(registerd!(0x809CE29B, sceKernelExitDeleteThread));
+		mixin(registerd!(0x278C0DF5, sceKernelWaitThreadEnd));
+		mixin(registerd!(0x9FA03CD3, sceKernelDeleteThread));
+		/+
+		mixin(registerd!(0x383F7BCC, sceKernelTerminateDeleteThread));
 		mixin(registerd!(0xD59EAD2F, sceKernelWakeupThread));
 		mixin(registerd!(0x9944F31F, sceKernelSuspendThread));
 		mixin(registerd!(0x840E8133, sceKernelWaitThreadEndCB));
@@ -79,10 +79,9 @@ template ThreadManForUser_Threads() {
 		newThreadState.registers.SP = hleEmulatorState.memoryManager.allocStack(PspPartition.User, std.string.format("stack for thread '%s'", name), stackSize);
 		
 		newThreadState.registers.RA = 0x08000000;
-		newThreadState.name = name;
 		newThreadState.thid = hleEmulatorState.uniqueIdFactory.add(newThreadState);
 		
-		Logger.log(Logger.Level.INFO, "ThreadManForUser.Threads", "sceKernelCreateThread(thid:'%d', name:'%s', SP:0x%08X)", newThreadState.thid, name, newThreadState.registers.SP);
+		logInfo("sceKernelCreateThread(thid:'%d', name:'%s', SP:0x%08X)", newThreadState.thid, name, newThreadState.registers.SP);
 		
 		newThreadState.sceKernelThreadInfo.attr = attr;
 		newThreadState.sceKernelThreadInfo.name[0..name.length] = name;
@@ -94,6 +93,8 @@ template ThreadManForUser_Threads() {
 		newThreadState.sceKernelThreadInfo.entry = entry;
 		newThreadState.sceKernelThreadInfo.size = SceKernelThreadInfo.sizeof;
 		newThreadState.sceKernelThreadInfo.status = PspThreadStatus.PSP_THREAD_STOPPED;
+
+		newThreadState.name = cast(string)newThreadState.sceKernelThreadInfo.name[0..name.length];
 		
 		return newThreadState.thid;
 		
@@ -144,6 +145,8 @@ template ThreadManForUser_Threads() {
 	 * @param argp   - Pointer to the arguments.
 	 */
 	int sceKernelStartThread(SceUID thid, SceSize arglen, /*void**/ uint argp) {
+		logInfo("sceKernelStartThread(%d, %d, %08X)", thid, arglen, argp);
+		
 		ThreadState newThreadState = hleEmulatorState.uniqueIdFactory.get!(ThreadState)(thid);
 		
 		newThreadState.registers.A0 = arglen;
@@ -205,8 +208,20 @@ template ThreadManForUser_Threads() {
 	 * @param status - Exit status.
 	 */
 	void sceKernelExitThread(int status) {
+		logInfo("sceKernelExitThread(%d)", status);
 		//writefln("sceKernelExitThread(%d)", status);
+		throw(new HaltException(std.string.format("sceKernelExitThread(%d)", status)));
+	}
+	
+	/** 
+	  * Exit a thread and delete itself.
+	  *
+	  * @param status - Exit status
+	  */
+	int sceKernelExitDeleteThread(int status) {
+		logInfo("sceKernelExitDeleteThread(%d)", status);
 		throw(new HaltException(std.string.format("sceKernelExitDeleteThread(%d)", status)));
+		return 0;
 	}
 
 	int _sceKernelSleepThreadCB(bool CallBack) {
@@ -226,6 +241,7 @@ template ThreadManForUser_Threads() {
 	 * @return < 0 on error.
 	 */
 	int sceKernelSleepThread() {
+		logInfo("sceKernelSleepThread()");
 		return _sceKernelSleepThreadCB(false);
 	}
 	
@@ -239,6 +255,7 @@ template ThreadManForUser_Threads() {
 	 * </code>
 	 */
 	int sceKernelSleepThreadCB() {
+		logInfo("sceKernelSleepThreadCB()");
 		return _sceKernelSleepThreadCB(true);
 	}
 	
@@ -281,6 +298,7 @@ template ThreadManForUser_Threads() {
 	 * </code>
 	 */
 	int sceKernelDelayThread(SceUInt delay) {
+		logInfo("sceKernelDelayThread(%d)", delay);
 		return _sceKernelDelayThread(delay, /*callbacks = */false);
 	}
 	
@@ -295,6 +313,7 @@ template ThreadManForUser_Threads() {
 	 * </code>
 	 */
 	int sceKernelDelayThreadCB(SceUInt delay) {
+		logInfo("sceKernelDelayThreadCB(%d)", delay);
 		return _sceKernelDelayThread(delay, /*callbacks = */true);
 	}
 
@@ -304,10 +323,11 @@ template ThreadManForUser_Threads() {
 	 * @return The thread id of the calling thread.
 	 */
 	SceUID sceKernelGetThreadId() {
+		logInfo("sceKernelGetThreadId()");
 		return currentThreadState().thid;
 	}
 	
-/** 
+	/** 
 	 * Get the status information for the specified thread.
 	 * 
 	 * @param thid - Id of the thread to get status
@@ -325,6 +345,7 @@ template ThreadManForUser_Threads() {
 	 * @return 0 if successful, otherwise the error code.
 	 */
 	int sceKernelReferThreadStatus(SceUID thid, SceKernelThreadInfo* info) {
+		logInfo("sceKernelReferThreadStatus(%d)", thid);
 		if (thid < 0) return -1;
 		ThreadState threadState = hleEmulatorState.uniqueIdFactory.get!(ThreadState)(thid);
 		if (threadState is null) return -1;
@@ -334,17 +355,64 @@ template ThreadManForUser_Threads() {
 		
 		return 0;
 	}
-
-	/+
-	/** 
-	  * Exit a thread and delete itself.
+	
+	/**
+	  * Change the threads current priority.
+	  * 
+	  * @param thid     - The ID of the thread (from sceKernelCreateThread or sceKernelGetThreadId)
+	  * @param priority - The new priority (the lower the number the higher the priority)
 	  *
-	  * @param status - Exit status
+	  * @par Example:
+	  * @code
+	  * int thid = sceKernelGetThreadId();
+	  * // Change priority of current thread to 16
+	  * sceKernelChangeThreadPriority(thid, 16);
+	  * @endcode
+	  *
+	  * @return 0 if successful, otherwise the error code.
 	  */
-	int sceKernelExitDeleteThread(int status) {
-		throw(new HaltException(std.string.format("sceKernelExitDeleteThread(%d)", status)));
+	int sceKernelChangeThreadPriority(SceUID thid, int priority) {
+		logInfo("sceKernelChangeThreadPriority(%d, %d)", thid, priority);
+		if (thid < 0) return -1;
+		ThreadState threadState = hleEmulatorState.uniqueIdFactory.get!(ThreadState)(thid);
+		threadState.sceKernelThreadInfo.currentPriority = priority; 
 		return 0;
 	}
+	
+	/** 
+	 * Wait until a thread has ended.
+	 *
+	 * @param thid    - Id of the thread to wait for.
+	 * @param timeout - Timeout in microseconds (assumed).
+	 *
+	 * @return < 0 on error.
+	 */
+	int sceKernelWaitThreadEnd(SceUID thid, SceUInt* timeout) {
+		if (thid < 0) return -1;
+		ThreadState threadState = hleEmulatorState.uniqueIdFactory.get!(ThreadState)(thid);
+		
+		while (!(threadState.sceKernelThreadInfo.status & PspThreadStatus.PSP_THREAD_STOPPED | PspThreadStatus.PSP_THREAD_KILLED)) {
+			currentEmulatorState.threadEndedCondition.wait();
+		}
+		
+		return 0;
+	}
+	
+	/**
+	 * Delete a thread
+	 *
+	 * @param thid - UID of the thread to be deleted.
+	 *
+	 * @return < 0 on error.
+	 */
+	int sceKernelDeleteThread(SceUID thid) {
+		if (thid < 0) return -1;
+		hleEmulatorState.uniqueIdFactory.remove!(ThreadState)(thid);
+		return 0;
+	}
+
+
+	/+
 
 	PspThread getThreadFromId(SceUID thid) {
 		if ((thid in threadManager.createdThreads) is null) throw(new Exception(std.string.format("No thread with THID/UID(%d)", thid)));
@@ -363,24 +431,6 @@ template ThreadManForUser_Threads() {
 		return -1;
 	}
 
-	/**
-	 * Delete a thread
-	 *
-	 * @param thid - UID of the thread to be deleted.
-	 *
-	 * @return < 0 on error.
-	 */
-	int sceKernelDeleteThread(SceUID thid) {
-		if (thid < 0) return -1;
-		auto pspThread = getThreadFromId(thid);
-		threadManager.createdThreads.remove(thid);
-		if (pspThread is null) {
-			throw(new Exception("Invalid sceKernelDeleteThread"));
-			return -1;
-		}
-		pspThread.exit();
-		return 0;
-	}
 
 	/**
 	 * Terminate and delete a thread.
@@ -391,55 +441,6 @@ template ThreadManForUser_Threads() {
 	 */
 	int sceKernelTerminateDeleteThread(SceUID thid) {
 		return sceKernelDeleteThread(thid);
-	}
-
-	/**
-	  * Change the threads current priority.
-	  * 
-	  * @param thid     - The ID of the thread (from sceKernelCreateThread or sceKernelGetThreadId)
-	  * @param priority - The new priority (the lower the number the higher the priority)
-	  *
-	  * @par Example:
-	  * @code
-	  * int thid = sceKernelGetThreadId();
-	  * // Change priority of current thread to 16
-	  * sceKernelChangeThreadPriority(thid, 16);
-	  * @endcode
-	  *
-	  * @return 0 if successful, otherwise the error code.
-	  */
-	int sceKernelChangeThreadPriority(SceUID thid, int priority) {
-		if (thid < 0) return -1;
-		auto pspThread = getThreadFromId(thid);
-		pspThread.info.currentPriority = priority;
-		return 0;
-	}
-	
-	/** 
-	 * Wait until a thread has ended.
-	 *
-	 * @param thid    - Id of the thread to wait for.
-	 * @param timeout - Timeout in microseconds (assumed).
-	 *
-	 * @return < 0 on error.
-	 */
-	int sceKernelWaitThreadEnd(SceUID thid, SceUInt* timeout) {
-		if (thid < 0) return -1;
-		
-		// @TODO implement timeout
-		try {
-			return threadManager.currentThread.pauseAndYield("sceKernelWaitThreadEnd", (PspThread pausedThread) {
-				try {
-					auto threadToWait = getThreadFromId(thid);
-					if ((threadToWait is null) || !threadToWait.alive) throw(new Exception("sceKernelWaitThreadEnd.end"));
-				} catch {
-					pausedThread.resumeAndReturn(0);
-				}
-			});
-		} catch (Object o) {
-			writefln("sceKernelWaitThreadEnd: %s", o);
-			return -1;
-		}
 	}
 
 	/**

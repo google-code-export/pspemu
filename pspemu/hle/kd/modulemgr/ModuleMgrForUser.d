@@ -1,9 +1,12 @@
 module pspemu.hle.kd.modulemgr.ModuleMgrForUser; // kd/modulemgr.prx (sceModuleManager)
 
 import pspemu.hle.ModuleNative;
+import pspemu.hle.ModulePsp;
 import pspemu.hle.kd.modulemgr.Types;
 
 //debug = DEBUG_SYSCALL;
+
+import pspemu.hle.kd.threadman.ThreadManForUser; 
 
 class ModuleMgrForUser : ModuleNative {
 	void initNids() {
@@ -35,7 +38,7 @@ class ModuleMgrForUser : ModuleNative {
 	 *
 	 * @param unknown - Unknown (I've seen 1 passed).
 	 * @param argsize - Size (in bytes) of the arguments that will be passed to module_stop().
-	 * @param argp - Pointer to arguments that will be passed to module_stop().
+	 * @param argp    - Pointer to arguments that will be passed to module_stop().
 	 *
 	 * @return ??? on success, otherwise one of ::PspKernelErrorCodes.
 	 */
@@ -70,34 +73,47 @@ class ModuleMgrForUser : ModuleNative {
 	 * @return The UID of the loaded module on success, otherwise one of ::PspKernelErrorCodes.
 	 */
 	SceUID sceKernelLoadModule(string path, int flags, SceKernelLMOption* option) {
-		unimplemented();
-		return -1;
+		Logger.log(Logger.Level.INFO, "ModuleMgrForUser", "@WARNING FAKED :: sceKernelLoadModule('%s', %d, 0x%08X)", path, flags, cast(uint)option);
+		//ModulePsp modulePsp = hleEmulatorState.moduleLoader.load(path);
+		ModulePsp modulePsp = hleEmulatorState.moduleLoader.load(r"C:\projects\pspemu31\tests_ex\modules\mymodule.prx");
+		Logger.log(Logger.Level.INFO, "ModuleMgrForUser", "sceKernelLoadModule.loaded");
+		return hleEmulatorState.uniqueIdFactory.add(modulePsp);
 	}
 
 	/**
 	 * Start a loaded module.
 	 *
-	 * @param modid - The ID of the module returned from LoadModule.
+	 * @param modid   - The ID of the module returned from LoadModule.
 	 * @param argsize - Length of the args.
-	 * @param argp - A pointer to the arguments to the module.
-	 * @param status - Returns the status of the start.
-	 * @param option - Pointer to an optional ::SceKernelSMOption structure.
+	 * @param argp    - A pointer to the arguments to the module.
+	 * @param status  - Returns the status of the start.
+	 * @param option  - Pointer to an optional ::SceKernelSMOption structure.
 	 *
 	 * @return ??? on success, otherwise one of ::PspKernelErrorCodes.
 	 */
-	int sceKernelStartModule(SceUID modid, SceSize argsize, void *argp, int *status, SceKernelSMOption *option) {
-		unimplemented();
-		return -1;
+	int sceKernelStartModule(SceUID modid, SceSize argsize, uint argp, int *status, SceKernelSMOption *option) {
+		ModulePsp modulePsp = hleEmulatorState.uniqueIdFactory.get!ModulePsp(modid);
+		
+		ThreadManForUser threadManForUser = hleEmulatorState.moduleManager.get!ThreadManForUser();
+		
+		//SceUID sceKernelCreateThread(string name, SceKernelThreadEntry entry, int initPriority, int stackSize, SceUInt attr, SceKernelThreadOptParam *option) {
+		SceUID thid = threadManForUser.sceKernelCreateThread("main_thread", modulePsp.sceModule.entry_addr, 0, 0x1000, modulePsp.sceModule.attribute, null);
+		threadManForUser.sceKernelStartThread(thid, argsize, argp);
+		
+		//sceKernelCreateThread
+		
+		//unimplemented();
+		return 0;
 	}
 
 	/**
 	 * Stop a running module.
 	 *
-	 * @param modid - The UID of the module to stop.
+	 * @param modid   - The UID of the module to stop.
 	 * @param argsize - The length of the arguments pointed to by argp.
-	 * @param argp - Pointer to arguments to pass to the module's module_stop() routine.
-	 * @param status - Return value of the module's module_stop() routine.
-	 * @param option - Pointer to an optional ::SceKernelSMOption structure.
+	 * @param argp    - Pointer to arguments to pass to the module's module_stop() routine.
+	 * @param status  - Return value of the module's module_stop() routine.
+	 * @param option  - Pointer to an optional ::SceKernelSMOption structure.
 	 *
 	 * @return ??? on success, otherwise one of ::PspKernelErrorCodes.
 	 */
