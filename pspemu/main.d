@@ -10,6 +10,9 @@ import std.stream;
 import std.file;
 import std.path;
 import std.process;
+import std.string;
+import std.array;
+import std.regex;
 
 import pspemu.tests.MemoryPartitionTests;
 
@@ -17,6 +20,11 @@ import pspemu.Emulator;
 import pspemu.EmulatorHelper;
 
 import std.getopt;
+
+import pspemu.gui.GuiNull;
+import pspemu.gui.GuiSdl;
+
+import pspemu.utils.Logger;
 
 void doUnittest() {
 	(new MemoryPartitionTests()).test();
@@ -58,28 +66,52 @@ int main(string[] args) {
 		"tests", &doTestsEx 
 	);
 	
-	if (showHelp) {
+	void displayHelp() {
 		writefln("DPspEmulator 0.3.1.0");
+		writefln("");
+		writefln("pspemu.exe [<args>] [<file>]");
+		writefln("");
+		writefln("Arguments:");
 		writefln("  --help   - Show this help");
 		writefln("  --tests  - Run tests on 'tests_ex' folder");
+		writefln("");
+		writefln("Examples:");
+		writefln("  pspemu.exe --help");
+		writefln("  pspemu.exe --test");
+		writefln("  pspemu.exe game/EBOOT.PBP");
+		writefln("");
+	}
+	
+	if (showHelp) {
+		displayHelp();
 		return -1;
 	}
 
 	if (doTestsEx) {
 		EmulatorHelper emulatorHelper = new EmulatorHelper(new Emulator());
 		emulatorHelper.initComponents();
-		emulatorHelper.loadAndRunTest(r"C:\projects\pspemu31\tests_ex\fpu\fputest.elf");
-		emulatorHelper.loadAndRunTest(r"C:\projects\pspemu31\tests_ex\string\string.elf");
-		
+		foreach (std.file.DirEntry dirEntry; dirEntries(r"tests_ex", SpanMode.depth, true)) {
+			if (std.string.indexOf(dirEntry.name, ".svn") != -1) continue;
+			if (std.path.getExt(dirEntry.name) != "expected") continue;
+			
+			emulatorHelper.loadAndRunTest(dirEntry.name);
+		}
+		emulatorHelper.stop();
 		return 0;
 	}
 	
-	{
+	if (args.length > 1) {
+		Logger.setLevel(Logger.Level.INFO);
 		EmulatorHelper emulatorHelper = new EmulatorHelper(new Emulator());
 		emulatorHelper.initComponents();
-		emulatorHelper.loadModule(r"C:\projects\pspemu31\demos\cube.pbp");
+		GuiSdl gui = new GuiSdl(emulatorHelper.emulator.emulatorState.display, emulatorHelper.emulator.emulatorState.controller);
+		gui.start();
+		emulatorHelper.loadModule(args[1]);
 		emulatorHelper.start();
+		return 0;
 	}
 	
-	return 0;
+	displayHelp();
+	writefln("No specified file to execute");
+	return -1;
 }

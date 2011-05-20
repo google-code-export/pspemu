@@ -11,6 +11,8 @@ import std.c.windows.windows;
 import pspemu.hle.Module;
 import pspemu.hle.ModuleNative;
 
+import pspemu.hle.kd.display.Types;
+
 class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	void initNids() {
 		mixin(registerd!(0x0E20F177, sceDisplaySetMode));
@@ -121,16 +123,15 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	/**
 	 * Display set framebuf
 	 *
-	 * @param topaddr - address of start of framebuffer
+	 * @param topaddr     - address of start of framebuffer
 	 * @param bufferwidth - buffer width (must be power of 2)
 	 * @param pixelformat - One of ::PspDisplayPixelFormats.
-	 * @param sync - One of ::PspDisplaySetBufSync
+	 * @param sync        - One of ::PspDisplaySetBufSync
 	 *
 	 * @return 0 on success
 	 */
-	int sceDisplaySetFrameBuf(uint topaddr, int bufferwidth, int pixelformat, int sync) {
+	int sceDisplaySetFrameBuf(uint topaddr, int bufferwidth, PspDisplayPixelFormats pixelformat, PspDisplaySetBufSync sync) {
 		Logger.log(Logger.Level.TRACE, "sceDisplay_driver", "sceDisplaySetFrameBuf");
-		//currentEmulatorState.display.info = Display.Info(topaddr, bufferwidth, pixelformat, sync);
 		currentEmulatorState.display.sceDisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, sync);
 		return 0;
 	}
@@ -138,14 +139,14 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	/**
 	 * Get Display Framebuffer information
 	 *
-	 * @param topaddr - pointer to void* to receive address of start of framebuffer
+	 * @param topaddr     - pointer to void* to receive address of start of framebuffer
 	 * @param bufferwidth - pointer to int to receive buffer width (must be power of 2)
 	 * @param pixelformat - pointer to int to receive one of ::PspDisplayPixelFormats.
-	 * @param sync - One of ::PspDisplaySetBufSync
+	 * @param sync        - One of ::PspDisplaySetBufSync
 	 *
 	 * @return 0 on success
 	 */
-	int sceDisplayGetFrameBuf(uint* topaddr, int* bufferwidth, int* pixelformat, int sync) {
+	int sceDisplayGetFrameBuf(uint* topaddr, int* bufferwidth, PspDisplayPixelFormats* pixelformat, PspDisplaySetBufSync sync) {
 		Logger.log(Logger.Level.TRACE, "sceDisplay_driver", "sceDisplayGetFrameBuf");
 		*topaddr     = currentEmulatorState.display.topaddr;
 		*bufferwidth = currentEmulatorState.display.bufferwidth;

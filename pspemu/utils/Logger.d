@@ -18,14 +18,16 @@ class Logger {
 		}
 	}
 
-	__gshared static Message[] messages;
-	//__gshared static Level currentLogLevel = Level.INFO;
-	//__gshared static Level currentLogLevel = Level.TRACE;
-	__gshared static Level currentLogLevel = Level.NONE;
+	__gshared Message[] messages;
+	__gshared Level currentLogLevel = Level.NONE;
+	
+	static public void setLevel(Level level) {
+		currentLogLevel = level;
+	}
 
 	static void log(T...)(Level level, string component, T args) {
 		if (level == Level.NONE) return;
-		
+	
 		if (level >= currentLogLevel) {
 			auto message = Message(std.c.time.time(null), level, component, std.string.format(args));
 			messages ~= message;

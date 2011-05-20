@@ -19,6 +19,9 @@ public import pspemu.core.cpu.Registers;
 public import pspemu.core.ThreadState;
 public import pspemu.core.EmulatorState;
 
+/**
+ * Thread Local Storage (TLS) variable. Each thread using it will have it's own value.
+ */
 static Module.Nid currentExecutingNid;
 
 abstract class ModuleNative : Module {
@@ -84,7 +87,7 @@ abstract class ModuleNative : Module {
 	}
 	
 	template Registration() {
-		__gshared static ClassInfo[] registeredModules;
+		__gshared ClassInfo[] registeredModules;
 
 		static string register(uint id, string name) {
 			return "names[\"" ~ name ~ "\"] = nids[" ~ to!string(id) ~ "] = Function(this, " ~ to!string(id) ~ ", \"" ~ name ~ "\", &this." ~ name ~ ");";

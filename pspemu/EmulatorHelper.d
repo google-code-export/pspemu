@@ -26,6 +26,8 @@ import pspemu.hle.ModuleLoader;
 import pspemu.hle.kd.iofilemgr.IoFileMgrForUser;
 import pspemu.hle.kd.sysmem.KDebugForKernel; 
 
+import pspemu.gui.GuiBase;
+
 class EmulatorHelper {
 	uint CODE_PTR_EXIT_THREAD = 0x08000000;
 	
@@ -45,7 +47,7 @@ class EmulatorHelper {
 			memory.write(cast(uint)(memory.position + 4));
 			memory.writeString("ms0:/PSP/GAME/virtual/EBOOT.PBP\0");
 		}
-		emulator.emulatorState.display.onStop += delegate() {
+		emulator.emulatorState.runningState.onStop += delegate() {
 			Thread.sleep(dur!("msecs")(100));
 			std.c.stdlib.exit(0);
 		};
@@ -53,6 +55,10 @@ class EmulatorHelper {
 	
 	public void reset() {
 		emulator.reset();
+	}
+	
+	public void stop() {
+		emulator.emulatorState.runningState.stop();
 	}
 	
 	public void loadModule(string pspModulePath) {
@@ -85,9 +91,9 @@ class EmulatorHelper {
 		emulator.emulatorState.waitForAllCpuThreadsToTerminate();
 	}
 	
-	public void loadAndRunTest(string pspTestElfPath) {
-		auto pspTestBasePath     = std.path.getName(pspTestElfPath);
-		auto pspTestExpectedPath = std.string.format("%s.expected", pspTestBasePath);
+	public void loadAndRunTest(string pspTestExpectedPath) {
+		auto pspTestBasePath     = std.path.getName(pspTestExpectedPath);
+		auto pspTestElfPath = std.string.format("%s.elf", pspTestBasePath);
 		stdout.writef("%s...", pspTestBasePath); stdout.flush();
 		{
 			loadModule(pspTestElfPath);
@@ -97,8 +103,8 @@ class EmulatorHelper {
 		string returned = std.string.strip(emulator.hleEmulatorState.moduleManager.get!(KDebugForKernel)().outputBuffer);
 		stdout.writefln("%s", (expected == returned) ? "OK" : "FAIL");
 		if (expected != returned) {
-			writefln("    returned:'%s'", std.array.replace(returned, "\n", "|"));
-			writefln("    expected:'%s'", std.array.replace(expected, "\n", "|"));
+			stdout.writefln("    returned:'%s'", std.array.replace(returned, "\n", "|"));
+			stdout.writefln("    expected:'%s'", std.array.replace(expected, "\n", "|"));
 		}
 	}
 }

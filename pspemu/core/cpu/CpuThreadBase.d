@@ -37,7 +37,7 @@ abstract class CpuThreadBase : InstructionHandler {
 		this.threadState.nativeThread = new Thread(&run);
 		this.threadState.nativeThread.name = std.string.format("PspCpuThread#%d('%s')", lastThreadId++, threadState.name);
 		
-		threadState.emulatorState.display.onStop += delegate() {
+		threadState.emulatorState.runningState.onStop += delegate() {
 			running = false;
 		};
 	}
