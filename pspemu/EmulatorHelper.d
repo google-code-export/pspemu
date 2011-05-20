@@ -23,10 +23,12 @@ import pspemu.hle.HleEmulatorState;
 import pspemu.hle.ModuleNative;
 import pspemu.hle.ModuleLoader;
 
+import pspemu.gui.GuiBase;
+
 import pspemu.hle.kd.iofilemgr.IoFileMgrForUser;
 import pspemu.hle.kd.sysmem.KDebugForKernel; 
 
-import pspemu.gui.GuiBase;
+import pspemu.hle.MemoryManager;
 
 class EmulatorHelper {
 	uint CODE_PTR_EXIT_THREAD = 0x08000000;
@@ -39,7 +41,7 @@ class EmulatorHelper {
 	}
 	
 	public void init() {
-		emulator.hleEmulatorState.memoryPartition.allocLow(1024);
+		emulator.hleEmulatorState.memoryManager.allocHeap(PspPartition.Kernel0, "KernelFunctions", 1024);
 		emulator.emulatorState.memory.twrite!uint(CODE_PTR_EXIT_THREAD, 0x0000000C | (0x2071 << 6));
 		
 		with (emulator.emulatorState) {
@@ -47,6 +49,8 @@ class EmulatorHelper {
 			memory.write(cast(uint)(memory.position + 4));
 			memory.writeString("ms0:/PSP/GAME/virtual/EBOOT.PBP\0");
 		}
+		
+		// @TODO: hack because not all threads are stopping.
 		emulator.emulatorState.runningState.onStop += delegate() {
 			Thread.sleep(dur!("msecs")(100));
 			std.c.stdlib.exit(0);
@@ -71,8 +75,7 @@ class EmulatorHelper {
 			registers.pcSet = emulator.hleEmulatorState.moduleLoader.PC; 
 		
 			registers.GP = emulator.hleEmulatorState.moduleLoader.GP;
-		
-			registers.SP = emulator.hleEmulatorState.memoryPartition.allocHigh(0x8000, 0x10).high;
+			registers.SP = emulator.hleEmulatorState.memoryManager.allocStack(PspPartition.User, "Stack for main thread", 0x8000);
 			registers.K0 = registers.SP;
 			registers.RA = CODE_PTR_EXIT_THREAD;
 			registers.A0 = 1;

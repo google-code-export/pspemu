@@ -34,6 +34,7 @@ class SysMemUserForUser : ModuleNative {
 		pspMemorySegment.allocByAddr(0x08000000,  4 * 1024 * 1024, "Kernel Memory 1");
 		pspMemorySegment.allocByAddr(0x08400000,  4 * 1024 * 1024, "Kernel Memory 2");
 		pspMemorySegment.allocByAddr(0x08800000, 24 * 1024 * 1024, "User Memory");
+		.writefln("pspMemorySegment.allocByAddr:: %s", pspMemorySegment);
 	}
 
 	void initNids() {
@@ -67,7 +68,6 @@ class SysMemUserForUser : ModuleNative {
 	/**
 	 * Get the firmware version.
 	 * 
-	 * @return The firmware version.
 	 * 0x01000300 on v1.00 unit,
 	 * 0x01050001 on v1.50 unit,
 	 * 0x01050100 on v1.51 unit,
@@ -77,6 +77,8 @@ class SysMemUserForUser : ModuleNative {
 	 * 0x02060010 on v2.60 unit,
 	 * 0x02070010 on v2.70 unit,
 	 * 0x02070110 on v2.71 unit.
+	 *
+	 * @return The firmware version.
 	 */
 	int sceKernelDevkitVersion() {
 		Logger.log(Logger.Level.TRACE, "SysMemUserForUser", "sceKernelDevkitVersion");
@@ -91,7 +93,7 @@ class SysMemUserForUser : ModuleNative {
 	 * @return ? on success, less than 0 on error.
 	 */
 	int sceKernelFreePartitionMemory(SceUID blockid) {
-		Logger.log(Logger.Level.TRACE, "SysMemUserForUser", "sceKernelFreePartitionMemory(%d)", blockid);
+		Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelFreePartitionMemory(%d)", blockid);
 		MemorySegment memorySegment = hleEmulatorState.uniqueIdFactory.get!(MemorySegment)(blockid);
 		memorySegment.free();
 		hleEmulatorState.uniqueIdFactory.remove!(MemorySegment)(blockid);
@@ -113,7 +115,9 @@ class SysMemUserForUser : ModuleNative {
 	 * @return The size of the largest free memory block, in bytes.
 	 */
 	SceSize sceKernelMaxFreeMemSize() {
-		return pspMemorySegment[2].getMaxAvailableMemoryBlock;
+		SceSize maxFreeMemSize = pspMemorySegment[2].getMaxAvailableMemoryBlock;
+		Logger.log(Logger.Level.INFO, "sysmem", "maxFreeMemSize(%d)", maxFreeMemSize);
+		return maxFreeMemSize;
 	}
 
 	/**
@@ -138,9 +142,11 @@ class SysMemUserForUser : ModuleNative {
 
 		if (memorySegment is null) return -1;
 		
-		Logger.log(Logger.Level.DEBUG, "sysmem", "sceKernelAllocPartitionMemory -> (%08X-%08X)", memorySegment.block.low, memorySegment.block.high);
+		SceUID sceUid = hleEmulatorState.uniqueIdFactory.add(memorySegment);
+		
+		Logger.log(Logger.Level.INFO, "sysmem", "sceKernelAllocPartitionMemory(%d) -> (%08X-%08X)", sceUid, memorySegment.block.low, memorySegment.block.high);
 
-		return reinterpret!(SceUID)(memorySegment);
+		return sceUid;
 	}
 
 	/**
@@ -151,7 +157,8 @@ class SysMemUserForUser : ModuleNative {
 	 * @return The lowest address belonging to the memory block.
 	 */
 	uint sceKernelGetBlockHeadAddr(SceUID blockid) {
-		return reinterpret!(MemorySegment)(blockid).block.low;
+		MemorySegment memorySegment = hleEmulatorState.uniqueIdFactory.get!(MemorySegment)(blockid);
+		return memorySegment.block.low;
 	}
 }
 

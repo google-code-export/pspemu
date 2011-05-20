@@ -21,7 +21,7 @@ class UniqueIdFactory {
 
 class UniqueIdTypeFactory {
 	string type;
-	uint last = 0;
+	uint last = 1;
 	Object[UID] values;
 	
 	this(string type) {

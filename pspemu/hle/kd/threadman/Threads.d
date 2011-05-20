@@ -75,8 +75,8 @@ template ThreadManForUser_Threads() {
 		ThreadState newThreadState = new ThreadState(currentEmulatorState, new Registers());
 		newThreadState.registers.copyFrom(currentRegisters);
 		newThreadState.registers.pcSet = entry;
-		auto stackMemoryPartition = hleEmulatorState.memoryPartition.allocHigh(stackSize, 0x10);
-		newThreadState.registers.SP = stackMemoryPartition.high;
+		
+		newThreadState.registers.SP = hleEmulatorState.memoryManager.allocStack(PspPartition.User, std.string.format("stack for thread '%s'", name), stackSize);
 		
 		newThreadState.registers.RA = 0x08000000;
 		newThreadState.name = name;
@@ -90,7 +90,7 @@ template ThreadManForUser_Threads() {
 		newThreadState.sceKernelThreadInfo.currentPriority = initPriority;
 		newThreadState.sceKernelThreadInfo.gpReg = cast(void *)currentRegisters().GP;
 		newThreadState.sceKernelThreadInfo.stackSize = stackSize;
-		newThreadState.sceKernelThreadInfo.stack = cast(void *)stackMemoryPartition.low;
+		newThreadState.sceKernelThreadInfo.stack = cast(void *)(newThreadState.registers.SP - stackSize);
 		newThreadState.sceKernelThreadInfo.entry = entry;
 		newThreadState.sceKernelThreadInfo.size = SceKernelThreadInfo.sizeof;
 		newThreadState.sceKernelThreadInfo.status = PspThreadStatus.PSP_THREAD_STOPPED;

@@ -7,7 +7,8 @@ import pspemu.core.cpu.Instruction;
 import pspemu.utils.StructUtils;
 import pspemu.utils.StreamUtils;
 import pspemu.utils.MathUtils;
-import pspemu.utils.MemoryPartition;
+//import pspemu.utils.MemoryPartition;
+import pspemu.hle.MemoryManager;
 //import pspemu.utils.Logger;
 
 import std.stream;
@@ -424,9 +425,9 @@ class Elf {
 	
 	uint relocationAddress;
 	
-	void allocateMemory(MemoryPartition memoryPartition) {
+	void allocateMemory(MemoryManager memoryManager) {
 		if (needsRelocation) {
-			relocationAddress = memoryPartition.alloc(sectionHeaderTotalSize, 0x1_0000).low;
+			relocationAddress = memoryManager.allocHeap(PspPartition.User, "ModuleMemory", sectionHeaderTotalSize);
 		} else {
 			relocationAddress = 0;
 			foreach (k, sectionHeader; sectionHeaders) {			
@@ -434,7 +435,7 @@ class Elf {
 
 				// Section to allocate
 				if (sectionHeader.flags & SectionHeader.Flags.Allocate) {
-					memoryPartition.use(sectionHeaderOffset, sectionHeaderOffset + sectionHeader.size);
+					memoryManager.allocAt(PspPartition.User, "ModuleMemory", sectionHeader.size, sectionHeaderOffset);
 				}
 			}
 		}

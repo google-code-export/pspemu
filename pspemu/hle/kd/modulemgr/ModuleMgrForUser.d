@@ -47,8 +47,8 @@ class ModuleMgrForUser : ModuleNative {
 	/**
 	 * Load a module from the given file UID.
 	 *
-	 * @param fid - The module's file UID.
-	 * @param flags - Unused, always 0.
+	 * @param fid    - The module's file UID.
+	 * @param flags  - Unused, always 0.
 	 * @param option - Pointer to an optional ::SceKernelLMOption structure.
 	 *
 	 * @return The UID of the loaded module on success, otherwise one of ::PspKernelErrorCodes.
@@ -63,9 +63,9 @@ class ModuleMgrForUser : ModuleNative {
 	 * @note This function restricts where it can load from (such as from flash0) 
 	 * unless you call it in kernel mode. It also must be called from a thread.
 	 * 
-	 * @param path - The path to the module to load.
-	 * @param flags - Unused, always 0 .
-	 * @param option  - Pointer to a mod_param_t structure. Can be NULL.
+	 * @param path   - The path to the module to load.
+	 * @param flags  - Unused, always 0 .
+	 * @param option - Pointer to a mod_param_t structure. Can be NULL.
 	 *
 	 * @return The UID of the loaded module on success, otherwise one of ::PspKernelErrorCodes.
 	 */

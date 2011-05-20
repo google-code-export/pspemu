@@ -10,6 +10,7 @@ import std.math;
 import pspemu.hle.kd.threadman.Threads;
 import pspemu.hle.kd.threadman.Semaphores;
 import pspemu.hle.kd.threadman.Types;
+import pspemu.hle.MemoryManager;
 
 import pspemu.utils.Logger;
 
