@@ -6,14 +6,17 @@ import derelict.sdl.sdl;
 import std.process;
 
 import pspemu.gui.GuiBase;
+import pspemu.utils.MathUtils;
+
+import pspemu.core.cpu.CpuThreadBase;
 
 class GuiSdl : GuiBase {
 	bool[SDLK_LAST] keyIsPressed;
 	PspCtrlButtons[SDLK_LAST] buttonMask;
 	SDL_Surface *screenSurface;
 	
-	this(Display display, Controller controller) {
-		super(display, controller);
+	this(EmulatorState emulatorState) {
+		super(emulatorState);
 	}
 
 	public void init() {
@@ -57,13 +60,47 @@ class GuiSdl : GuiBase {
 				keyIsPressed[sym] = Pressed;
 				sceCtrlData.SetPressedButton(buttonMask[sym], Pressed);
 				
-				if (sym == SDLK_F2 && !Pressed) {
-					writefln("Threads(%d):", Thread.getAll.length);
-					foreach (thread; Thread.getAll) {
-						writefln("  - Thread: '%s', running:%d, priority:%d", thread.name, thread.isRunning, thread.priority);
+				if (!Pressed) {
+					switch (sym) {
+						case SDLK_F2:
+							try {
+								writefln("Threads(%d):", Thread.getAll.length);
+								foreach (thread; Thread.getAll) {
+									writefln("  - Thread: '%s', running:%d, priority:%d", thread.name, thread.isRunning, thread.priority);
+								}
+								writefln("CpuThreads(%d):", emulatorState.cpuThreads.length);
+								foreach (CpuThreadBase cpuThread; emulatorState.cpuThreads.keys.dup) {
+									writef("  - CpuThread:");
+									try {
+										writef("%s", cpuThread);
+									} catch {
+										
+									}
+									writefln("");
+									//int callStackPosEnd   = min(cast(int)cpuThread.threadState.registers.CallStackPos, cast(int)cpuThread.threadState.registers.CallStack.length);
+									//int callStackPosStart = max(0, callStackPosEnd - 10);
+	
+									try {								
+										//foreach (k, pc; cpuThread.threadState.registers.CallStack[callStackPosStart..callStackPosEnd])
+										foreach (k, pc; cpuThread.threadState.registers.CallStack[0..cpuThread.threadState.registers.CallStackPos]) {
+											writefln("    - %d - 0x%08X", k, pc);
+										}
+									} catch (Throwable o) {
+										
+									}
+								}
+							} catch (Throwable o) {
+								
+							}
+						break;
+						case SDLK_F3:
+							this.display.enableWaitVblank = !this.display.enableWaitVblank; 
+						break;
+						default:
+						break;
 					}
 				}
-
+				
 				//sceCtrlData.x = cast(float)sceCtrlData.IsPressedButton2(PspCtrlButtons.PSP_CTRL_LEFT, PspCtrlButtons.PSP_CTRL_RIGHT);
 				//sceCtrlData.y = cast(float)sceCtrlData.IsPressedButton2(PspCtrlButtons.PSP_CTRL_UP  , PspCtrlButtons.PSP_CTRL_DOWN );
 			} break;

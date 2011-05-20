@@ -4,6 +4,7 @@ import std.stdio;
 
 import pspemu.core.Memory;
 import pspemu.core.cpu.ISyscall;
+import pspemu.core.cpu.CpuThreadBase;
 import pspemu.core.gpu.Gpu;
 import pspemu.core.gpu.impl.GpuOpengl;
 import pspemu.core.display.Display;
@@ -23,6 +24,7 @@ class EmulatorState {
 	Condition            threadStartedCondition;
 	Condition            threadEndedCondition;
 	uint                 threadsRunning = 0;
+	bool[CpuThreadBase]  cpuThreads;
 	
 	this() {
 		this.runningState           = new RunningState();

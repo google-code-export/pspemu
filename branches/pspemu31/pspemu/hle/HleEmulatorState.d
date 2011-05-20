@@ -37,7 +37,7 @@ class HleEmulatorState : ISyscall {
 		this.emulatorState   = emulatorState;
 		//this.memoryPartition = new MemoryPartition(Memory.Segments.mainMemory.low, Memory.Segments.mainMemory.high);
 		this.moduleManager   = new ModuleManager(this);
-		this.memoryManager   = new MemoryManager(this.moduleManager);
+		this.memoryManager   = new MemoryManager(this.emulatorState.memory, this.moduleManager);
 		this.moduleLoader    = new ModuleLoader(this.emulatorState.memory, this.memoryManager, this.moduleManager);
 		this.uniqueIdFactory = new UniqueIdFactory();
 		this.syscallObject   = new Syscall(this);

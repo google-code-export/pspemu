@@ -18,12 +18,15 @@ import pspemu.utils.StreamUtils;
 import pspemu.utils.ExceptionUtils;
 
 import pspemu.hle.Module;
+import pspemu.hle.ModulePsp;
 import pspemu.hle.ModuleManager;
 import pspemu.hle.MemoryManager;
 import pspemu.hle.Syscall;
 
 import pspemu.core.cpu.Instruction;
 import pspemu.core.cpu.InstructionHandler;
+
+import pspemu.hle.kd.loadcore.Types;
 
 class InstructionCounter : InstructionHandler {
 	uint[string] counts;
@@ -70,6 +73,13 @@ class ModuleLoader {
 		byte   var_count;    ///
 		ushort func_count;   ///
 		uint   exports;      ///
+		
+		string toString() {
+			return std.string.format(
+				"ModuleExport(name=%08X, version=%04X, flags=%04X, entry_size=%02X, var_count=%02X, func_count=%04X, exports=%08X)",
+				name, _version, flags, entry_size, var_count, func_count, exports
+			);
+		}
 
 		// Check the size of the struct.
 		static assert(this.sizeof == 16);
@@ -112,6 +122,7 @@ class ModuleLoader {
 	Stream exportsStream;
 	ModuleImport[] moduleImports;
 	ModuleExport[] moduleExports;
+	ModulePsp modulePsp;
 
 	public this(Stream memoryStream, MemoryManager memoryManager, ModuleManager moduleManager) {
 		this.memoryStream  = memoryStream;
@@ -119,11 +130,13 @@ class ModuleLoader {
 		this.moduleManager = moduleManager;
 	}
 	
-	public void load(string fullPath) {
-		load(new BufferedFile(fullPath), std.path.basename(fullPath));
+	public ModulePsp load(string fullPath) {
+		return load(new BufferedFile(fullPath), std.path.basename(fullPath));
 	}
 	
-	public void load(Stream stream, string name = "<unknown>") {
+	public ModulePsp load(Stream stream, string name = "<unknown>") {
+		modulePsp = new ModulePsp();
+		
 		while (true) {
 			auto magics = new SliceStream(stream, 0, 4);
 			auto magic_data = cast(ubyte[])magics.readString(4);
@@ -154,8 +167,21 @@ class ModuleLoader {
 		this.exportsStream = getMemorySliceRelocated(moduleInfo.exportsStart, moduleInfo.exportsEnd);
 		
 		processImports();
+		processExports();
 		
 		countInstructions();
+		
+		//memoryManager
+		//SceModule
+		//this.memoryManager.
+		//memoryManager.
+		modulePsp.sceModule = cast(SceModule*)memoryManager.memory.getPointer(memoryManager.allocHeap(PspPartition.Kernel0, "ModuleInfo", SceModule.sizeof));
+		//modulePsp.sceModule.
+		modulePsp.sceModule.modname[0..27] = moduleInfo.name[0..27];
+		modulePsp.sceModule.gp_value = moduleInfo.gp;
+		modulePsp.sceModule.entry_addr = PC;
+		
+		return modulePsp;
 	}
 	
 	Syscall.Function[] funcs;
@@ -225,6 +251,16 @@ class ModuleLoader {
 			version (DEBUG_LOADER) {
 				writefln("  }");
 			}
+		}
+	}
+	
+	public void processExports() {
+		// Load Exports.
+		while (!exportsStream.eof) {
+			ModuleExport moduleExport = read!(ModuleExport)(exportsStream);
+			string moduleExportName = moduleExport.name ? readStringz(memoryStream, moduleExport.name) : "<null>";
+			writefln("@EXPORT: %s", moduleExport);
+			moduleExports ~= moduleExport;
 		}
 	}
 	
@@ -371,14 +407,7 @@ class Loader {
 				throw(new Exception(std.string.format("Several unimplemented NIds. (%d)", count)));
 			}
 		}
-		// Load Exports.
-		version (DEBUG_LOADER) writefln("Exports (0x%08X-0x%08X):", moduleInfo.exportsStart, moduleInfo.exportsEnd);
-		while (!exportsStream.eof) {
-			auto moduleExport = read!(ModuleExport)(exportsStream);
-			auto moduleExportName = moduleExport.name ? readStringz(memory, moduleExport.name) : "<null>";
-			version (DEBUG_LOADER) writefln("  '%s'", moduleExportName);
-			moduleExports ~= moduleExport;
-		}
+
 	}
 
 	void setRegisters() {

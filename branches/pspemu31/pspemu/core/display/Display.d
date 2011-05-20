@@ -65,6 +65,8 @@ class Display {
 	const real hsync_hz = (processed_pixels_per_second * cycles_per_pixel) / pixels_in_a_row;
 	const real vsync_hz = hsync_hz / number_of_rows;
 	
+	bool enableWaitVblank = true;
+	
 	this(RunningState runningState, Memory memory) {
 		this.runningState = runningState;
 		this.memory       = memory;
@@ -97,7 +99,7 @@ class Display {
 	}
 	
 	public void waitVblank() {
-		vblankStartCondition.wait();
+		if (enableWaitVblank) vblankStartCondition.wait();
 	}
 
 	protected void run() {

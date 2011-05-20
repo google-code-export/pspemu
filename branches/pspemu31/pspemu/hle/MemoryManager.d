@@ -3,12 +3,15 @@ module pspemu.hle.MemoryManager;
 import pspemu.hle.ModuleManager;
 public import pspemu.hle.kd.sysmem.Types;
 import pspemu.hle.kd.sysmem.SysMemUserForUser;
+import pspemu.core.Memory;
 
 class MemoryManager {
+	Memory memory;
 	ModuleManager moduleManager;
 	SysMemUserForUser sysMemUserForUser;
 	
-	public this(ModuleManager moduleManager) {
+	public this(Memory memory, ModuleManager moduleManager) {
+		this.memory = memory;
 		this.moduleManager = moduleManager;		
 		this.sysMemUserForUser = moduleManager.get!(SysMemUserForUser);
 	}

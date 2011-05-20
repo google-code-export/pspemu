@@ -2,6 +2,11 @@ module pspemu.hle.kd.sysmem.Types;
 
 public import pspemu.hle.kd.Types;
 
+/** Type for Kprintf handler */
+//extern (C) function 
+//typedef int (*PspDebugKprintfHandler)(const char *format, u32 *args);
+alias void* PspDebugKprintfHandler;
+
 enum PspPartition : int {
 	Kernel0 = 0,
 	Kernel1 = 1,

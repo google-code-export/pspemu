@@ -2,450 +2,450 @@ switch (instruction.v & 0x_FC000000) {
 	case 0x_00000000:
 		switch (instruction.v & 0x_0000003F) {
 			case 0x_00000020:
-				{this.OP_ADD();}
+				{OP_ADD();}
 			break;
 			case 0x_00000021:
-				{this.OP_ADDU();}
+				{OP_ADDU();}
 			break;
 			case 0x_00000022:
-				{this.OP_SUB();}
+				{OP_SUB();}
 			break;
 			case 0x_00000023:
-				{this.OP_SUBU();}
+				{OP_SUBU();}
 			break;
 			case 0x_00000024:
-				{this.OP_AND();}
+				{OP_AND();}
 			break;
 			case 0x_00000027:
-				{this.OP_NOR();}
+				{OP_NOR();}
 			break;
 			case 0x_00000025:
-				{this.OP_OR();}
+				{OP_OR();}
 			break;
 			case 0x_00000026:
-				{this.OP_XOR();}
+				{OP_XOR();}
 			break;
 			case 0x_00000000:
-				{this.OP_SLL();}
+				{OP_SLL();}
 			break;
 			case 0x_00000004:
-				{this.OP_SLLV();}
+				{OP_SLLV();}
 			break;
 			case 0x_00000003:
-				{this.OP_SRA();}
+				{OP_SRA();}
 			break;
 			case 0x_00000007:
-				{this.OP_SRAV();}
+				{OP_SRAV();}
 			break;
 			case 0x_00000002:
 				switch (instruction.v & 0x_FFE00000) {
 					case 0x_00000000:
-						{this.OP_SRL();}
+						{OP_SRL();}
 					break;
 					case 0x_00200000:
-						{this.OP_ROTR();}
+						{OP_ROTR();}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
 			case 0x_00000006:
 				switch (instruction.v & 0x_FC0007C0) {
 					case 0x_00000000:
-						{this.OP_SRLV();}
+						{OP_SRLV();}
 					break;
 					case 0x_00000040:
-						{this.OP_ROTRV();}
+						{OP_ROTRV();}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
 			case 0x_0000002A:
-				{this.OP_SLT();}
+				{OP_SLT();}
 			break;
 			case 0x_0000002B:
-				{this.OP_SLTU();}
+				{OP_SLTU();}
 			break;
 			case 0x_0000002C:
-				{this.OP_MAX();}
+				{OP_MAX();}
 			break;
 			case 0x_0000002D:
-				{this.OP_MIN();}
+				{OP_MIN();}
 			break;
 			case 0x_0000001A:
-				{this.OP_DIV();}
+				{OP_DIV();}
 			break;
 			case 0x_0000001B:
-				{this.OP_DIVU();}
+				{OP_DIVU();}
 			break;
 			case 0x_00000018:
-				{this.OP_MULT();}
+				{OP_MULT();}
 			break;
 			case 0x_00000019:
-				{this.OP_MULTU();}
+				{OP_MULTU();}
 			break;
 			case 0x_0000001C:
-				{this.OP_MADD();}
+				{OP_MADD();}
 			break;
 			case 0x_0000001D:
-				{this.OP_MADDU();}
+				{OP_MADDU();}
 			break;
 			case 0x_0000002E:
-				{this.OP_MSUB();}
+				{OP_MSUB();}
 			break;
 			case 0x_0000002F:
-				{this.OP_MSUBU();}
+				{OP_MSUBU();}
 			break;
 			case 0x_00000010:
-				{this.OP_MFHI();}
+				{OP_MFHI();}
 			break;
 			case 0x_00000012:
-				{this.OP_MFLO();}
+				{OP_MFLO();}
 			break;
 			case 0x_00000011:
-				{this.OP_MTHI();}
+				{OP_MTHI();}
 			break;
 			case 0x_00000013:
-				{this.OP_MTLO();}
+				{OP_MTLO();}
 			break;
 			case 0x_0000000A:
-				{this.OP_MOVZ();}
+				{OP_MOVZ();}
 			break;
 			case 0x_0000000B:
-				{this.OP_MOVN();}
+				{OP_MOVN();}
 			break;
 			case 0x_00000016:
-				{this.OP_CLZ();}
+				{OP_CLZ();}
 			break;
 			case 0x_00000017:
-				{this.OP_CLO();}
+				{OP_CLO();}
 			break;
 			case 0x_00000008:
-				{this.OP_JR();}
+				{OP_JR();}
 			break;
 			case 0x_00000009:
-				{this.OP_JALR();}
+				{OP_JALR();}
 			break;
 			case 0x_0000000C:
-				{this.OP_SYSCALL();}
+				{OP_SYSCALL();}
 			break;
 			case 0x_0000000F:
-				{this.OP_SYNC();}
+				{OP_SYNC();}
 			break;
 			case 0x_0000000D:
-				{this.OP_BREAK();}
+				{OP_BREAK();}
 			break;
-			default:{this.OP_UNK();}
+			default:{OP_UNK();}
 		}
 	break;
 	case 0x_20000000:
-		{this.OP_ADDI();}
+		{OP_ADDI();}
 	break;
 	case 0x_24000000:
-		{this.OP_ADDIU();}
+		{OP_ADDIU();}
 	break;
 	case 0x_30000000:
-		{this.OP_ANDI();}
+		{OP_ANDI();}
 	break;
 	case 0x_34000000:
-		{this.OP_ORI();}
+		{OP_ORI();}
 	break;
 	case 0x_38000000:
-		{this.OP_XORI();}
+		{OP_XORI();}
 	break;
 	case 0x_28000000:
-		{this.OP_SLTI();}
+		{OP_SLTI();}
 	break;
 	case 0x_2C000000:
-		{this.OP_SLTIU();}
+		{OP_SLTIU();}
 	break;
 	case 0x_3C000000:
-		{this.OP_LUI();}
+		{OP_LUI();}
 	break;
 	case 0x_7C000000:
 		switch (instruction.v & 0x_0000003F) {
 			case 0x_00000020:
 				switch (instruction.v & 0x_FFE007C0) {
 					case 0x_7C000400:
-						{this.OP_SEB();}
+						{OP_SEB();}
 					break;
 					case 0x_7C000600:
-						{this.OP_SEH();}
+						{OP_SEH();}
 					break;
 					case 0x_7C000500:
-						{this.OP_BITREV();}
+						{OP_BITREV();}
 					break;
 					case 0x_7C000080:
-						{this.OP_WSBH();}
+						{OP_WSBH();}
 					break;
 					case 0x_7C0000C0:
-						{this.OP_WSBW();}
+						{OP_WSBW();}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
 			case 0x_00000000:
-				{this.OP_EXT();}
+				{OP_EXT();}
 			break;
 			case 0x_00000004:
-				{this.OP_INS();}
+				{OP_INS();}
 			break;
-			default:{this.OP_UNK();}
+			default:{OP_UNK();}
 		}
 	break;
 	case 0x_10000000:
-		{this.OP_BEQ();}
+		{OP_BEQ();}
 	break;
 	case 0x_50000000:
-		{this.OP_BEQL();}
+		{OP_BEQL();}
 	break;
 	case 0x_04000000:
 		switch (instruction.v & 0x_001F0000) {
 			case 0x_00010000:
-				{this.OP_BGEZ();}
+				{OP_BGEZ();}
 			break;
 			case 0x_00030000:
-				{this.OP_BGEZL();}
+				{OP_BGEZL();}
 			break;
 			case 0x_00110000:
-				{this.OP_BGEZAL();}
+				{OP_BGEZAL();}
 			break;
 			case 0x_00130000:
-				{this.OP_BGEZALL();}
+				{OP_BGEZALL();}
 			break;
 			case 0x_00000000:
-				{this.OP_BLTZ();}
+				{OP_BLTZ();}
 			break;
 			case 0x_00020000:
-				{this.OP_BLTZL();}
+				{OP_BLTZL();}
 			break;
 			case 0x_00100000:
-				{this.OP_BLTZAL();}
+				{OP_BLTZAL();}
 			break;
 			case 0x_00120000:
-				{this.OP_BLTZALL();}
+				{OP_BLTZALL();}
 			break;
-			default:{this.OP_UNK();}
+			default:{OP_UNK();}
 		}
 	break;
 	case 0x_18000000:
-		{this.OP_BLEZ();}
+		{OP_BLEZ();}
 	break;
 	case 0x_58000000:
-		{this.OP_BLEZL();}
+		{OP_BLEZL();}
 	break;
 	case 0x_1C000000:
-		{this.OP_BGTZ();}
+		{OP_BGTZ();}
 	break;
 	case 0x_5C000000:
-		{this.OP_BGTZL();}
+		{OP_BGTZL();}
 	break;
 	case 0x_14000000:
-		{this.OP_BNE();}
+		{OP_BNE();}
 	break;
 	case 0x_54000000:
-		{this.OP_BNEL();}
+		{OP_BNEL();}
 	break;
 	case 0x_08000000:
-		{this.OP_J();}
+		{OP_J();}
 	break;
 	case 0x_0C000000:
-		{this.OP_JAL();}
+		{OP_JAL();}
 	break;
 	case 0x_44000000:
 		switch (instruction.v & 0x_03E00000) {
 			case 0x_01000000:
 				switch (instruction.v & 0x_FC1F0000) {
 					case 0x_44000000:
-						{this.OP_BC1F();}
+						{OP_BC1F();}
 					break;
 					case 0x_44010000:
-						{this.OP_BC1T();}
+						{OP_BC1T();}
 					break;
 					case 0x_44020000:
-						{this.OP_BC1FL();}
+						{OP_BC1FL();}
 					break;
 					case 0x_44030000:
-						{this.OP_BC1TL();}
+						{OP_BC1TL();}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
 			case 0x_02000000:
 				switch (instruction.v & 0x_FC00003F) {
 					case 0x_44000000:
-						{this.OP_ADD_S();}
+						{OP_ADD_S();}
 					break;
 					case 0x_44000001:
-						{this.OP_SUB_S();}
+						{OP_SUB_S();}
 					break;
 					case 0x_44000002:
-						{this.OP_MUL_S();}
+						{OP_MUL_S();}
 					break;
 					case 0x_44000003:
-						{this.OP_DIV_S();}
+						{OP_DIV_S();}
 					break;
 					case 0x_44000004:
-						{this.OP_SQRT_S();}
+						{OP_SQRT_S();}
 					break;
 					case 0x_44000005:
-						{this.OP_ABS_S();}
+						{OP_ABS_S();}
 					break;
 					case 0x_44000006:
-						{this.OP_MOV_S();}
+						{OP_MOV_S();}
 					break;
 					case 0x_44000007:
-						{this.OP_NEG_S();}
+						{OP_NEG_S();}
 					break;
 					case 0x_4400000C:
-						{this.OP_ROUND_W_S();}
+						{OP_ROUND_W_S();}
 					break;
 					case 0x_4400000D:
-						{this.OP_TRUNC_W_S();}
+						{OP_TRUNC_W_S();}
 					break;
 					case 0x_4400000E:
-						{this.OP_CEIL_W_S();}
+						{OP_CEIL_W_S();}
 					break;
 					case 0x_4400000F:
-						{this.OP_FLOOR_W_S();}
+						{OP_FLOOR_W_S();}
 					break;
 					case 0x_44000024:
-						{this.OP_CVT_W_S();}
+						{OP_CVT_W_S();}
 					break;
 					case 0x_44000030:
-						{this.OP_C_F_S();}
+						{OP_C_F_S();}
 					break;
 					case 0x_44000031:
-						{this.OP_C_UN_S();}
+						{OP_C_UN_S();}
 					break;
 					case 0x_44000032:
-						{this.OP_C_EQ_S();}
+						{OP_C_EQ_S();}
 					break;
 					case 0x_44000033:
-						{this.OP_C_UEQ_S();}
+						{OP_C_UEQ_S();}
 					break;
 					case 0x_44000034:
-						{this.OP_C_OLT_S();}
+						{OP_C_OLT_S();}
 					break;
 					case 0x_44000035:
-						{this.OP_C_ULT_S();}
+						{OP_C_ULT_S();}
 					break;
 					case 0x_44000036:
-						{this.OP_C_OLE_S();}
+						{OP_C_OLE_S();}
 					break;
 					case 0x_44000037:
-						{this.OP_C_ULE_S();}
+						{OP_C_ULE_S();}
 					break;
 					case 0x_44000038:
-						{this.OP_C_SF_S();}
+						{OP_C_SF_S();}
 					break;
 					case 0x_44000039:
-						{this.OP_C_NGLE_S();}
+						{OP_C_NGLE_S();}
 					break;
 					case 0x_4400003A:
-						{this.OP_C_SEQ_S();}
+						{OP_C_SEQ_S();}
 					break;
 					case 0x_4400003B:
-						{this.OP_C_NGL_S();}
+						{OP_C_NGL_S();}
 					break;
 					case 0x_4400003C:
-						{this.OP_C_LT_S();}
+						{OP_C_LT_S();}
 					break;
 					case 0x_4400003D:
-						{this.OP_C_NGE_S();}
+						{OP_C_NGE_S();}
 					break;
 					case 0x_4400003E:
-						{this.OP_C_LE_S();}
+						{OP_C_LE_S();}
 					break;
 					case 0x_4400003F:
-						{this.OP_C_NGT_S();}
+						{OP_C_NGT_S();}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
 			case 0x_02800000:
-				{this.OP_CVT_S_W();}
+				{OP_CVT_S_W();}
 			break;
 			case 0x_00000000:
-				{this.OP_MFC1();}
+				{OP_MFC1();}
 			break;
 			case 0x_00400000:
-				{this.OP_CFC1();}
+				{OP_CFC1();}
 			break;
 			case 0x_00800000:
-				{this.OP_MTC1();}
+				{OP_MTC1();}
 			break;
 			case 0x_00C00000:
-				{this.OP_CTC1();}
+				{OP_CTC1();}
 			break;
-			default:{this.OP_UNK();}
+			default:{OP_UNK();}
 		}
 	break;
 	case 0x_80000000:
-		{this.OP_LB();}
+		{OP_LB();}
 	break;
 	case 0x_84000000:
-		{this.OP_LH();}
+		{OP_LH();}
 	break;
 	case 0x_8C000000:
-		{this.OP_LW();}
+		{OP_LW();}
 	break;
 	case 0x_88000000:
-		{this.OP_LWL();}
+		{OP_LWL();}
 	break;
 	case 0x_98000000:
-		{this.OP_LWR();}
+		{OP_LWR();}
 	break;
 	case 0x_90000000:
-		{this.OP_LBU();}
+		{OP_LBU();}
 	break;
 	case 0x_94000000:
-		{this.OP_LHU();}
+		{OP_LHU();}
 	break;
 	case 0x_A0000000:
-		{this.OP_SB();}
+		{OP_SB();}
 	break;
 	case 0x_A4000000:
-		{this.OP_SH();}
+		{OP_SH();}
 	break;
 	case 0x_AC000000:
-		{this.OP_SW();}
+		{OP_SW();}
 	break;
 	case 0x_A8000000:
-		{this.OP_SWL();}
+		{OP_SWL();}
 	break;
 	case 0x_B8000000:
-		{this.OP_SWR();}
+		{OP_SWR();}
 	break;
 	case 0x_C0000000:
-		{this.OP_LL();}
+		{OP_LL();}
 	break;
 	case 0x_E0000000:
-		{this.OP_SC();}
+		{OP_SC();}
 	break;
 	case 0x_C4000000:
-		{this.OP_LWC1();}
+		{OP_LWC1();}
 	break;
 	case 0x_E4000000:
-		{this.OP_SWC1();}
+		{OP_SWC1();}
 	break;
 	case 0x_40000000:
 		switch (instruction.v & 0x_03E007FF) {
 			case 0x_00400000:
-				{this.OP_CFC0();}
+				{OP_CFC0();}
 			break;
 			case 0x_00C00000:
-				{this.OP_CTC0();}
+				{OP_CTC0();}
 			break;
 			case 0x_00000000:
-				{this.OP_MFC0();}
+				{OP_MFC0();}
 			break;
 			case 0x_00800000:
-				{this.OP_MTC0();}
+				{OP_MTC0();}
 			break;
 			case 0x_02000018:
-				{this.OP_ERET();}
+				{OP_ERET();}
 			break;
-			default:{this.OP_UNK();}
+			default:{OP_UNK();}
 		}
 	break;
 	case 0x_48000000:
@@ -453,109 +453,109 @@ switch (instruction.v & 0x_FC000000) {
 			case 0x_00600000:
 				switch (instruction.v & 0x_FC00FF80) {
 					case 0x_48000000:
-						{this.OP_MFV();}
+						{OP_MFV();}
 					break;
 					case 0x_48000080:
-						{this.OP_MFVC();}
+						{OP_MFVC();}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
 			case 0x_00E00000:
 				switch (instruction.v & 0x_FC00FF80) {
 					case 0x_48000000:
-						{this.OP_MTV();}
+						{OP_MTV();}
 					break;
 					case 0x_48000080:
-						{this.OP_MTVC();}
+						{OP_MTVC();}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
 			case 0x_01000000:
 				switch (instruction.v & 0x_FC030000) {
 					case 0x_48000000:
-						{this.OP_BVF();}
+						{OP_BVF();}
 					break;
 					case 0x_48020000:
-						{this.OP_BVFL();}
+						{OP_BVFL();}
 					break;
 					case 0x_48010000:
-						{this.OP_BVT();}
+						{OP_BVT();}
 					break;
 					case 0x_48030000:
-						{this.OP_BVTL();}
+						{OP_BVTL();}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
-			default:{this.OP_UNK();}
+			default:{OP_UNK();}
 		}
 	break;
 	case 0x_C8000000:
-		{this.OP_LV_S();}
+		{OP_LV_S();}
 	break;
 	case 0x_D8000000:
-		{this.OP_LV_Q();}
+		{OP_LV_Q();}
 	break;
 	case 0x_D4000000:
 		switch (instruction.v & 0x_00000002) {
 			case 0x_00000000:
-				{this.OP_LVL_Q();}
+				{OP_LVL_Q();}
 			break;
 			case 0x_00000002:
-				{this.OP_LVR_Q();}
+				{OP_LVR_Q();}
 			break;
-			default:{this.OP_UNK();}
+			default:{OP_UNK();}
 		}
 	break;
 	case 0x_F8000000:
-		{this.OP_SV_Q();}
+		{OP_SV_Q();}
 	break;
 	case 0x_64000000:
 		switch (instruction.v & 0x_03800000) {
 			case 0x_00800000:
-				{this.OP_VDOT();}
+				{OP_VDOT();}
 			break;
 			case 0x_01000000:
-				{this.OP_VSCL();}
+				{OP_VSCL();}
 			break;
 			case 0x_02000000:
-				{this.OP_VHDP();}
+				{OP_VHDP();}
 			break;
 			case 0x_02800000:
-				{this.OP_VCRS_T();}
+				{OP_VCRS_T();}
 			break;
 			case 0x_00000000:
-				{this.OP_VMUL();}
+				{OP_VMUL();}
 			break;
 			case 0x_03000000:
-				{this.OP_VDET();}
+				{OP_VDET();}
 			break;
-			default:{this.OP_UNK();}
+			default:{OP_UNK();}
 		}
 	break;
 	case 0x_6C000000:
 		switch (instruction.v & 0x_03800000) {
 			case 0x_02000000:
-				{this.OP_VSLT();}
+				{OP_VSLT();}
 			break;
 			case 0x_03000000:
-				{this.OP_VSGE();}
+				{OP_VSGE();}
 			break;
 			case 0x_01000000:
-				{this.OP_VMIN();}
+				{OP_VMIN();}
 			break;
 			case 0x_01800000:
-				{this.OP_VMAX();}
+				{OP_VMAX();}
 			break;
 			case 0x_00000000:
-				{this.OP_VCMP();}
+				{OP_VCMP();}
 			break;
 			case 0x_02800000:
-				{this.OP_VSCMP();}
+				{OP_VSCMP();}
 			break;
-			default:{this.OP_UNK();}
+			default:{OP_UNK();}
 		}
 	break;
 	case 0x_F0000000:
@@ -563,71 +563,71 @@ switch (instruction.v & 0x_FC000000) {
 			case 0x_03800000:
 				switch (instruction.v & 0x_FC600000) {
 					case 0x_F0200000:
-						{this.OP_VROT();}
+						{OP_VROT();}
 					break;
 					case 0x_F0000000:
 						switch (instruction.v & 0x_039F0000) {
 							case 0x_03830000:
-								{this.OP_VMIDT();}
+								{OP_VMIDT();}
 							break;
 							case 0x_03800000:
-								{this.OP_VMMOV();}
+								{OP_VMMOV();}
 							break;
 							case 0x_03860000:
-								{this.OP_VMZERO();}
+								{OP_VMZERO();}
 							break;
 							case 0x_03870000:
-								{this.OP_VMONE();}
+								{OP_VMONE();}
 							break;
-							default:{this.OP_UNK();}
+							default:{OP_UNK();}
 						}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
 			case 0x_00000000:
-				{this.OP_VMMUL();}
+				{OP_VMMUL();}
 			break;
 			case 0x_02800000:
-				{this.OP_VCRSP_T();}
+				{OP_VCRSP_T();}
 			break;
 			case 0x_00800000:
 				switch (instruction.v & 0x_FC008080) {
 					case 0x_F0000080:
-						{this.OP_VTFM2();}
+						{OP_VTFM2();}
 					break;
 					case 0x_F0000000:
-						{this.OP_VHTFM2();}
+						{OP_VHTFM2();}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
 			case 0x_01000000:
 				switch (instruction.v & 0x_FC008080) {
 					case 0x_F0008000:
-						{this.OP_VTFM3();}
+						{OP_VTFM3();}
 					break;
 					case 0x_F0000080:
-						{this.OP_VHTFM3();}
+						{OP_VHTFM3();}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
 			case 0x_01800000:
 				switch (instruction.v & 0x_FC008080) {
 					case 0x_F0008080:
-						{this.OP_VTFM4();}
+						{OP_VTFM4();}
 					break;
 					case 0x_F0008000:
-						{this.OP_VHTFM4();}
+						{OP_VHTFM4();}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
 			case 0x_02000000:
-				{this.OP_VMSCL();}
+				{OP_VMSCL();}
 			break;
-			default:{this.OP_UNK();}
+			default:{OP_UNK();}
 		}
 	break;
 	case 0x_D0000000:
@@ -635,239 +635,239 @@ switch (instruction.v & 0x_FC000000) {
 			case 0x_00000000:
 				switch (instruction.v & 0x_FC1F0000) {
 					case 0x_D0060000:
-						{this.OP_VZERO();}
+						{OP_VZERO();}
 					break;
 					case 0x_D0070000:
-						{this.OP_VONE();}
+						{OP_VONE();}
 					break;
 					case 0x_D0000000:
-						{this.OP_VMOV();}
+						{OP_VMOV();}
 					break;
 					case 0x_D0010000:
-						{this.OP_VABS();}
+						{OP_VABS();}
 					break;
 					case 0x_D0020000:
-						{this.OP_VNEG();}
+						{OP_VNEG();}
 					break;
 					case 0x_D0100000:
-						{this.OP_VRCP();}
+						{OP_VRCP();}
 					break;
 					case 0x_D0110000:
-						{this.OP_VRSQ();}
+						{OP_VRSQ();}
 					break;
 					case 0x_D0120000:
-						{this.OP_VSIN();}
+						{OP_VSIN();}
 					break;
 					case 0x_D0130000:
-						{this.OP_VCOS();}
+						{OP_VCOS();}
 					break;
 					case 0x_D0140000:
-						{this.OP_VEXP2();}
+						{OP_VEXP2();}
 					break;
 					case 0x_D0150000:
-						{this.OP_VLOG2();}
+						{OP_VLOG2();}
 					break;
 					case 0x_D0160000:
-						{this.OP_VSQRT();}
+						{OP_VSQRT();}
 					break;
 					case 0x_D0170000:
-						{this.OP_VASIN();}
+						{OP_VASIN();}
 					break;
 					case 0x_D0180000:
-						{this.OP_VNRCP();}
+						{OP_VNRCP();}
 					break;
 					case 0x_D01A0000:
-						{this.OP_VNSIN();}
+						{OP_VNSIN();}
 					break;
 					case 0x_D01C0000:
-						{this.OP_VREXP2();}
+						{OP_VREXP2();}
 					break;
 					case 0x_D0040000:
-						{this.OP_VSAT0();}
+						{OP_VSAT0();}
 					break;
 					case 0x_D0050000:
-						{this.OP_VSAT1();}
+						{OP_VSAT1();}
 					break;
 					case 0x_D0030000:
-						{this.OP_VIDT();}
+						{OP_VIDT();}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
 			case 0x_00400000:
 				switch (instruction.v & 0x_FC1F0000) {
 					case 0x_D0040000:
-						{this.OP_VOCP();}
+						{OP_VOCP();}
 					break;
 					case 0x_D00A0000:
-						{this.OP_VSGN();}
+						{OP_VSGN();}
 					break;
 					case 0x_D0080000:
-						{this.OP_VSRT3();}
+						{OP_VSRT3();}
 					break;
 					case 0x_D0060000:
-						{this.OP_VFAD();}
+						{OP_VFAD();}
 					break;
 					case 0x_D0070000:
-						{this.OP_VAVG();}
+						{OP_VAVG();}
 					break;
 					case 0x_D0190000:
-						{this.OP_VT4444_Q();}
+						{OP_VT4444_Q();}
 					break;
 					case 0x_D01A0000:
-						{this.OP_VT5551_Q();}
+						{OP_VT5551_Q();}
 					break;
 					case 0x_D01B0000:
-						{this.OP_VT5650_Q();}
+						{OP_VT5650_Q();}
 					break;
 					case 0x_D0100000:
-						{this.OP_VMFVC();}
+						{OP_VMFVC();}
 					break;
 					case 0x_D0110000:
-						{this.OP_VMTVC();}
+						{OP_VMTVC();}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
 			case 0x_00600000:
-				{this.OP_VCST();}
+				{OP_VCST();}
 			break;
 			case 0x_00200000:
 				switch (instruction.v & 0x_FC1F0000) {
 					case 0x_D01D0000:
-						{this.OP_VI2C();}
+						{OP_VI2C();}
 					break;
 					case 0x_D01C0000:
-						{this.OP_VI2UC();}
+						{OP_VI2UC();}
 					break;
 					case 0x_D0000000:
-						{this.OP_VRNDS();}
+						{OP_VRNDS();}
 					break;
 					case 0x_D0010000:
-						{this.OP_VRNDI();}
+						{OP_VRNDI();}
 					break;
 					case 0x_D0020000:
-						{this.OP_VRNDF1();}
+						{OP_VRNDF1();}
 					break;
 					case 0x_D0030000:
-						{this.OP_VRNDF2();}
+						{OP_VRNDF2();}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
 			case 0x_02A00000:
 				switch (instruction.v & 0x_FC180000) {
 					case 0x_D0080000:
-						{this.OP_VCMOVF();}
+						{OP_VCMOVF();}
 					break;
 					case 0x_D0000000:
-						{this.OP_VCMOVT();}
+						{OP_VCMOVT();}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
 			case 0x_02600000:
-				{this.OP_VF2ID();}
+				{OP_VF2ID();}
 			break;
 			case 0x_02000000:
-				{this.OP_VF2IN();}
+				{OP_VF2IN();}
 			break;
 			case 0x_02400000:
-				{this.OP_VF2IU();}
+				{OP_VF2IU();}
 			break;
 			case 0x_02200000:
-				{this.OP_VF2IZ();}
+				{OP_VF2IZ();}
 			break;
 			case 0x_02800000:
-				{this.OP_VI2F();}
+				{OP_VI2F();}
 			break;
-			default:{this.OP_UNK();}
+			default:{OP_UNK();}
 		}
 	break;
 	case 0x_60000000:
 		switch (instruction.v & 0x_03800000) {
 			case 0x_00000000:
-				{this.OP_VADD();}
+				{OP_VADD();}
 			break;
 			case 0x_00800000:
-				{this.OP_VSUB();}
+				{OP_VSUB();}
 			break;
 			case 0x_03800000:
-				{this.OP_VDIV();}
+				{OP_VDIV();}
 			break;
-			default:{this.OP_UNK();}
+			default:{OP_UNK();}
 		}
 	break;
 	case 0x_DC000000:
 		switch (instruction.v & 0x_03000000) {
 			case 0x_03000000:
-				{this.OP_VIIM();}
+				{OP_VIIM();}
 			break;
 			case 0x_02000000:
-				{this.OP_VPFXD();}
+				{OP_VPFXD();}
 			break;
 			case 0x_00000000:
-				{this.OP_VPFXS();}
+				{OP_VPFXS();}
 			break;
 			case 0x_01000000:
-				{this.OP_VPFXT();}
+				{OP_VPFXT();}
 			break;
-			default:{this.OP_UNK();}
+			default:{OP_UNK();}
 		}
 	break;
 	case 0x_FC000000:
 		switch (instruction.v & 0x_03FFFFFF) {
 			case 0x_03FF0000:
-				{this.OP_VNOP();}
+				{OP_VNOP();}
 			break;
 			case 0x_03FF0320:
-				{this.OP_VSYNC();}
+				{OP_VSYNC();}
 			break;
 			case 0x_03FF040D:
-				{this.OP_VFLUSH();}
+				{OP_VFLUSH();}
 			break;
-			default:{this.OP_UNK();}
+			default:{OP_UNK();}
 		}
 	break;
 	case 0x_68000000:
-		{this.OP_MFVME();}
+		{OP_MFVME();}
 	break;
 	case 0x_B0000000:
-		{this.OP_MTVME();}
+		{OP_MTVME();}
 	break;
 	case 0x_BC000000:
-		{this.OP_CACHE();}
+		{OP_CACHE();}
 	break;
 	case 0x_70000000:
 		switch (instruction.v & 0x_000007FF) {
 			case 0x_0000003F:
-				{this.OP_DBREAK();}
+				{OP_DBREAK();}
 			break;
 			case 0x_00000000:
-				{this.OP_HALT();}
+				{OP_HALT();}
 			break;
 			case 0x_0000003E:
-				{this.OP_DRET();}
+				{OP_DRET();}
 			break;
 			case 0x_00000024:
-				{this.OP_MFIC();}
+				{OP_MFIC();}
 			break;
 			case 0x_00000026:
-				{this.OP_MTIC();}
+				{OP_MTIC();}
 			break;
 			case 0x_0000003D:
 				switch (instruction.v & 0x_FFE00000) {
 					case 0x_70000000:
-						{this.OP_MFDR();}
+						{OP_MFDR();}
 					break;
 					case 0x_70800000:
-						{this.OP_MTDR();}
+						{OP_MTDR();}
 					break;
-					default:{this.OP_UNK();}
+					default:{OP_UNK();}
 				}
 			break;
-			default:{this.OP_UNK();}
+			default:{OP_UNK();}
 		}
 	break;
-	default:{this.OP_UNK();}
+	default:{OP_UNK();}
 }

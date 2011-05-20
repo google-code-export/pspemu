@@ -18,7 +18,7 @@ class Logger {
 		}
 	}
 
-	__gshared Message[] messages;
+	//__gshared Message[] messages;
 	__gshared Level currentLogLevel = Level.NONE;
 	
 	static public void setLevel(Level level) {
@@ -27,11 +27,15 @@ class Logger {
 
 	static void log(T...)(Level level, string component, T args) {
 		if (level == Level.NONE) return;
+
+		//std.string.format
 	
 		if (level >= currentLogLevel) {
 			auto message = Message(std.c.time.time(null), level, component, std.string.format(args));
-			messages ~= message;
+			//messages ~= message;
 			if (component == "sceAudio_driver") return;
+			if (component == "ThreadManForUser") return;
+			if (component == "sceCtrl") return;
 			//if (component == "Module") return;
 			message.print();
 		}

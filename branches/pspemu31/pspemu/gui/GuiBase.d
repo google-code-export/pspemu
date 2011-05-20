@@ -6,16 +6,19 @@ import pspemu.utils.WaitReady;
 
 public import pspemu.core.controller.Controller;
 public import pspemu.core.display.Display;
+public import pspemu.core.EmulatorState;
 
 abstract class GuiBase {
+	EmulatorState emulatorState;
 	Display display;
 	Controller controller;
 	Thread thread;
 	WaitReady initialized;
 	
-	this(Display display, Controller controller) {
-		this.display    = display;
-		this.controller = controller;
+	this(EmulatorState emulatorState) {
+		this.emulatorState = emulatorState;
+		this.display    = emulatorState.display;
+		this.controller = emulatorState.controller;
 		this.initialized = new WaitReady();
 	}
 	

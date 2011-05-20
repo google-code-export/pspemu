@@ -67,6 +67,8 @@ class EmulatorHelper {
 	
 	public void loadModule(string pspModulePath) {
 		//reset();
+		
+		Logger.log(Logger.Level.INFO, "EmulatorHelper", "Loading module ('%s')...", pspModulePath);
 
 		emulator.hleEmulatorState.moduleLoader.load(pspModulePath);
 		emulator.hleEmulatorState.moduleManager.get!(IoFileMgrForUser)().setVirtualDir(std.path.dirname(pspModulePath));
@@ -81,6 +83,8 @@ class EmulatorHelper {
 			registers.A0 = 1;
 			registers.A1 = 0x08100000 + 4;
 		}
+		
+		Logger.log(Logger.Level.INFO, "EmulatorHelper", "Module loaded successfully");
 	}
 	
 	public void initComponents() {

@@ -1,10 +1,5 @@
 module pspemu.hle.kd.audio.sceAudio_driver; // kd/audio.prx (sceAudio_Driver)
 
-//debug = DEBUG_AUDIO;
-//debug = DEBUG_SYSCALL;
-
-//version = DISABLE_SOUND;
-
 import std.c.windows.windows;
 
 import core.thread;
@@ -104,7 +99,7 @@ class sceAudio_driver : ModuleNative {
 		auto cchannel = channels[channel];
 		bool playing = true;
 
-		Logger.log(Logger.Level.TRACE, "sceAudio_driver", "sceAudioOutputPannedBlocking(channel=%d, leftvol=%d, rightvol=%d, buf_length=%d)", channel, leftvol, rightvol, cchannel.dataCount);
+		logInfo("sceAudioOutputPannedBlocking(channel=%d, leftvol=%d, rightvol=%d, buf_length=%d)", channel, leftvol, rightvol, cchannel.dataCount);
 
 		float toFloat(short sample) { return cast(float)sample / cast(float)(0x8000 - 1); }
 		
@@ -259,7 +254,7 @@ class sceAudio_driver : ModuleNative {
 		// Sets the information of the channel.
 		channels[channel] = Channel(true, samplecount, format);
 		
-		debug (DEBUG_AUDIO) writefln("sceAudioChReserve(channel=%d, samplecount=%d, format=%d)", channel, samplecount, format);
+		logInfo("sceAudioChReserve(channel=%d, samplecount=%d, format=%d)", channel, samplecount, format);
 
 		// Returns the channel.
 		return channel;

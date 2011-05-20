@@ -16,32 +16,42 @@ template TemplateCpu_JUMP() {
 	// Jumps to the calculated address and stores the return address in $31
 	// $31 = PC + 8 (or nPC + 4); PC = nPC; nPC = (PC & 0xf0000000) | (target << 2);
 	void OP_JAL() {
+		registers.CallStackPush();
 		mixin(LINK ~ JUMP);
+		/*
 		debug (DEBUG_CALLS) {
-			registers.CallStack ~= registers.nPC;
 			foreach (n; 0..registers.CallStack.length) writef("|");
 			writef("JAL: %08X->%08X (", registers.RA, registers.nPC);
 			for (int n = 0; n < 3; n++) writef("a%d=%08X, ", n, registers.R[4 + n]);
 			writef("SP=%08X", registers.SP);
 			writefln(")");
 		}
+		*/
 	}
 
 	// JR -- Jump register
 	// Jump to the address contained in register $s
 	// PC = nPC; nPC = $s;
 	void OP_JR() {
+		if (instruction.RS == 31) {
+			registers.CallStackPop();
+		}
+		/*
 		debug (DEBUG_CALLS) if (instruction.RS == 31) {
 			foreach (n; 0..registers.CallStack.length) writef("|");
 			writefln("/jr RA %08X", registers.RA);
 			registers.dump();
 			if (registers.CallStack.length > 0) registers.CallStack.length = registers.CallStack.length - 1;
 		}
+		*/
 		mixin(JUMPR);
 	}
 
 	// JALR -- Jump and link register
-	void OP_JALR() { mixin(LINK("instruction.RD") ~ JUMPR); }
+	void OP_JALR() {
+		registers.CallStackPush();
+		mixin(LINK("instruction.RD") ~ JUMPR);
+	}
 }
 
 template TemplateCpu_JUMP_Utils() {

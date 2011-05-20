@@ -42,7 +42,7 @@ template TemplateCpu_SPECIAL() {
 		if (threadState.emulatorState.syscall is null) {
 			std.stdio.writefln("Syscall handler not set");
 		} else {
-			threadState.emulatorState.syscall.syscall(this, instruction.CODE);
+			threadState.emulatorState.syscall.syscall(cpuThread, instruction.CODE);
 		}
 	}
 

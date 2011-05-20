@@ -131,6 +131,7 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return Returns the value 0 if its succesful otherwise -1
 	 */
 	int sceIoMkdir(string path, SceMode mode) {
+		logInfo("sceIoMkdir('%s, %d)", path, mode);
 		auto vfs = locateParentAndUpdateFile(path);
 		try {
 			vfs.mkdir(path);
@@ -149,6 +150,7 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return Returns the value 0 if its succesful otherwise -1
 	 */
 	int sceIoRmdir(string path) {
+		logInfo("sceIoRmdir('%s)", path);
 		unimplemented();
 		return -1;
 	}
@@ -162,6 +164,7 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return < 0 on error.
 	 */
 	int sceIoRename(string oldname, string newname) {
+		logInfo("sceIoRename('%s', '%s')", oldname, newname);
 		unimplemented();
 		return -1;
 	}
@@ -200,6 +203,7 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return If >= 0 then a valid file descriptor, otherwise a Sony error code.
 	 */
 	SceUID sceIoDopen(string dirname) {
+		logInfo("sceIoDopen('%s')", dirname);
 		try {
 			SceUID uid = openedDirectories.length + 1;
 			openedDirectories[uid] = new DirectoryIterator(dirname);
@@ -222,6 +226,7 @@ class IoFileMgrForKernel : ModuleNative {
 	  * - < 0 - Error
 	  */
 	int sceIoDread(SceUID fd, SceIoDirent *dir) {
+		logInfo("sceIoDread('%d')", fd);
 		if (fd !in openedDirectories) return -1;
 		auto cdir = openedDirectories[fd];
 		uint lastLeft = cdir.left;
@@ -245,6 +250,7 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return < 0 on error
 	 */
 	int sceIoDclose(SceUID fd) {
+		logInfo("sceIoDclose('%d')", fd);
 		if (fd !in openedDirectories) return -1;
 		openedDirectories.remove(fd);
 		return 0;
@@ -258,6 +264,7 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return < 0 on error.
 	 */
 	int sceIoChdir(string path) {
+		logInfo("sceIoChdir('%s')", path);
 		try {
 			fsroot.access(path);
 			fscurdir = path;
@@ -286,6 +293,7 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return 0 on success, < 0 on error
 	 */
 	int sceIoDevctl(string dev, int cmd, void* indata, int inlen, void* outdata, int outlen) {
+		logInfo("sceIoDevctl('%s', %d)", dev, cmd);
 		try {
 			return devices[dev].sceIoDevctl(cmd, (cast(ubyte*)indata)[0..inlen], (cast(ubyte*)outdata)[0..outlen]);
 		} catch (Exception e) {
@@ -305,6 +313,7 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return < 0 on error
 	 */
 	int sceIoClose(SceUID fd) {
+		logInfo("sceIoClose('%d')", fd);
 		if (fd < 0) return -1;
 		try {
 			auto stream = getStreamFromFD(fd);
@@ -371,6 +380,7 @@ class IoFileMgrForKernel : ModuleNative {
 		VFS vfs;
 		FileMode fmode;
 		try {
+			logInfo("sceIoOpen('%s', %d, %d)", file, flags, mode);
 			if (flags & PSP_O_RDONLY) fmode |= FileMode.In;
 			if (flags & PSP_O_WRONLY) fmode |= FileMode.Out;
 			if (flags & PSP_O_APPEND) fmode |= FileMode.Append;
@@ -408,6 +418,7 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return The number of bytes read
 	 */
 	int sceIoRead(SceUID fd, void* data, SceSize size) {
+		logInfo("sceIoRead(%d, %d)", fd, size);
 		if (fd < 0) return -1;
 		if (data is null) return -1;
 		auto stream = getStreamFromFD(fd);
@@ -434,6 +445,7 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return The number of bytes written
 	 */
 	int sceIoWrite(SceUID fd, /*const*/ void* data, SceSize size) {
+		logInfo("sceIoWrite(%d, %d)", fd, size);
 		if (fd < 0) return -1;
 		if (data is null) return -1;
 		auto stream = getStreamFromFD(fd);
@@ -467,6 +479,7 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return The position in the file after the seek. 
 	 */
 	SceOff sceIoLseek(SceUID fd, SceOff offset, int whence) {
+		logInfo("sceIoLseek(%d, %d, %d)", fd, offset, whence);
 		if (fd < 0) return -1;
 		auto stream = getStreamFromFD(fd);
 		stream.seek(offset, cast(SeekPos)whence);
@@ -489,6 +502,7 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return The position in the file after the seek. 
 	 */
 	int sceIoLseek32(SceUID fd, int offset, int whence) {
+		logInfo("sceIoLseek32(%d, %d, %d)", fd, offset, whence);
 		return cast(int)sceIoLseek(fd, offset, whence);
 	}
 
@@ -501,6 +515,7 @@ class IoFileMgrForKernel : ModuleNative {
 	  * @return < 0 on error.
 	  */
 	int sceIoGetstat(string file, SceIoStat* stat) {
+		logInfo("sceIoGetstat('%s')", file);
 		string fileIni = file;
 		try {
 			auto vfs = locateParentAndUpdateFile(file);
@@ -677,14 +692,16 @@ class IoFileMgrForKernel : ModuleNative {
 	/**
 	 * Reopens an existing file descriptor.
 	 *
-	 * @param file - The new file to open.
+	 * @param file  - The new file to open.
 	 * @param flags - The open flags.
-	 * @param mode - The open mode.
-	 * @param fd - The old filedescriptor to reopen
+	 * @param mode  - The open mode.
+	 * @param fd    - The old filedescriptor to reopen
 	 *
 	 * @return < 0 on error, otherwise the reopened fd.
 	 */
 	int sceIoReopen(string file, int flags, SceMode mode, SceUID fd) {
+		Logger.log(Logger.Level.WARNING, "IoFileMgrForKernel", "Not implemented sceIoReopen");
+		Logger.log(Logger.Level.INFO, "IoFileMgrForKernel", "sceIoReopen('%s', %d, %d, %d)", file, flags, mode, cast(int)fd);
 		unimplemented();
 		return -1;
 	}
@@ -705,8 +722,10 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @endcode
 	 */
 	int sceIoAddDrv(PspIoDrv* drv) {
-		unimplemented();
-		return -1;
+		string name  = to!string(cast(char *)currentCpuThread().memory.getPointer(cast(uint)drv.name));
+		string name2 = to!string(cast(char *)currentCpuThread().memory.getPointer(cast(uint)drv.name2));
+		Logger.log(Logger.Level.WARNING, "IoFileMgrForKernel", "sceIoAddDrv('%s', '%s', ...)", name, name2);
+		return 0;
 	}
 
 	/**
@@ -717,8 +736,8 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return < 0 on error
 	 */
 	int sceIoDelDrv(string drv_name) {
-		unimplemented();
-		return -1;
+		Logger.log(Logger.Level.WARNING, "IoFileMgrForKernel", "Not implemented: sceIoDelDrv('%s')", drv_name);
+		return 0;
 	}
 }
 

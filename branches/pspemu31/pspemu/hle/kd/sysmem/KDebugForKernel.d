@@ -3,16 +3,30 @@ module pspemu.hle.kd.sysmem.KDebugForKernel; // kd/sysmem.prx (sceSystemMemoryMa
 import std.stdio;
 
 import pspemu.hle.ModuleNative;
+import pspemu.hle.kd.sysmem.Types;
 
 class KDebugForKernel : ModuleNative {
 	string outputBuffer = "";
+	
+	bool outputKprintf = false;
 	
 	void initNids() {
 		mixin(registerd!(0x7CEB2C09, sceKernelRegisterKprintfHandler));
 		mixin(registerd!(0x84F370BC, Kprintf));
 	}
 
-	void sceKernelRegisterKprintfHandler() { unimplemented(); }
+	/** 
+	  * Install a Kprintf handler into the system.
+	  *
+	  * @param handler - Function pointer to the handler.
+	  * @return < 0 on error.
+	  */
+	//int pspDebugInstallKprintfHandler(PspDebugKprintfHandler handler);
+	int sceKernelRegisterKprintfHandler(PspDebugKprintfHandler handler) {
+		Logger.log(Logger.Level.WARNING, "KDebugForKernel", "Not implemented sceKernelRegisterKprintfHandler");
+		return -1;
+	}
+
 	void Kprintf(string format, ...) {
 		string outstr = "";
 		void output(string s) {
@@ -31,6 +45,10 @@ class KDebugForKernel : ModuleNative {
 					switch (format[n]) {
 						case 's':
 							output(std.string.format(format[m..n + 1], readparam!(string)));
+							goto endwhile;
+						break;
+						case 'p':
+							output(std.string.format("%08X", readparam!(uint)));
 							goto endwhile;
 						break;
 						case 'u', 'x', 'X':
@@ -71,7 +89,12 @@ class KDebugForKernel : ModuleNative {
 			}
 		}
 		outputBuffer ~= outstr;
-		Logger.log(Logger.Level.INFO, "KDebugForKernel", "KPrintf: %s", outstr);
+		if (outputKprintf) {
+			stdout.writef("%s", outstr);
+			stdout.flush();			
+		} else {
+			Logger.log(Logger.Level.INFO, "KDebugForKernel", "KPrintf: %s", outstr);
+		}
 		//stdout.writef("%s", outstr);
 		//stdout.flush();
 		//unimplemented();

@@ -34,4 +34,8 @@ class ThreadState {
 	public this(EmulatorState emulatorState) {
 		this(emulatorState, new Registers());
 	}
+	
+	string toString() {
+		return std.string.format("ThreadState(%d:'%s', PC:%08X)", thid, name, registers.PC);
+	}
 }

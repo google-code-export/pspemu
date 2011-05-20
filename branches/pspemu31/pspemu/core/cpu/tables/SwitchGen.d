@@ -64,8 +64,8 @@ string genSwitch(const InstructionDefinition[] ilist, string processor = "callFu
 		// ""
 	} else if (ilist.length == 1) {
 		//r = indent_level ~ "{mixin(" ~ processor ~ "(\"" ~ ilist[0].name ~ "\"));}\n";
-		r = indent_level ~ "{this.OP_" ~ process_name(ilist[0].name) ~ "();}\n";
-		//r = indent_level ~ "{OP_" ~ process_name(ilist[0].name) ~ "();}\n";
+		//r = indent_level ~ "{this.OP_" ~ process_name(ilist[0].name) ~ "();}\n";
+		r = indent_level ~ "{OP_" ~ process_name(ilist[0].name) ~ "();}\n";
 	} if (ilist.length > 1) {
 		InstructionDefinition[512] ci; int ci_len;
 
@@ -88,8 +88,8 @@ string genSwitch(const InstructionDefinition[] ilist, string processor = "callFu
 			cvalues ~= cvalue;
 		}
 		//r ~= indent_level ~ "\tdefault:{mixin(" ~ processor ~ "(\"unk\"));}\n";
-		r ~= indent_level ~ "\tdefault:{this.OP_UNK();}\n";
-		//r ~= indent_level ~ "\tdefault:{OP_UNK();}\n";
+		//r ~= indent_level ~ "\tdefault:{this.OP_UNK();}\n";
+		r ~= indent_level ~ "\tdefault:{OP_UNK();}\n";
 		r ~= indent_level ~ "}\n";
 	}
 	return r;

@@ -33,8 +33,6 @@ class ThreadManForUser : ModuleNative {
 	void initNids() {
 		initNids_Threads();
 		initNids_Semaphores();
-		//mixin(registerd!(0xBC6FEBC5, sceKernelReferSemaStatus));
-
 		mixin(registerd!(0xE81CAF8F, sceKernelCreateCallback));
 		mixin(registerd!(0x55C20A00, sceKernelCreateEventFlag));
 		mixin(registerd!(0xEF9E4C70, sceKernelDeleteEventFlag));
@@ -471,6 +469,8 @@ class ThreadManForUser : ModuleNative {
 		 * @return >= 0 A callback id which can be used in subsequent functions, < 0 an error.
 		 */
 		int sceKernelCreateCallback(string name, SceKernelCallbackFunction func, void *arg) {
+			logInfo("sceKernelCreateCallback('%s')", name);
+			unimplemented();
 			return reinterpret!(int)(new PspCallback(name, func, arg));
 		}
 	}

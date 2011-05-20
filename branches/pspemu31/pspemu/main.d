@@ -26,6 +26,8 @@ import pspemu.gui.GuiSdl;
 
 import pspemu.utils.Logger;
 
+import pspemu.hle.kd.sysmem.KDebugForKernel;
+
 void doUnittest() {
 	(new MemoryPartitionTests()).test();
 }
@@ -59,11 +61,13 @@ int main(string[] args) {
 	*/
 	bool doTestsEx;
 	bool showHelp;
+	bool nolog;
 	
 	getopt(
 		args,
 		"help|h|?", &showHelp,
-		"tests", &doTestsEx 
+		"tests", &doTestsEx,
+		"nolog", &nolog  
 	);
 	
 	void displayHelp() {
@@ -74,6 +78,7 @@ int main(string[] args) {
 		writefln("Arguments:");
 		writefln("  --help   - Show this help");
 		writefln("  --tests  - Run tests on 'tests_ex' folder");
+		writefln("  --nolog  - Disables logging");
 		writefln("");
 		writefln("Examples:");
 		writefln("  pspemu.exe --help");
@@ -101,10 +106,17 @@ int main(string[] args) {
 	}
 	
 	if (args.length > 1) {
-		Logger.setLevel(Logger.Level.INFO);
+		if (nolog) {
+			Logger.setLevel(Logger.Level.NONE);
+		} else {
+			Logger.setLevel(Logger.Level.INFO);
+		}
 		EmulatorHelper emulatorHelper = new EmulatorHelper(new Emulator());
+		if (nolog) {
+			emulatorHelper.emulator.hleEmulatorState.moduleManager.get!(KDebugForKernel).outputKprintf = true;
+		}
 		emulatorHelper.initComponents();
-		GuiSdl gui = new GuiSdl(emulatorHelper.emulator.emulatorState.display, emulatorHelper.emulator.emulatorState.controller);
+		GuiSdl gui = new GuiSdl(emulatorHelper.emulator.emulatorState);
 		gui.start();
 		emulatorHelper.loadModule(args[1]);
 		emulatorHelper.start();
