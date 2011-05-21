@@ -81,13 +81,15 @@ abstract class CpuThreadBase : InstructionHandler {
 		}
 	}
 	
-    void execute() {
+    void execute(bool trace = false) {
     	try {
 			Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: START (%s)", Thread.getThis().name);
     		
 	    	while (running) {
 	    		//if (registers.PC <= 0x08800100) throw(new Exception("Invalid address for executing"));
-	    		//writefln("THREAD(%s) : PC: %08X", Thread.getThis().name, registers.PC);
+	    		if (trace) {
+	    			writefln("THREAD(%s) : PC: %08X", Thread.getThis().name, registers.PC);
+	    		}
 
 		    	instruction.v = memory.tread!(uint)(registers.PC);
 		    	

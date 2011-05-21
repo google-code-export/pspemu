@@ -5,6 +5,7 @@ module pspemu.hle.kd.sysmem.SysMemUserForUser; // kd/sysmem.prx (sceSystemMemory
 
 import pspemu.hle.ModuleNative;
 
+import std.conv;
 import std.stdio;
 
 public import pspemu.utils.MemorySegment;
@@ -144,7 +145,7 @@ class SysMemUserForUser : ModuleNative {
 		
 		SceUID sceUid = hleEmulatorState.uniqueIdFactory.add(memorySegment);
 		
-		Logger.log(Logger.Level.INFO, "sysmem", "sceKernelAllocPartitionMemory(%d) -> (%08X-%08X)", sceUid, memorySegment.block.low, memorySegment.block.high);
+		Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%s:%d) :: (%d) -> (%08X-%08X)", partitionid, name, std.conv.to!string(type), size, sceUid, memorySegment.block.low, memorySegment.block.high);
 
 		return sceUid;
 	}

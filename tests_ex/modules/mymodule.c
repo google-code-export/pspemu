@@ -39,3 +39,13 @@ void* getModuleInfo(void)
 {
 	return (void *) &module_info;
 }
+
+int getConst1(void)
+{
+	return 1;
+}
+
+int getConst2(void)
+{
+	return 1;
+}

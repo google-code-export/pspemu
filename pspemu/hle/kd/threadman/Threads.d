@@ -73,6 +73,9 @@ template ThreadManForUser_Threads() {
 		*/
 
 		ThreadState newThreadState = new ThreadState(currentEmulatorState, new Registers());
+		
+		newThreadState.threadModule = currentThreadState.threadModule;
+		
 		newThreadState.registers.copyFrom(currentRegisters);
 		newThreadState.registers.pcSet = entry;
 		

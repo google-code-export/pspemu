@@ -10,6 +10,7 @@ import pspemu.core.cpu.CpuThreadBase;
 
 import pspemu.hle.kd.Types;
 import pspemu.hle.kd.threadman.Types;
+import pspemu.hle.Module;
 
 class ThreadState {
 	public bool waiting;
@@ -19,6 +20,21 @@ class ThreadState {
 	public string name;
 	public SceUID thid;
 	public SceKernelThreadInfo sceKernelThreadInfo;
+	public Module threadModule;
+	
+	ThreadState clone() {
+		ThreadState threadState = new ThreadState(emulatorState, new Registers());
+		{
+			threadState.waiting = waiting;
+			threadState.registers.copyFrom(registers);
+			threadState.nativeThread = Thread.getThis;
+			threadState.name = name;
+			threadState.thid = -1;
+			threadState.threadModule = threadModule;
+			threadState.sceKernelThreadInfo = sceKernelThreadInfo;
+		}
+		return threadState;
+	}
 	
 	public void waitingBlock(void delegate() callback) {
 		waiting = true;

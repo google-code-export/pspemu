@@ -189,7 +189,7 @@ class Elf {
 
 	bool needsRelocation() { return (header.entryPoint < 0x08000000) || (header.type == Header.Type.Prx); }
 	Stream SectionStream(SectionHeader sectionHeader) {
-		//writefln("SectionStream(Address=%08X, Offset=%08X, Size=%08X, Type=%08X)", sectionHeader.address, sectionHeader.offset, sectionHeader.size, sectionHeader.type);
+		writefln("SectionStream(Address=%08X, Offset=%08X, Size=%08X, Type=%08X)", sectionHeader.address, sectionHeader.offset, sectionHeader.size, sectionHeader.type);
 
 		switch (sectionHeader.type) {
 			case SectionHeader.Type.PROGBITS:

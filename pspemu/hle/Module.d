@@ -12,6 +12,7 @@ import pspemu.core.cpu.CpuThreadBase;
 import pspemu.core.cpu.Registers;
 import pspemu.core.ThreadState;
 import pspemu.core.EmulatorState;
+import pspemu.core.Memory;
 
 import pspemu.utils.Logger;
 
@@ -27,10 +28,79 @@ static string classInfoBaseName(ClassInfo ci) {
 }
 
 abstract class Module {
+	public SceModule *sceModule;
+
+	class ImportLibrary {
+		string name;
+		uint[uint] funcImports;
+		uint[uint] varImports;
+
+		this(string name) {
+			this.name = name;
+		}
+		
+		public void fillImportsWithExports(Memory memory, ExportLibrary exportLibrary) {
+			//writefln("%s", currentEmulatorState());
+			//writefln("%s", currentMemory());
+			writefln("    FUNCS:");
+			foreach (nid, importAddr; funcImports) {
+				uint funcAddr = exportLibrary.funcExports[nid];
+				
+				writefln("      (%08X) %s:%08X <- %s:%08X", nid, this.name, importAddr, exportLibrary.name, funcAddr);
+				
+				memory.twrite!(uint)(importAddr + 0, 0x_08000000 | ((funcAddr >> 2) & 0x3FFFFFF));
+				memory.twrite!(uint)(importAddr + 4, 0x_00000000);
+				writefln("           %08X:%08X", memory.tread!(uint)(importAddr + 0), memory.tread!(uint)(importAddr + 4));
+			}
+
+			writefln("    VARS:");
+			foreach (nid, importAddr; varImports) {
+				uint varAddr = exportLibrary.varExports[nid];
+				
+				writefln("      (%08X) %s:%08X <- %s:%08X", nid, this.name, importAddr, exportLibrary.name, varAddr);
+				memory.twrite(importAddr + 0, varAddr);
+			}
+		}
+	}
+	
+	class ExportLibrary {
+		string name;
+		uint[uint] funcExports;
+		uint[uint] varExports;
+		
+		this(string name) {
+			this.name = name;
+		}
+	}
+	
+	ImportLibrary[string] importLibraries;
+	ExportLibrary[string] exportLibraries;
+	
+	public void fillImportsWithExports(Memory memory, Module moduleWithExports) {
+		foreach (importLibrary; moduleWithExports.importLibraries) {
+			writefln("Import library '%s'", importLibrary.name);
+		}
+		foreach (exportLibrary; moduleWithExports.exportLibraries) {
+			if (exportLibrary.name is null) continue;
+			if (exportLibrary.name == "<null>") continue;
+			writefln("Trying to inject '%s'...", exportLibrary.name);
+			if (exportLibrary.name in this.importLibraries) {
+				writefln("   Injecting '%s'...", exportLibrary.name);
+				this.importLibraries[exportLibrary.name].fillImportsWithExports(memory, exportLibrary);
+			}
+		}
+	}
+	
+	public ExportLibrary addExportLibrary(string name) {
+		return exportLibraries[name] = new ExportLibrary(name);
+	}
+
+	public ImportLibrary addImportLibrary(string name) {
+		return importLibraries[name] = new ImportLibrary(name);
+	}
+	
 	public HleEmulatorState hleEmulatorState;
 
-	public SceModule *sceModule;
-	
 	@property static public CpuThreadBase currentCpuThread() {
 		return thisThreadCpuThreadBase;
 	}
@@ -42,6 +112,10 @@ abstract class Module {
 	@property public EmulatorState currentEmulatorState() {
 		//return currentThreadState.emulatorState;
 		return hleEmulatorState.emulatorState;
+	}
+
+	@property public Memory currentMemory() {
+		return currentEmulatorState().memory;
 	}
 
 	@property static public Registers currentRegisters() {

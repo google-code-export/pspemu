@@ -28,6 +28,8 @@ import pspemu.core.cpu.InstructionHandler;
 
 import pspemu.hle.kd.loadcore.Types;
 
+import pspemu.hle.HleEmulatorState;
+
 class InstructionCounter : InstructionHandler {
 	uint[string] counts;
 
@@ -123,12 +125,22 @@ class ModuleLoader {
 	ModuleImport[] moduleImports;
 	ModuleExport[] moduleExports;
 	ModulePsp modulePsp;
-
+	HleEmulatorState hleEmulatorState;
+	
+	public this(HleEmulatorState hleEmulatorState) {
+		this.hleEmulatorState = hleEmulatorState;
+		this.memoryStream  = hleEmulatorState.emulatorState.memory;
+		this.memoryManager = hleEmulatorState.memoryManager;
+		this.moduleManager = hleEmulatorState.moduleManager;
+	}
+	
+	/*
 	public this(Stream memoryStream, MemoryManager memoryManager, ModuleManager moduleManager) {
 		this.memoryStream  = memoryStream;
 		this.memoryManager = memoryManager;
 		this.moduleManager = moduleManager;
 	}
+	*/
 	
 	public ModulePsp load(string fullPath) {
 		return load(new BufferedFile(fullPath), std.path.basename(fullPath));
@@ -136,6 +148,7 @@ class ModuleLoader {
 	
 	public ModulePsp load(Stream stream, string name = "<unknown>") {
 		modulePsp = new ModulePsp();
+		modulePsp.hleEmulatorState = hleEmulatorState;
 		
 		while (true) {
 			auto magics = new SliceStream(stream, 0, 4);
@@ -165,6 +178,8 @@ class ModuleLoader {
 		
 		this.importsStream = getMemorySliceRelocated(moduleInfo.importsStart, moduleInfo.importsEnd);
 		this.exportsStream = getMemorySliceRelocated(moduleInfo.exportsStart, moduleInfo.exportsEnd);
+		
+		writefln("@EXPORTS-START: %08X-%08X", moduleInfo.exportsStart, moduleInfo.exportsEnd);
 		
 		processImports();
 		processExports();
@@ -217,9 +232,16 @@ class ModuleLoader {
 				if (pspModule is null) {
 					writefln("MODULE '%s' NOT FOUND", moduleImportName);
 				}
-
+				
+				Module.ImportLibrary moduleImportLibrary = modulePsp.addImportLibrary(moduleImportName);
+				//moduleImportLibrary
+				
+				uint stubStartAddr = moduleImport.callAddress;
+				uint stubAddr = stubStartAddr; 
 				while (!nidStream.eof) {
 					uint nid = read!(uint)(nidStream);
+					
+					moduleImportLibrary.funcImports[nid] = stubAddr;
 					
 					if ((pspModule !is null) && (nid in pspModule.nids)) {
 						version (DEBUG_LOADER) writefln("    %s", pspModule.nids[nid]);
@@ -243,6 +265,8 @@ class ModuleLoader {
 					}
 					//writefln("++");
 					//writefln("--");
+					
+					stubAddr += 4;
 				}
 			} catch (Throwable o) {
 				writefln("  ERRROR!: %s", o);
@@ -259,7 +283,28 @@ class ModuleLoader {
 		while (!exportsStream.eof) {
 			ModuleExport moduleExport = read!(ModuleExport)(exportsStream);
 			string moduleExportName = moduleExport.name ? readStringz(memoryStream, moduleExport.name) : "<null>";
-			writefln("@EXPORT: %s", moduleExport);
+			
+			Module.ExportLibrary moduleExportLibrary = modulePsp.addExportLibrary(moduleExportName);
+			writefln("@EXPORT: %s:'%s'", moduleExport, moduleExportName);
+			
+			uint[] func_nids;
+			uint[] var_nids;
+			memoryStream.position = moduleExport.exports;
+			for (int n = 0; n < moduleExport.func_count; n++) func_nids ~= read!uint(memoryStream);
+			for (int n = 0; n < moduleExport.var_count ; n++) var_nids ~= read!uint(memoryStream);
+			for (int n = 0; n < moduleExport.func_count; n++) {
+				uint nid  = func_nids[n];
+				uint addr = read!uint(memoryStream);  
+				moduleExportLibrary.funcExports[nid] = addr; 
+				writefln("  FUNC:%08X:%08X", nid, addr);
+			}
+			for (int n = 0; n < moduleExport.var_count ; n++) {
+				uint nid  = var_nids[n];
+				uint addr = read!uint(memoryStream);  
+				moduleExportLibrary.varExports[nid] = addr;
+				writefln("  VAR:%08X:%08X", nid, addr);
+			}
+			
 			moduleExports ~= moduleExport;
 		}
 	}
