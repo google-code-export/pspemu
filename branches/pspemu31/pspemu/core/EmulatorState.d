@@ -41,7 +41,13 @@ class EmulatorState {
 	}
 	
 	public void reset() {
+		this.cpuThreads = null;
 		this.memory.reset();
+		this.display.reset();
+		this.controller.reset();
+		this.gpu.reset();
+		this.runningState.reset();
+		this.threadsRunning = 0;
 	}
 	
 	public void cpuThreadRunningBlock(void delegate() callback) {

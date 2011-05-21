@@ -29,6 +29,11 @@ class RunningState {
 			throw(new HaltException("Halt"));
 		};
 	}
+	
+	public void reset() {
+		this.running = true;
+		onStop.reset();
+	}
 
 	public void stop() {
 		Logger.log(Logger.Level.INFO, "RunningState.stop");

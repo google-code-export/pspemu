@@ -57,7 +57,7 @@ class CpuThreadInterpreted : CpuThreadBase {
 	    		
 			void OP_UNK() {
 				registers.pcAdvance(4);
-				writefln("Thread(%d): OP_UNK", threadState.thid);
+				Logger.log(Logger.Level.CRITICAL, "CpuThreadInterpreted", "Thread(%d): OP_UNK", threadState.thid);
 			}
 
 			mixin TemplateCpu_ALU;
@@ -67,6 +67,7 @@ class CpuThreadInterpreted : CpuThreadBase {
 			mixin TemplateCpu_SPECIAL;
 			mixin TemplateCpu_FPU;
 			mixin TemplateCpu_VFPU;
+			
 	    	try {
 				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: START (%s)", Thread.getThis().name);
 	    		

@@ -34,7 +34,7 @@ class Emulator {
 	
 	public void reset() {
 		emulatorState.reset();
-		hleEmulatorState = new HleEmulatorState(emulatorState);
+		hleEmulatorState.reset();
 		mainCpuThread    = new CpuThreadInterpreted(new ThreadState(emulatorState));
 	}
 	

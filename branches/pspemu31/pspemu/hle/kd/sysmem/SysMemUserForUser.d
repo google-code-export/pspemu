@@ -29,13 +29,14 @@ class SysMemUserForUser : ModuleNative {
 
 	void initModule() {
 		pspMemorySegment       = new MemorySegment(0x08000000, 0x0A000000, "PSP Memory");
-		//pspMemorySegmentStacks = new MemorySegment(0x08000000, 0x08400000 - 0x100, "PSP Memory Stacks");
+		//pspMemorySegmentStacks = new MemorySegment(0x08000000, 0x0A000000 - 0x100, "PSP Memory Stacks");
 		pspMemorySegmentStacks = new MemorySegment(0x08000000, 0x0A000000, "PSP Memory Stacks");
 		
 		pspMemorySegment.allocByAddr(0x08000000,  4 * 1024 * 1024, "Kernel Memory 1");
 		pspMemorySegment.allocByAddr(0x08400000,  4 * 1024 * 1024, "Kernel Memory 2");
 		pspMemorySegment.allocByAddr(0x08800000, 24 * 1024 * 1024, "User Memory");
-		.writefln("pspMemorySegment.allocByAddr:: %s", pspMemorySegment);
+		
+		logTrace("pspMemorySegment.allocByAddr:: %s", pspMemorySegment);
 	}
 
 	void initNids() {

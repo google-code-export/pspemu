@@ -3,6 +3,7 @@ module pspemu.hle.kd.threadman.Semaphores;
 //import pspemu.hle.kd.threadman_common;
 
 import std.math;
+import std.stdio;
 import core.thread;
 
 import pspemu.utils.MathUtils;
@@ -12,40 +13,54 @@ import pspemu.hle.kd.threadman.Types;
 
 import pspemu.core.EmulatorState;
 import pspemu.core.exceptions.HaltException;
+import pspemu.core.ThreadState;
+
+import pspemu.hle.HleEmulatorState;
 
 import core.sync.condition;
 import core.sync.mutex;
+
+import pspemu.utils.sync.WaitObject;
+import pspemu.utils.sync.WaitEvent;
+import pspemu.utils.sync.WaitSemaphore;
+import pspemu.utils.sync.WaitMultipleEvents;
 
 import std.c.windows.windows;
 
 class PspSemaphore {
 	string name;
 	SceKernelSemaInfo info;
-	Condition updatedCountCondition;
+	WaitEvent waitEvent;
 	
-	this() {
-		updatedCountCondition = new Condition(new Mutex());
+	this(string name, int attr, int initCount, int maxCount, ) {
+		this.waitEvent = new WaitEvent(name);
+
+		this.name = name;
+
+		this.info.name[0..name.length] = name[0..$];
+		this.info.attr           = attr;
+		this.info.initCount      = initCount;
+		this.info.currentCount   = initCount;
+		this.info.maxCount       = maxCount;
+		this.info.numWaitThreads = 0;
 	}
 
 	public void incrementCount(int count) {
-		info.currentCount = min(info.maxCount, info.currentCount + count);
-		updatedCountCondition.notify();
+		this.info.currentCount = min(this.info.maxCount, this.info.currentCount + count);
+		this.waitEvent.signal();
 	}
 	
-	public void waitSignal(EmulatorState emulatorState, int signal, uint timeout) {
+	public void waitSignal(HleEmulatorState hleEmulatorState, ThreadState threadState, int signal, uint timeout, bool handleCallbacks) {
 		// @TODO: ignored timeout
-		info.numWaitThreads++;
-		{
-			while (info.currentCount < signal) {
-				// @TODO This should be done with a set of mutexs, and a wait for any.
-				if (!emulatorState.runningState.running) throw(new HaltException("Halt"));
-				updatedCountCondition.wait(dur!"msecs"(10));
-				//updatedCountCondition.wait();
-				//Thread.yield();
-			}
-			info.currentCount -= signal;
-		}
-		info.numWaitThreads--;
+		info.numWaitThreads++; scope (exit) info.numWaitThreads--;
+		
+		WaitMultipleEvents waitMultipleEvents = new WaitMultipleEvents(threadState);
+		waitMultipleEvents.add(this.waitEvent);
+		waitMultipleEvents.add(threadState.emulatorState.runningState.stopEvent);
+		if (handleCallbacks) waitMultipleEvents.add(hleEmulatorState.callbacksHandler.waitEvent);
+		
+		while (this.info.currentCount < signal) waitMultipleEvents.waitAny();
+		info.currentCount -= signal;
 	}
 	
 	public string toString() {
@@ -89,16 +104,7 @@ template ThreadManForUser_Semaphores() {
 	 * @return A semaphore id
 	 */
 	SceUID sceKernelCreateSema(string name, SceUInt attr, int initCount, int maxCount, SceKernelSemaOptParam* option) {
-		auto semaphore = new PspSemaphore();
-		{
-			semaphore.info.name[0..semaphore.name.length] = semaphore.name[0..$];
-			semaphore.info.attr           = attr;
-			semaphore.info.initCount      = initCount;
-			semaphore.info.currentCount   = initCount; // Actual value
-			semaphore.info.maxCount       = maxCount;
-			semaphore.info.numWaitThreads = 0;
-		}
-		semaphore.name = cast(string)semaphore.info.name[0..semaphore.name.length];
+		auto semaphore = new PspSemaphore(name, attr, initCount, maxCount);
 		uint uid = hleEmulatorState.uniqueIdFactory.add(semaphore);
 		logInfo("sceKernelCreateSema(%d:'%s') :: %s", uid, name, semaphore);
 		return uid;
@@ -138,6 +144,16 @@ template ThreadManForUser_Semaphores() {
 		return 0;
 	}
 	
+	int _sceKernelWaitSemaCB(SceUID semaid, int signal, SceUInt *timeout, bool callback) {
+		auto semaphore = hleEmulatorState.uniqueIdFactory.get!PspSemaphore(semaid);
+		logInfo("sceKernelWaitSema%s(%d:'%s', %d, %d) :: %s", callback ? "CB" : "", semaid, semaphore.name, signal, (timeout is null) ? 0 : *timeout, semaphore);
+
+		currentCpuThread.threadState.waitingBlock({
+			semaphore.waitSignal(hleEmulatorState, currentThreadState, signal, (timeout !is null) ? *timeout : 0, callback);
+		});
+		return 0;
+	}
+	
 	/**
 	 * Lock a semaphore
 	 *
@@ -153,13 +169,27 @@ template ThreadManForUser_Semaphores() {
 	 * @return < 0 on error.
 	 */
 	int sceKernelWaitSema(SceUID semaid, int signal, SceUInt* timeout) {
-		auto semaphore = hleEmulatorState.uniqueIdFactory.get!PspSemaphore(semaid);
-		logInfo("sceKernelWaitSema(%d:'%s', %d, %d) :: %s", semaid, semaphore.name, signal, (timeout is null) ? 0 : *timeout, semaphore);
-		currentCpuThread.threadState.waitingBlock({
-			semaphore.waitSignal(currentEmulatorState, signal, (timeout !is null) ? *timeout : 0);
-		});
-		return 0;
+		return _sceKernelWaitSemaCB(semaid, signal, timeout, /* callback = */ false);
 	}
+	
+	/**
+	 * Lock a semaphore a handle callbacks if necessary.
+	 *
+	 * @par Example:
+	 * @code
+	 * sceKernelWaitSemaCB(semaid, 1, 0);
+	 * @endcode
+	 *
+	 * @param semaid - The sema id returned from sceKernelCreateSema
+	 * @param signal - The value to wait for (i.e. if 1 then wait till reaches a signal state of 1)
+	 * @param timeout - Timeout in microseconds (assumed).
+	 *
+	 * @return < 0 on error.
+	 */
+	int sceKernelWaitSemaCB(SceUID semaid, int signal, SceUInt *timeout) {
+		return _sceKernelWaitSemaCB(semaid, signal, timeout, /* callback = */ true);
+	}
+
 
 	/**
 	 * Poll a sempahore.
@@ -186,24 +216,5 @@ template ThreadManForUser_Semaphores() {
 		auto semaphore = hleEmulatorState.uniqueIdFactory.get!PspSemaphore(semaid);
 		*info = semaphore.info;
 		return 0;
-	}
-
-	/**
-	 * Lock a semaphore a handle callbacks if necessary.
-	 *
-	 * @par Example:
-	 * @code
-	 * sceKernelWaitSemaCB(semaid, 1, 0);
-	 * @endcode
-	 *
-	 * @param semaid - The sema id returned from sceKernelCreateSema
-	 * @param signal - The value to wait for (i.e. if 1 then wait till reaches a signal state of 1)
-	 * @param timeout - Timeout in microseconds (assumed).
-	 *
-	 * @return < 0 on error.
-	 */
-	int sceKernelWaitSemaCB(SceUID semaid, int signal, SceUInt *timeout) {
-		unimplemented();
-		return -1;
 	}
 }

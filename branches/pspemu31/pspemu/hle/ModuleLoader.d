@@ -1,6 +1,5 @@
 module pspemu.hle.ModuleLoader;
 
-//version = DEBUG_LOADER;
 //version = ALLOW_UNIMPLEMENTED_NIDS;
 //version = LOAD_DWARF_INFORMATION;
 
@@ -16,6 +15,7 @@ import pspemu.formats.Pbp;
 import pspemu.utils.StructUtils;
 import pspemu.utils.StreamUtils;
 import pspemu.utils.ExceptionUtils;
+import pspemu.utils.Logger;
 
 import pspemu.hle.Module;
 import pspemu.hle.ModulePsp;
@@ -179,7 +179,7 @@ class ModuleLoader {
 		this.importsStream = getMemorySliceRelocated(moduleInfo.importsStart, moduleInfo.importsEnd);
 		this.exportsStream = getMemorySliceRelocated(moduleInfo.exportsStart, moduleInfo.exportsEnd);
 		
-		writefln("@EXPORTS-START: %08X-%08X", moduleInfo.exportsStart, moduleInfo.exportsEnd);
+		Logger.log(Logger.Level.TRACE, "ModuleLoader", "@EXPORTS-START: %08X-%08X", moduleInfo.exportsStart, moduleInfo.exportsEnd);
 		
 		processImports();
 		processExports();
@@ -203,7 +203,7 @@ class ModuleLoader {
 	
 	public void processImports() {
 		// Load Imports.
-		//version (DEBUG_LOADER) writefln("Imports (0x%08X-0x%08X):", moduleInfo.importsStart, moduleInfo.importsEnd);
+		Logger.log(Logger.Level.TRACE, "ModuleLoader", "Imports (0x%08X-0x%08X):", moduleInfo.importsStart, moduleInfo.importsEnd);
 
 		uint[][string] unimplementedNids;
 	
@@ -244,12 +244,12 @@ class ModuleLoader {
 					moduleImportLibrary.funcImports[nid] = stubAddr;
 					
 					if ((pspModule !is null) && (nid in pspModule.nids)) {
-						version (DEBUG_LOADER) writefln("    %s", pspModule.nids[nid]);
+						Logger.log(Logger.Level.TRACE, "ModuleLoader", "    %s", pspModule.nids[nid]);
 						//auto Instruction syscallInstruction;
 						callStream.write(cast(uint)(0x0000000C | (0x1000 << 6))); // syscall 0x2307
 						callStream.write(cast(uint)cast(void *)&pspModule.nids[nid]);
 					} else {
-						version (DEBUG_LOADER) writefln("    0x%08X:<unimplemented>", nid);
+						Logger.log(Logger.Level.TRACE, "ModuleLoader", "    0x%08X:<unimplemented>", nid);
 						callStream.write(cast(uint)(0x0000000C | (0x1001 << 6))); // syscall 0x2307
 						auto func = new Syscall.Function(delegate(Syscall.Function func) {
 							.writefln("trying to call %s", func.info);
@@ -257,7 +257,7 @@ class ModuleLoader {
 						funcs ~= func;
 						callStream.write(cast(uint)cast(void *)func);
 						
-						writefln("@FUNC: %08X", cast(uint)cast(void *)func);
+						Logger.log(Logger.Level.TRACE, "ModuleLoader", "@FUNC: %08X", cast(uint)cast(void *)func);
 
 						//callStream.write(cast(uint)(0x70000000));
 						//callStream.write(cast(uint)0);
@@ -285,7 +285,7 @@ class ModuleLoader {
 			string moduleExportName = moduleExport.name ? readStringz(memoryStream, moduleExport.name) : "<null>";
 			
 			Module.ExportLibrary moduleExportLibrary = modulePsp.addExportLibrary(moduleExportName);
-			writefln("@EXPORT: %s:'%s'", moduleExport, moduleExportName);
+			Logger.log(Logger.Level.TRACE, "ModuleLoader", "@EXPORT: %s:'%s'", moduleExport, moduleExportName);
 			
 			uint[] func_nids;
 			uint[] var_nids;
@@ -296,13 +296,13 @@ class ModuleLoader {
 				uint nid  = func_nids[n];
 				uint addr = read!uint(memoryStream);  
 				moduleExportLibrary.funcExports[nid] = addr; 
-				writefln("  FUNC:%08X:%08X", nid, addr);
+				Logger.log(Logger.Level.TRACE, "ModuleLoader", "  FUNC:%08X:%08X", nid, addr);
 			}
 			for (int n = 0; n < moduleExport.var_count ; n++) {
 				uint nid  = var_nids[n];
 				uint addr = read!uint(memoryStream);  
 				moduleExportLibrary.varExports[nid] = addr;
-				writefln("  VAR:%08X:%08X", nid, addr);
+				Logger.log(Logger.Level.TRACE, "ModuleLoader", "  VAR:%08X:%08X", nid, addr);
 			}
 			
 			moduleExports ~= moduleExport;

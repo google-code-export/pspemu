@@ -40,6 +40,7 @@ class Logger {
 				if (component == "ThreadManForUser") return;
 				if (component == "sceHprm") return;
 				if (component == "sceCtrl") return;
+				if (component == "CallbacksHandler") return;
 				//if (component == "Module") return;
 			}
 			message.print();
