@@ -67,8 +67,8 @@ class sceCtrl_driver : ModuleNative {
 
 	// sceCtrlPeekBufferPositive () is non-blocking (faster)
 	int sceCtrlPeekBufferPositive(SceCtrlData* pad_data, int count) {
-		logInfo("sceCtrlPeekBufferPositive(%d)", count);
 		readBufferedFrames(pad_data, count, true);
+		logInfo("sceCtrlPeekBufferPositive(%d):%s", count, *pad_data);
 		return count;
 	}
 

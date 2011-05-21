@@ -40,6 +40,8 @@ class sceUtility : ModuleNative {
 
 		mixin(registerd!(0x1579A159, sceUtilityLoadNetModule));
 		mixin(registerd!(0x64D50C56, sceUtilityUnloadNetModule));
+		
+		mixin(registerd!(0x2A2B3DE0, sceUtilityLoadModule));
 
 		initNids_sysparams();
 	}
@@ -293,6 +295,11 @@ class sceUtility : ModuleNative {
 	 */
 	int sceUtilityUnloadNetModule(int _module) {
 		unimplemented();
+		return -1;
+	}
+	
+	int sceUtilityLoadModule(int _module) {
+		//unimplemented();
 		return -1;
 	}
 }

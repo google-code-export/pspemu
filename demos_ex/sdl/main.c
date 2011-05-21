@@ -20,10 +20,11 @@ int filter_events(const SDL_Event *event) {
 
 int main(int argc, char *argv[]) {
 	SDL_Surface* screen;
-	Mix_Music *music;
+	//Mix_Music *music;
 	int x, y;
 
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+	//SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
 	screen = SDL_SetVideoMode(480, 272, 32, SDL_HWSURFACE);
 	for (y = 0; y < 272; y++) {
 		for (x = 0; x < 480; x++) {
@@ -39,15 +40,30 @@ int main(int argc, char *argv[]) {
 	Mix_PlayMusic(music, 10);
 	*/
 	
-	SDL_SetEventFilter(filter_events);
+	//SDL_SetEventFilter(filter_events);
 	
-	Kprintf("Loading...\n");
-	SDL_Surface *bmp = SDL_LoadBMP("test.bmp");
-	SDL_Rect rect = {0, 0, 480, 272};
+	//Kprintf("Loading...\n");
+	//SDL_Surface *bmp = SDL_LoadBMP("test.bmp");
+	//SDL_Rect rect = {0, 0, 480, 272};
 	while (1) {
-		SDL_BlitSurface(bmp, NULL, screen, &rect);
-		Kprintf("Blitted...\n");
-		rect.y += 16;
+		//Kprintf("Frame...\n");
+		SDL_Event event;
+		while (SDL_PollEvent(&event))  {
+			switch (event.type) {
+				case SDL_QUIT: return -1;
+				case SDL_JOYBUTTONUP:
+				case SDL_JOYBUTTONDOWN:
+					Kprintf("Button: %d, %d\n", event.jbutton.button, event.type);
+				break;
+				default:
+					Kprintf("Other event %d\n", event.type);
+				break;
+			}
+		}
+		//SDL_BlitSurface(bmp, NULL, screen, &rect);
+		//Kprintf("Blitted...\n");
+		//rect.y += 16;
+		SDL_Delay(1000);
 	}
 
 	return 0;
