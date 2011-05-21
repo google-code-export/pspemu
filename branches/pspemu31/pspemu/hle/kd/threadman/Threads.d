@@ -280,12 +280,18 @@ template ThreadManForUser_Threads() {
 		currentCpuThread.threadState.waitingBlock({
 			//writefln("sceKernelDelayThread(%d)", delay);
 			
+			//long delay2 = delay;
+			
+			Thread.sleep(dur!("usecs")(delay));
+			
+			/*
 			while (delay > 0) {
 				// @TODO This should be done with a set of mutexs, and a wait for any.
 				if (!currentEmulatorState.runningState.running) throw(new HaltException("Halt"));
 				Thread.sleep(dur!("usecs")(1000));
 				delay -= 1000;
 			}
+			*/
 		});
 		return 0;
 	}

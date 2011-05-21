@@ -33,6 +33,7 @@ import pspemu.hle.MemoryManager;
 class EmulatorHelper {
 	const uint CODE_PTR_EXIT_THREAD = 0x08000000;
 	const uint CODE_PTR_END_CALLBACK = 0x08000004;
+	const uint CODE_PTR_ARGUMENTS = 0x08000100;
 	
 	Emulator emulator;
 	
@@ -47,7 +48,7 @@ class EmulatorHelper {
 		emulator.emulatorState.memory.twrite!uint(CODE_PTR_END_CALLBACK, 0x0000000C | (0x1002 << 6));
 		
 		with (emulator.emulatorState) {
-			memory.position = 0x08000100;
+			memory.position = CODE_PTR_ARGUMENTS;
 			memory.write(cast(uint)(memory.position + 4));
 			memory.writeString("ms0:/PSP/GAME/virtual/EBOOT.PBP\0");
 			//memory.writeString("umd0:/PSP_GAME/SYSDIR/BOOT.BIN\0");
@@ -85,7 +86,7 @@ class EmulatorHelper {
 			registers.K0 = registers.SP;
 			registers.RA = CODE_PTR_EXIT_THREAD;
 			registers.A0 = 1;
-			registers.A1 = 0x08100000 + 4;
+			registers.A1 = CODE_PTR_ARGUMENTS + 4;
 		}
 		
 		Logger.log(Logger.Level.INFO, "EmulatorHelper", "Module loaded successfully");

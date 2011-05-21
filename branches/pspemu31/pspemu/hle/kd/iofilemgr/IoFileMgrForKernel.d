@@ -342,7 +342,6 @@ class IoFileMgrForKernel : ModuleNative {
 		VFS vfs;
 		FileMode fmode;
 		try {
-			logInfo("sceIoOpen('%s', %d, %d)", file, flags, mode);
 			if (flags & PSP_O_RDONLY) fmode |= FileMode.In;
 			if (flags & PSP_O_WRONLY) fmode |= FileMode.Out;
 			if (flags & PSP_O_APPEND) fmode |= FileMode.Append;
@@ -351,10 +350,11 @@ class IoFileMgrForKernel : ModuleNative {
 			//.writefln("Open: Flags:%08X, Mode:%03o, File:'%s'", flags, mode, file);
 			
 			vfs = locateParentAndUpdateFile(file);
+			logInfo("sceIoOpen('%s':'%s', %d, %d)", file, vfs.full_name, flags, mode);
 			//.writefln("%d", fmode);
 			return hleEmulatorState.uniqueIdFactory.add(vfs.open(file, fmode, mode));
 		} catch (Throwable o) {
-			logInfo("sceIoOpen failed to open '%s' for '%d'", file, fmode);
+			logInfo("sceIoOpen failed to open '%s' for '%d' : '%s'", file, fmode, o);
 			return -1;
 		}
 	}
