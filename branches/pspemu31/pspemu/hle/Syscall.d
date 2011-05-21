@@ -98,7 +98,9 @@ class Syscall : ISyscall {
 					callModuleFunction(moduleFunction);
 				} catch (Throwable o) {
 					if (cast(HaltException)o) throw(o);
-					throw(new Exception(std.string.format("%s: %s", moduleFunction.toString, o)));
+					.writef("%s: ", moduleFunction.toString);
+					.writefln("%s", o);
+					throw(new Exception("There was an error in a hleModule"));
 				}
 			} break;
 			
@@ -109,6 +111,11 @@ class Syscall : ISyscall {
 				.writefln("INFO: %s", functionToCall.info);
 				functionToCall.callback(functionToCall);
 				throw(new Exception("_pspemuHLECall2"));
+			} break;
+			
+			// Special syscalls for this emulator:
+			case 0x1002: { // _pspemuHLECall3
+				throw(new HaltException("halt"));
 			} break;
 
 			case 0x206d: callLibrary("ThreadManForUser", "sceKernelCreateThread"); break;

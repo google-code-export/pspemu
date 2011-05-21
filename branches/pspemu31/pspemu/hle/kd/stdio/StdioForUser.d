@@ -1,8 +1,32 @@
 module pspemu.hle.kd.stdio.StdioForUser; // kd/stdio.prx (sceStdio)
 
+import std.stdio;
+import std.stream;
+
 import pspemu.hle.ModuleNative;
 
 public import pspemu.hle.kd.stdio.Types;
+
+class FileWrapperStream : Stream {
+	std.stdio.File file;
+	
+	this(std.stdio.File file) {
+		this.file = file;
+	}
+	
+	size_t readBlock(void* buffer, size_t size) {
+		return this.file.rawRead((cast(ubyte *)buffer)[0..size]).length;		
+	}
+	
+	size_t writeBlock(const void* buffer, size_t size) {
+		this.file.rawWrite((cast(ubyte *)buffer)[0..size]);
+		return size;
+	}
+	
+	ulong seek(long offset, SeekPos whence) {
+		throw(new Exception("Not implemented"));
+	}
+}
 
 class StdioForUser : ModuleNative {
 	void initNids() {
@@ -11,6 +35,12 @@ class StdioForUser : ModuleNative {
 		mixin(registerd!(0xF78BA90A, sceKernelStderr));
 		mixin(registerd!(0x98220F3E, sceKernelStdoutReopen));
 		mixin(registerd!(0xFB5380C5, sceKernelStderrReopen));
+	}
+	
+	void initModule() {
+		hleEmulatorState.uniqueIdFactory.set!Stream(cast(uint)STDIN , new FileWrapperStream(stdin ));
+		hleEmulatorState.uniqueIdFactory.set!Stream(cast(uint)STDOUT, new FileWrapperStream(stdout));
+		hleEmulatorState.uniqueIdFactory.set!Stream(cast(uint)STDERR, new FileWrapperStream(stderr));
 	}
 
 	/**

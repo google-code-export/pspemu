@@ -85,6 +85,7 @@ class Memory : Stream {
 		const scratchPad  = Segment(0x00_010000, 0x00004000);
 		const frameBuffer = Segment(0x04_000000, 0x00200000);
 		const mainMemory  = Segment(0x08_000000, 0x02000000);
+		const hwVectors   = Segment(0x1f_c00000, 0x00100000);
 	}
 
 	ubyte* baseMemory;
@@ -99,6 +100,8 @@ class Memory : Stream {
 	/// Main Memory is a big physical memory of 16MB for fat and 32MB for slim.
 	/// Currently it only supports fat 16MB.
 	ubyte[] mainMemory ;
+	
+	ubyte[] hwVectors ;
 	
 	/**
 	 * Constructor.
@@ -124,6 +127,7 @@ class Memory : Stream {
 		mixin(alloc("scratchPad"));
 		mixin(alloc("frameBuffer")); // http://hitmen.c02.at/files/yapspd/psp_doc/chap10.html#sec10 // Mirrors?
 		mixin(alloc("mainMemory"));
+		mixin(alloc("hwVectors"));
 
 		// reset(); // D already sets all the new ubyte arrays to 0.
 
@@ -220,8 +224,10 @@ class Memory : Stream {
 					mixin(CheckAndReturnSegment("mainMemory"));
 				break;
 				/////// hp
-				case 0b_11100: // HW IO1
 				case 0b_11111: // HO IO2
+					mixin(CheckAndReturnSegment("hwVectors"));
+				break;
+				case 0b_11100: // HW IO1
 					mixin(InvalidAddress);
 					//return null;
 				break;

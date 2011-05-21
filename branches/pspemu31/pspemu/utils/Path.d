@@ -1,5 +1,6 @@
 module pspemu.utils.Path;
 
+import std.path;
 import std.c.windows.windows;
 import std.windows.registry;
 import std.string;
@@ -17,7 +18,7 @@ class ApplicationPaths {
 	}
 	
 	static string exe() {
-		return cast(string)std.path.dirname(executablePath);
+		return std.path.rel2abs(cast(string)std.path.dirname(executablePath));
 	}
 
 	static string current() {

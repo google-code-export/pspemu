@@ -4,6 +4,7 @@ import std.stream;
 import std.string;
 import std.stdio;
 import std.file;
+import std.path;
 import std.datetime;
 import std.conv;
 
@@ -101,15 +102,21 @@ class VFS {
 			if (singleComponent == "." ) return this;
 			if (singleComponent == "..") return parentOrThis;
 			if (auto node = contains(singleComponent, create)) return node;
-			throw(new Exception(std.string.format("Can't find component '%s' in '%s' (create:%s)", index, full_name, create)));
+			throw(new Exception("Can't find component '" ~ index ~ "' in '" ~ full_name ~ "' (create:" ~ create ~ ")"));
 		}
 	}
 
 	VFS contains(string index, bool create = false) {
 		//writefln("[1]");
+		//writefln(" ** %s (%d)", index, caseInsensitive);
 		if (caseInsensitive) {
 			string singleComponentLower = std.string.tolower(index);
-			foreach (key; childrenMounted.keys) if (std.string.tolower(key) == singleComponentLower) return childrenMounted[key];
+			foreach (key; childrenMounted.keys) {
+				if (std.string.tolower(key) == singleComponentLower) {
+					//writefln("GET_MOUNTED :: %s", childrenMounted[key]);
+					return childrenMounted[key];
+				}
+			}
 			foreach (key; children.keys) if (std.string.tolower(key) == singleComponentLower) return children[key];
 		} else {
 			VFS* node;
@@ -181,6 +188,7 @@ class VFS {
 	void addChild(VFS_Proxy node) {
 		node.parent = this;
 		this.childrenMounted[node.name] = node;
+		//writefln("MOUNTED '%s' / '%s' / '%s'", this, node.name, node);
 	}
 	
 	void addChild(VFS node, string name = null) {
@@ -192,7 +200,7 @@ class VFS {
 	bool is_root() { return (parent is null); }
 	string toString() {
 		//return full_name;
-		return std.string.format("VFS('%s', %s)", full_name, stats);
+		return "VFS('" ~ full_name ~ "', " ~ stats.toString ~ ")";
 	}
 
 // To implement.
@@ -217,6 +225,7 @@ public final:
 	}
 
 	Stream open(string path, FileMode mode = FileMode.In, int attr = octal!777) {
+		//.writefln("open[0]:%s", path);
 		int index = path.lastIndexOf("/");
 		if (index != -1) return this[path[0..index]].open(path[index + 1..$], mode, attr);
 		//assert(!isDir, "Can't open a directory");
@@ -261,30 +270,52 @@ class VFS_Proxy : VFS {
 		}
 		return nodes;
 	}
-	override VFS    implMkdir(string path, int mode = octal!777) { return node.implMkdir(path, mode); }
-	Stream implOpen(string path, FileMode mode, int attr) { return node.implOpen(path, mode, attr); }
+
+	override VFS implMkdir(string path, int mode = octal!777) {
+		return node.implMkdir(path, mode);
+	}
+	
+	Stream implOpen(string path, FileMode mode, int attr) {
+		return node.implOpen(path, mode, attr);
+	}
+	
+	string toString() {
+		return node.toString;
+	}
 }
 
 class FileSystem : VFS {
+	string filesystem_path;
+	
+	string toString() {
+		return "FileSystem('" ~ filesystem_path ~ "')";
+	}
+	
 	bool _statsCached;
 	Stats _stats;
-	this(string path, VFS parent = null) {
+	this(string path, string name = null, VFS parent = null) {
 		//if (!path.exists) throw(new Exception(std.string.format("Path '%s' doesn't exists", path)));
 		// Remove ending /
 		while (path.length && path[$ - 1] == '/') path = path[0..$ - 1];
-
-		super(path, parent);
+		
+		if (name is null) name = std.path.basename(path);
+		
+		this.filesystem_path = path;
+	
+		super(name, parent);
 	}
 	VFS[] implList() {
 		VFS[] nodes;
-		auto cname = full_name;
+		auto cname = filesystem_path;
 		//writefln("%s", cname);
 		if (!std.file.isDir(cname)) {
-			throw(new Exception(std.string.format("Dir not found '%s'", cname)));
+			throw(new Exception("Dir not found '" ~ cname ~ "'"));
 		}
+		//writefln("LISTING :: %s; %s", filesystem_path, this);
 		foreach (DirEntry file; dirEntries(cname, SpanMode.shallow)) {
 			string file_name = file.name[cname.length + 1..$];
-			auto node = new FileSystem(file_name, this);
+			//writefln("%s", file_name);
+			auto node = new FileSystem(this.filesystem_path ~ "/" ~ file_name, file_name, this);
 			node._statsCached = true;
 			//writefln("--%s", file);
 			node._stats = VFS.Stats(
@@ -304,7 +335,7 @@ class FileSystem : VFS {
 	}
 	Stats implStats() {
 		if (!_statsCached) {
-			string cname = full_name;
+			string cname = filesystem_path;
 			_stats.phyname = name;
 			_stats.mode = 0;
 			_stats.attr = getAttributes(cname);
@@ -321,19 +352,27 @@ class FileSystem : VFS {
 		return _stats;
 	}
 	override VFS implMkdir(string name, int mode = octal!777) {
-		writefln("::MKDIR('%s', '%s')", full_name, name);
-		std.file.mkdir(full_name ~ "/" ~ name);
+		//writefln("::MKDIR('%s', '%s')", full_name, name);
+		std.file.mkdir(filesystem_path ~ "/" ~ name);
 		flushChildren();
 		return this[name];
 	}
 	void implRmdir(string name) {
-		.writefln("implRmdir()");
-		std.file.rmdir(full_name ~ "/" ~ name);
+		//.writefln("implRmdir()");
+		std.file.rmdir(filesystem_path ~ "/" ~ name);
 		flushChildren();
 	}
 	Stream implOpen(string name, FileMode mode, int attr) {
+		//.writefln("%s", name);
 		//writefln("implOpen(%s, %s)", full_name ~ "/" ~ name, to!string(mode));
-		return new std.stream.File(full_name ~ "/" ~ name, mode);
+		
+		//writefln("OPEN_NODE :: %s", this);
+		
+		if (mode == FileMode.In) {
+			return new std.stream.BufferedFile(filesystem_path ~ "/" ~ name, mode);
+		} else {
+			return new std.stream.File(filesystem_path ~ "/" ~ name, mode);
+		}
 		//return new std.stream.BufferedFile(full_name ~ "/" ~ name, mode);
 	}
 }

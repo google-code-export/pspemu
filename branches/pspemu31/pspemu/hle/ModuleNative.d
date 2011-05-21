@@ -33,6 +33,12 @@ abstract class ModuleNative : Module {
 	this() {
 		//Logger.log(Logger.Level.DEBUG, "Module", "Loading '%s'...", typeid(this));
 	}
+	
+	/*
+	public uint executeGuestCode(ThreadState threadState, uint pointer) {
+		return hleEmulatorState.executeGuestCode(threadState, pointer);
+	}
+	*/
 
 	template Parameters() {
 		void* vparam_ptr(T)(int n) {

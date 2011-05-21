@@ -11,6 +11,10 @@ import pspemu.core.display.Display;
 import pspemu.core.controller.Controller;
 import pspemu.core.RunningState;
 
+import pspemu.core.ThreadState;
+
+//import pspemu.EmulatorHelper;
+
 import core.sync.condition;
 import core.sync.mutex;
 

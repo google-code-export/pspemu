@@ -39,6 +39,7 @@ class ModuleManager {
 	 */
 	Module getName(string moduleName) {
 		if (moduleName !in loadedModules) {
+			Logger.log(Logger.Level.INFO, "ModuleManager", "%08X :: Loading module '%s'", cast(uint)cast(void *)this, moduleName);
 			auto loadedModule = cast(Module)(ModuleNative.getModule(moduleName).create);
 			loadedModule.hleEmulatorState = this.hleEmulatorState;
 			//loadedModule.cpu = cpu;

@@ -26,7 +26,7 @@ abstract class GuiBase {
 		this.thread = new Thread(&loop);
 		this.thread.name = "GuiBaseThread";
 		this.thread.start();
-		this.initialized.waitReady();
+		//this.initialized.waitReady();
 	}
 	
 	protected void loop() {

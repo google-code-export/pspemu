@@ -25,52 +25,11 @@ import pspemu.hle.kd.iofilemgr.Devices;
 import pspemu.Emulator;
 
 class IoFileMgrForKernel : ModuleNative {
-	VFS fsroot, gameroot;
-	IoDevice[string] devices;
-	string fscurdir;
-
-	void initModule() {
-		//.writefln("[1]");
-		fsroot = new VFS("<root>");
-		//.writefln("[2]");
-
-		// Devices.
-		devices["ms0:"   ] = new MemoryStickDevice(new FileSystem(ApplicationPaths.exe ~ "/pspfs/ms0"));
-		devices["flash0:"] = new IoDevice         (new FileSystem(ApplicationPaths.exe ~ "/pspfs/flash0"));
-		devices["flash1:"] = new IoDevice         (new FileSystem(ApplicationPaths.exe ~ "/pspfs/flash0"));
-		devices["umd0:"  ] = new UmdDevice        (new FileSystem(ApplicationPaths.exe ~ "/pspfs/umd0"));
-		//.writefln("[3]");
-	
-		// Aliases.
-		devices["disc0:" ] = devices["umd0:"];
-		devices["ms:"    ] = devices["ms0:"];
-		devices["fatms0:"] = devices["ms0:"];
-		//.writefln("[4]");
-
-		// Mount registered devices:
-		foreach (deviceName, device; devices) fsroot.addChild(device, deviceName);
-		
-		//.writefln("[5]");
-		
-		fscurdir = "ms0:/PSP/GAME/virtual";
-		//writefln("%s", fsroot[fscurdir]);
-		gameroot = new VFS_Proxy("<gameroot>", fsroot[fscurdir]);
-
-		//.writefln("[6]");
+	VFS fsroot() {
+		return hleEmulatorState.rootFileSystem.fsroot;
 	}
 
-	void setVirtualDir(string path) {
-		// No absolute path; Relative path. No starts by '/' nor contains ':'.
-		if ((path[0] == '/') || (path.indexOf(':') != -1)) {
-			//writefln("set absolute!");
-		} else {
-			//writefln("path already absolute!");
-			path = std.file.getcwd() ~ '/' ~ path;
-		}
-		//writefln("setVirtualDir('%s')", path);
-
-		fsroot["ms0:/PSP/GAME"].addChild(new FileSystem(path), "virtual");
-		gameroot = new VFS_Proxy("<gameroot>", fsroot[fscurdir]);
+	void initModule() {
 	}
 
 	void initNids() {
@@ -112,6 +71,7 @@ class IoFileMgrForKernel : ModuleNative {
 		mixin(registerd!(0x35DBD746, sceIoWaitAsyncCB));
 	}
 
+	/*
 	Stream[SceUID] openedStreams;
 
 	Stream getStreamFromFD(SceUID uid) {
@@ -121,6 +81,7 @@ class IoFileMgrForKernel : ModuleNative {
 		}
 		return openedStreams[uid];
 	}
+	*/
 
 	/**
 	 * Make a directory file
@@ -267,7 +228,7 @@ class IoFileMgrForKernel : ModuleNative {
 		logInfo("sceIoChdir('%s')", path);
 		try {
 			fsroot.access(path);
-			fscurdir = path;
+			hleEmulatorState.rootFileSystem.fscurdir = path;
 			return 0;
 		} catch (Throwable o) {
 			.writefln("sceIoChdir: %s", o);
@@ -295,7 +256,7 @@ class IoFileMgrForKernel : ModuleNative {
 	int sceIoDevctl(string dev, int cmd, void* indata, int inlen, void* outdata, int outlen) {
 		logInfo("sceIoDevctl('%s', %d)", dev, cmd);
 		try {
-			return devices[dev].sceIoDevctl(cmd, (cast(ubyte*)indata)[0..inlen], (cast(ubyte*)outdata)[0..outlen]);
+			return hleEmulatorState.rootFileSystem.devices[dev].sceIoDevctl(cmd, (cast(ubyte*)indata)[0..inlen], (cast(ubyte*)outdata)[0..outlen]);
 		} catch (Exception e) {
 			writefln("sceIoDevctl: %s", e);
 			return -1;
@@ -316,8 +277,8 @@ class IoFileMgrForKernel : ModuleNative {
 		logInfo("sceIoClose('%d')", fd);
 		if (fd < 0) return -1;
 		try {
-			auto stream = getStreamFromFD(fd);
-			openedStreams.remove(fd);
+			auto stream = hleEmulatorState.uniqueIdFactory.get!Stream(fd);
+			hleEmulatorState.uniqueIdFactory.remove!Stream(fd);
 			stream.flush();
 			stream.close();
 			return 0;
@@ -345,7 +306,9 @@ class IoFileMgrForKernel : ModuleNative {
 			file = file[indexLastSeparator + 1..$];
 			vfs = fsroot.access(path);
 		} else {
-			vfs = fsroot.access(fscurdir);
+			writefln(" :: %s", hleEmulatorState.rootFileSystem.fscurdir);
+			writefln(" :: %s", fsroot);
+			vfs = fsroot.access(hleEmulatorState.rootFileSystem.fscurdir);
 		}
 		
 		//writefln("locateParentAndUpdateFile('%s', '%s')", vfs, file);
@@ -376,7 +339,6 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return A non-negative integer is a valid fd, anything else is an error
 	 */
 	SceUID sceIoOpen(/*const*/ string file, int flags, SceMode mode) {
-		string fileIni = file;
 		VFS vfs;
 		FileMode fmode;
 		try {
@@ -388,18 +350,12 @@ class IoFileMgrForKernel : ModuleNative {
 			
 			//.writefln("Open: Flags:%08X, Mode:%03o, File:'%s'", flags, mode, file);
 			
-			SceUID fd = 0; foreach (fd_cur; openedStreams.keys) if (fd < fd_cur) fd = fd_cur;
-			//fd++;
-			fd += 10;
 			vfs = locateParentAndUpdateFile(file);
 			//.writefln("%d", fmode);
-			openedStreams[fd] = vfs.open(file, fmode, mode);
-			return fd;
+			return hleEmulatorState.uniqueIdFactory.add(vfs.open(file, fmode, mode));
 		} catch (Throwable o) {
-			Logger.log(Logger.Level.INFO, "IoFileMgrForKernel", "sceIoOpen failed to open '%s' for '%d'", file, fmode);
-			//.writefln("sceIoOpen('%s') exception: %s", fileIni, o);
+			logInfo("sceIoOpen failed to open '%s' for '%d'", file, fmode);
 			return -1;
-			//return 0;
 		}
 	}
 
@@ -421,7 +377,7 @@ class IoFileMgrForKernel : ModuleNative {
 		logInfo("sceIoRead(%d, %d)", fd, size);
 		if (fd < 0) return -1;
 		if (data is null) return -1;
-		auto stream = getStreamFromFD(fd);
+		auto stream = hleEmulatorState.uniqueIdFactory.get!Stream(fd);
 		try {
 			return stream.read((cast(ubyte *)data)[0..size]);
 		} catch (Throwable o) {
@@ -448,7 +404,7 @@ class IoFileMgrForKernel : ModuleNative {
 		logInfo("sceIoWrite(%d, %d)", fd, size);
 		if (fd < 0) return -1;
 		if (data is null) return -1;
-		auto stream = getStreamFromFD(fd);
+		auto stream = hleEmulatorState.uniqueIdFactory.get!Stream(fd);
 
 		// Less than 256 MB.
 		if (stream.position >= 256 * 1024 * 1024) {
@@ -458,7 +414,7 @@ class IoFileMgrForKernel : ModuleNative {
 		try {
 			return stream.write((cast(ubyte *)data)[0..size]);
 		} catch (Throwable o) {
-			throw(o);
+			Logger.log(Logger.Level.WARNING, "IoFileMgrForKernel", "sceIoWrite.ERROR :: %s", o);
 			return -1;
 		}
 	}
@@ -481,7 +437,7 @@ class IoFileMgrForKernel : ModuleNative {
 	SceOff sceIoLseek(SceUID fd, SceOff offset, int whence) {
 		logInfo("sceIoLseek(%d, %d, %d)", fd, offset, whence);
 		if (fd < 0) return -1;
-		auto stream = getStreamFromFD(fd);
+		auto stream = hleEmulatorState.uniqueIdFactory.get!Stream(fd);
 		stream.seek(offset, cast(SeekPos)whence);
 		return stream.position;
 	}
