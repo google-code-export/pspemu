@@ -10,13 +10,15 @@ import pspemu.utils.MathUtils;
 
 import pspemu.core.cpu.CpuThreadBase;
 
+import pspemu.hle.kd.iofilemgr.Devices;
+
 class GuiSdl : GuiBase {
 	bool[SDLK_LAST] keyIsPressed;
 	PspCtrlButtons[SDLK_LAST] buttonMask;
 	SDL_Surface *screenSurface;
 	
-	this(EmulatorState emulatorState) {
-		super(emulatorState);
+	this(HleEmulatorState hleEmulatorState) {
+		super(hleEmulatorState);
 	}
 
 	public void init() {
@@ -96,6 +98,10 @@ class GuiSdl : GuiBase {
 						case SDLK_F3:
 							this.display.enableWaitVblank = !this.display.enableWaitVblank; 
 						break;
+						case SDLK_F4: {
+							MemoryStickDevice memoryStickDevice = cast(MemoryStickDevice)hleEmulatorState.rootFileSystem.devices["ms:"];
+							memoryStickDevice.inserted = !memoryStickDevice.inserted;
+						} break;
 						default:
 						break;
 					}

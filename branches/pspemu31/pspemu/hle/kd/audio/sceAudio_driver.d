@@ -43,6 +43,8 @@ class sceAudio_driver : ModuleNative {
 
 		mixin(registerd!(0x086E5895, sceAudioInputBlocking));
 		mixin(registerd!(0x7DE61688, sceAudioInputInit));
+		
+		mixin(registerd!(0x38553111, sceAudioSRCChReserve));
 	}
 
 	void initModule() {
@@ -299,6 +301,22 @@ class sceAudio_driver : ModuleNative {
 	int sceAudioInputInit(int unknown1, int gain, int unknown2) {
 		unimplemented();
 		return -1;
+	}
+
+	/**
+	  * Reserve the audio output
+	  *
+	  * @param samplecount - The number of samples to output in one output call (min 17, max 4111).
+	  *
+	  * @param freq - The frequency. One of 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11050, 8000.
+	  *
+	  * @param channels - Number of channels. Pass 2 (stereo).
+	  *
+	  * @return 0 on success, an error if less than 0.
+	  */
+	int sceAudioSRCChReserve(int samplecount, int freq, int channels) {
+		logInfo("Not implemented: sceAudioSRCChReserve(%d, %d, %d)", samplecount, freq, channels);
+		return 0;
 	}
 }
 

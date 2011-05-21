@@ -7,16 +7,21 @@ import pspemu.utils.WaitReady;
 public import pspemu.core.controller.Controller;
 public import pspemu.core.display.Display;
 public import pspemu.core.EmulatorState;
+public import pspemu.hle.HleEmulatorState;
+
+import pspemu.utils.Logger;
 
 abstract class GuiBase {
+	HleEmulatorState hleEmulatorState;
 	EmulatorState emulatorState;
 	Display display;
 	Controller controller;
 	Thread thread;
 	WaitReady initialized;
 	
-	this(EmulatorState emulatorState) {
-		this.emulatorState = emulatorState;
+	this(HleEmulatorState hleEmulatorState) {
+		this.hleEmulatorState = hleEmulatorState;
+		this.emulatorState = hleEmulatorState.emulatorState;
 		this.display    = emulatorState.display;
 		this.controller = emulatorState.controller;
 		this.initialized = new WaitReady();
@@ -33,8 +38,12 @@ abstract class GuiBase {
 		this.init();
 		this.initialized.setReady();
 		while (display.runningState.running) {
-			this.display.drawRow0Condition.wait();
-			this.loopStep();
+			try {
+				this.display.drawRow0Condition.wait();
+				this.loopStep();
+			} catch (Throwable o) {
+				Logger.log(Logger.Level.ERROR, "Gui", "Error: " ~ o.toString);
+			}
 		}
 	}
 

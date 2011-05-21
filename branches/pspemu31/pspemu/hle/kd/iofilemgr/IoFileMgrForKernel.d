@@ -284,7 +284,7 @@ class IoFileMgrForKernel : ModuleNative {
 			return 0;
 		} catch (Throwable o) {
 			.writefln("sceIoClose(%d) : %s", fd, o);
-			return -1;
+			return 0;
 		}
 	}
 	
@@ -415,7 +415,7 @@ class IoFileMgrForKernel : ModuleNative {
 			return stream.write((cast(ubyte *)data)[0..size]);
 		} catch (Throwable o) {
 			Logger.log(Logger.Level.WARNING, "IoFileMgrForKernel", "sceIoWrite.ERROR :: %s", o);
-			return -1;
+			return 0;
 		}
 	}
 

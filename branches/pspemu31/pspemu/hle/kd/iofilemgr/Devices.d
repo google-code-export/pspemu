@@ -11,11 +11,17 @@ import pspemu.utils.VirtualFileSystem;
 
 import pspemu.hle.kd.iofilemgr.Types;
 
+import pspemu.hle.Callbacks;
+import pspemu.hle.HleEmulatorState;
+
 class IoDevice : VFS_Proxy {
 	//Cpu cpu;
 	string name = "<iodev:unknown>";
 
-	this(VFS node) {
+	HleEmulatorState hleEmulatorState;
+
+	this(HleEmulatorState hleEmulatorState, VFS node) {
+		this.hleEmulatorState = hleEmulatorState;
 		super(name, node, null);
 		register();
 	}
@@ -34,15 +40,14 @@ class IoDevice : VFS_Proxy {
 }
 
 class UmdDevice : IoDevice {
-	this(VFS node) { super(node); }
+	this(HleEmulatorState hleEmulatorState, VFS node) { super(hleEmulatorState, node); }
 }
 
 class MemoryStickDevice : IoDevice {
 	bool _inserted = true;
-	bool[uint] callbacks;
 	string name = "<iodev:mstick>";
 
-	this(VFS node) { super(node); }
+	this(HleEmulatorState hleEmulatorState, VFS node) { super(hleEmulatorState, node); }
 
 	override void register() {
 		//writefln("MemoryStickDevice.register");
@@ -56,39 +61,44 @@ class MemoryStickDevice : IoDevice {
 
 	override bool inserted() { return _inserted; }
 	override bool inserted(bool value) {
-		/*
 		if (_inserted != value) {
 			_inserted = value;
-			cpu.interrupts.queue(Interrupts.Type.GPIO);
+
+			Logger.log(Logger.Level.INFO, "Devices", "MemoryStickDevice.setInserted: %d", _inserted);
+
+			hleEmulatorState.callbacksHandler.trigger(
+				CallbacksHandler.Type.MemoryStickInsertEject,
+				[0, _inserted ? 1 : 2, 0]
+			);
 		}
-		return _inserted;
-		*/
 		return _inserted;
 	}
 
 	override int sceIoDevctl(uint cmd, ubyte[] inData, ubyte[] outData) {
-		/*
+		PspCallback pspCallback;
+
 		switch (cmd) {
 			case 0x02025806: // MScmIsMediumInserted
+				Logger.log(Logger.Level.INFO, "Devices", "MScmIsMediumInserted");
 				*(cast(uint*)outData.ptr) = cast(uint)inserted;
-				writefln("MScmIsMediumInserted");
 			break;
 			case 0x02415821: // MScmRegisterMSInsertEjectCallback
-				uint callback = *(cast(uint*)inData.ptr);
-				callbacks[callback] = true;
-				writefln("MScmRegisterMSInsertEjectCallback");
+				Logger.log(Logger.Level.INFO, "Devices", "MScmRegisterMSInsertEjectCallback");
+
+				pspCallback = hleEmulatorState.uniqueIdFactory.get!PspCallback(*(cast(uint*)inData.ptr));
+				hleEmulatorState.callbacksHandler.register(CallbacksHandler.Type.MemoryStickInsertEject, pspCallback); 
 			break;
 			case 0x02415822: // MScmUnregisterMSInsertEjectCallback
-				uint callback = *(cast(uint*)inData.ptr);
-				callbacks.remove(callback);
-				writefln("MScmUnregisterMSInsertEjectCallback");
+				Logger.log(Logger.Level.INFO, "Devices", "MScmUnregisterMSInsertEjectCallback");
+			
+				pspCallback = hleEmulatorState.uniqueIdFactory.get!PspCallback(*(cast(uint*)inData.ptr));
+				hleEmulatorState.callbacksHandler.unregister(CallbacksHandler.Type.MemoryStickInsertEject, pspCallback);
 			break;
 			default: // Unknown command
-				writefln("MemoryStickDevice.sceIoDevctl: Unknown command 0x%08X!", cmd);
+				Logger.log(Logger.Level.ERROR, "Devices", "MemoryStickDevice.sceIoDevctl: Unknown command 0x%08X!", cmd);
 				return -1;
 			break;
 		}
-		*/
 		return 0;
 	}
 }

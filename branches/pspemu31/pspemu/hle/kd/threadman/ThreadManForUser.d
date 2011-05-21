@@ -14,6 +14,10 @@ import pspemu.hle.MemoryManager;
 
 import pspemu.utils.Logger;
 
+import pspemu.utils.sync.WaitMultipleEvents;
+
+import pspemu.hle.Callbacks;
+
 //debug = DEBUG_THREADS;
 //debug = DEBUG_SYSCALL;
 
@@ -290,28 +294,6 @@ class ThreadManForUser : ModuleNative {
 	}
 
 	/**
-	 * Delete a callback
-	 *
-	 * @param cb - The UID of the specified callback
-	 *
-	 * @return 0 on success, < 0 on error
-	 */
-	int sceKernelDeleteCallback(SceUID cb) {
-		unimplemented();
-		return -1;
-	}
-
-	/**
-	 * Check callback ?
-	 *
-	 * @return Something or another
-	 */
-	int sceKernelCheckCallback() {
-		unimplemented();
-		return -1;
-	}
-
-	/**
 	 * Get the system time (wide version)
 	 *
 	 * @return The system time
@@ -468,10 +450,33 @@ class ThreadManForUser : ModuleNative {
 		 *
 		 * @return >= 0 A callback id which can be used in subsequent functions, < 0 an error.
 		 */
-		int sceKernelCreateCallback(string name, SceKernelCallbackFunction func, void *arg) {
-			logInfo("sceKernelCreateCallback('%s')", name);
+		int sceKernelCreateCallback(string name, SceKernelCallbackFunction func, void* arg) {
+			PspCallback pspCallback = new PspCallback(name, func, arg);
+			int uid = hleEmulatorState.uniqueIdFactory.add(pspCallback);
+			logInfo("sceKernelCreateCallback('%s':%d, %08X, %08X)", name, uid, cast(uint)func, cast(uint)arg);
+			return uid;
+		}
+		
+		/**
+		 * Delete a callback
+		 *
+		 * @param cb - The UID of the specified callback
+		 *
+		 * @return 0 on success, < 0 on error
+		 */
+		int sceKernelDeleteCallback(SceUID cb) {
 			unimplemented();
-			return reinterpret!(int)(new PspCallback(name, func, arg));
+			return -1;
+		}
+	
+		/**
+		 * Check callback ?
+		 *
+		 * @return Something or another
+		 */
+		int sceKernelCheckCallback() {
+			unimplemented();
+			return -1;
 		}
 	}
 	
@@ -589,35 +594,6 @@ class ThreadManForUser : ModuleNative {
 	mixin TemplateMsgPipe;
 }
 
-
-/**
- * Psp Callback.
- */
-class PspCallback {
-	/**
-	 * Name of the callback.
-	 */
-	string name;
-
-	/**
-	 * Pointer to the callback function to execute.
-	 */
-	SceKernelCallbackFunction func;
-
-	/**
-	 * Argument to send to callback function.
-	 */
-	void* arg;
-
-	/**
-	 * Constructor.
-	 */
-	this(string name, SceKernelCallbackFunction func, void* arg) {
-		this.name = name;
-		this.func = func;
-		this.arg  = arg;
-	}
-}
 
 struct SceKernelMbxOptParam {
 	/** Size of the ::SceKernelMbxOptParam structure. */
