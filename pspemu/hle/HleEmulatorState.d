@@ -41,7 +41,11 @@ class HleEmulatorState : ISyscall {
 	public CallbacksHandler callbacksHandler;
 	
 	public this(EmulatorState emulatorState) {
-		this.emulatorState    = emulatorState;
+		this.emulatorState = emulatorState;
+		reset();
+	}
+	
+	public void reset() {
 		this.moduleManager    = new ModuleManager(this);
 		this.memoryManager    = new MemoryManager(this.emulatorState.memory, this.moduleManager);
 		this.moduleLoader     = new ModuleLoader(this);
@@ -49,7 +53,6 @@ class HleEmulatorState : ISyscall {
 		this.syscallObject    = new Syscall(this);
 		this.rootFileSystem   = new RootFileSystem(this);
 		this.callbacksHandler = new CallbacksHandler(this);
-		
 		this.emulatorState.syscall = this;
 	}
 
@@ -66,12 +69,12 @@ class HleEmulatorState : ISyscall {
 	public uint executeGuestCode(ThreadState threadState, uint pointer) {
 		//new CpuThreadBase();
 		CpuThreadBase tempCpuThread = new CpuThreadInterpreted(threadState);
+		
+		Registers backRegisters = new Registers();
+		backRegisters.copyFrom(tempCpuThread.threadState.registers);
 
-		uint PC_back  = tempCpuThread.threadState.registers.PC;
-		uint nPC_back = tempCpuThread.threadState.registers.nPC;
 		scope (exit) {
-			tempCpuThread.threadState.registers.PC = PC_back;
-			tempCpuThread.threadState.registers.nPC = nPC_back;
+			tempCpuThread.threadState.registers.copyFrom(backRegisters);
 		} 
 
 		tempCpuThread.threadState.registers.pcSet = pointer;

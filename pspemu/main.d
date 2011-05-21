@@ -95,11 +95,14 @@ int main(string[] args) {
 	if (doTestsEx) {
 		EmulatorHelper emulatorHelper = new EmulatorHelper(new Emulator());
 		emulatorHelper.initComponents();
+		//Logger.setLevel(Logger.Level.TRACE);
+		Logger.setLevel(Logger.Level.CRITICAL);
 		foreach (std.file.DirEntry dirEntry; dirEntries(r"tests_ex", SpanMode.depth, true)) {
 			if (std.string.indexOf(dirEntry.name, ".svn") != -1) continue;
 			if (std.path.getExt(dirEntry.name) != "expected") continue;
 			
 			emulatorHelper.loadAndRunTest(dirEntry.name);
+			emulatorHelper.reset();
 		}
 		emulatorHelper.stop();
 		return 0;

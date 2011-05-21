@@ -10,6 +10,8 @@ import pspemu.core.Memory;
 
 import pspemu.hle.kd.interruptman.Types;
 
+import pspemu.hle.Callbacks;
+
 //import pspemu.utils.Utils;
 //import pspemu.hle.Utils;
 
@@ -27,6 +29,7 @@ class InterruptManager : ModuleNative {
 	}
 
 	//Interrupts.Callback[int][int] handlers;
+	PspCallback[int][int] handlers;
 
 	/** 
 	 * Register a sub interrupt handler.
@@ -40,14 +43,10 @@ class InterruptManager : ModuleNative {
 	 */
 	int sceKernelRegisterSubIntrHandler(PspSubInterrupts intno, int no, uint handler, uint arg) {
 		logInfo("sceKernelRegisterSubIntrHandler(%d:%s, %d, %08X, %08X)", intno, to!string(intno), no, handler, arg);
-		/*
-		handlers[intno][no] = createUserInterruptCallback(
-			moduleManager, cpu,
-			cast(Memory.Pointer)handler,
-			[no, cast(uint)arg]
-		);
-		*/
-		unimplemented();
+		
+		handlers[intno][no] = new PspCallback("sceKernelRegisterSubIntrHandlerCallback", handler, null);
+		handlers[intno][no].argumentValue = arg;
+		
 		return 0;
 	}
 
@@ -61,7 +60,17 @@ class InterruptManager : ModuleNative {
 	 */
 	int sceKernelEnableSubIntr(PspSubInterrupts intno, int no) {
 		//cpu.interrupts.registerCallback(cast(Interrupts.Type)intno, handlers[intno][no]);
-		unimplemented();
+		//unimplemented();
+
+		switch (intno) {
+			case PspSubInterrupts.PSP_DISPLAY_SUBINT:
+				hleEmulatorState.callbacksHandler.register(CallbacksHandler.Type.VerticalBlank, handlers[intno][no]);
+			break;
+			default:
+				unimplemented();
+			break;
+		}
+
 		return 0;
 	}
 

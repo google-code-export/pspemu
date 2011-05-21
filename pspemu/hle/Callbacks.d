@@ -1,6 +1,7 @@
 module pspemu.hle.Callbacks;
 
 import std.stdio;
+import std.conv;
 
 import pspemu.core.ThreadState;
 import pspemu.hle.HleEmulatorState;
@@ -27,6 +28,8 @@ class PspCallback {
 	 * Argument to send to callback function.
 	 */
 	void* arg;
+	
+	uint argumentValue;
 
 	/**
 	 * Constructor.
@@ -45,6 +48,16 @@ class PspCallback {
 class CallbacksHandler {
 	enum Type {
 		MemoryStickInsertEject,
+		GraphicEngine,
+		VerticalBlank,
+		/*
+		PSP_GPIO_SUBINT     = PspInterrupts.PSP_GPIO_INT,
+		PSP_ATA_SUBINT      = PspInterrupts.PSP_ATA_INT,
+		PSP_UMD_SUBINT      = PspInterrupts.PSP_UMD_INT,
+		PSP_DMACPLUS_SUBINT = PspInterrupts.PSP_DMACPLUS_INT,
+		PSP_GE_SUBINT       = PspInterrupts.PSP_GE_INT,
+		PSP_DISPLAY_SUBINT  = PspInterrupts.PSP_VBLANK_INT
+		*/
 	}
 	
 	HleEmulatorState hleEmulatorState;
@@ -62,6 +75,10 @@ class CallbacksHandler {
 		this.waitEvent = new WaitEvent("CallbacksHandlerEvent");
 		this.waitEvent.callback = delegate(Object object) {
 			executeQueued(cast(ThreadState)object);
+		};
+		
+		hleEmulatorState.emulatorState.display.vblankEvent += delegate() {
+			trigger(Type.VerticalBlank, []);
 		};
 	}
 

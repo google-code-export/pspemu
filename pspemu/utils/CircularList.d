@@ -17,6 +17,12 @@ class CircularList(Type, bool CheckAvailable = true) {
 	this(uint capacity = 1024) {
 		list = new Type[capacity];
 	}
+	
+	public void clear() {
+		this.readAvailable = 0;
+		this.headPosition = 0;
+		this.tailPosition = 0;
+	}
 
 	uint readAvailable;
 	uint writeAvailable() { return list.length - readAvailable; }

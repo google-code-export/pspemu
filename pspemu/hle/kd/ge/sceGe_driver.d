@@ -155,8 +155,7 @@ class sceGe_driver : ModuleNative {
 	 * @return < 0 on error
 	 */
 	int sceGeUnsetCallback(int cbid) {
-		Logger.log(Logger.Level.ERROR, "sceGe_driver", "sceGeUnsetCallback()");
-		unimplemented();
+		Logger.log(Logger.Level.ERROR, "sceGe_driver", "Not Implemented: sceGeUnsetCallback()");
 		/*
 		auto callbackDataPtr = (cast(PspGeCallbackData*)cbid);
 		if (callbackDataPtr is null) return -1;

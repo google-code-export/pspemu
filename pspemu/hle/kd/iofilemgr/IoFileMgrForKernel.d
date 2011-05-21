@@ -290,19 +290,22 @@ class IoFileMgrForKernel : ModuleNative {
 	
 	string getAbsolutePathFromRelative(string relativePath) {
 		auto indexHasDevice = relativePath.indexOf(":/");
+		string absolutePath;
 		if (indexHasDevice >= 0) {
-			return relativePath;
+			absolutePath = relativePath;
 		} else {
-			throw(new Exception("Not supporting relative paths"));
+			//throw(new Exception("Not supporting relative paths"));
+			absolutePath = hleEmulatorState.rootFileSystem.fscurdir ~ "/" ~ relativePath;
 		}
+		logInfo("getAbsolutePathFromRelative('%s') : '%s'", relativePath, absolutePath);
+		return absolutePath;
 	}
 
 	VFS locateParentAndUpdateFile(ref string file) {
 		VFS vfs;
 		auto indexLastSeparator = file.lastIndexOf("/");
 		if (indexLastSeparator >= 0) {
-			auto path = getAbsolutePathFromRelative(file);
-			path = file[0..indexLastSeparator];
+			string path = file[0..indexLastSeparator];
 			file = file[indexLastSeparator + 1..$];
 			vfs = fsroot.access(path);
 		} else {
@@ -314,6 +317,25 @@ class IoFileMgrForKernel : ModuleNative {
 		//writefln("locateParentAndUpdateFile('%s', '%s')", vfs, file);
 
 		return vfs;
+	}
+	
+	Stream _open(string file, int flags, SceMode mode) {
+		FileMode fmode;
+		if (flags & PSP_O_RDONLY) fmode |= FileMode.In;
+		if (flags & PSP_O_WRONLY) fmode |= FileMode.Out;
+		if (flags & PSP_O_APPEND) fmode |= FileMode.Append;
+		if (flags & PSP_O_CREAT ) fmode |= FileMode.OutNew;
+		
+		VFS vfs;
+		
+		file = getAbsolutePathFromRelative(file);
+		vfs = locateParentAndUpdateFile(file);
+		try {
+			return vfs.open(file, fmode, mode);
+		} catch (Throwable o) {
+			logWarning("Can't open file '%s' at '%s'", file, vfs);
+			throw(o);
+		}
 	}
 
 	/**
@@ -338,23 +360,12 @@ class IoFileMgrForKernel : ModuleNative {
 	 *
 	 * @return A non-negative integer is a valid fd, anything else is an error
 	 */
-	SceUID sceIoOpen(/*const*/ string file, int flags, SceMode mode) {
-		VFS vfs;
-		FileMode fmode;
+	SceUID sceIoOpen(string file, int flags, SceMode mode) {
 		try {
-			if (flags & PSP_O_RDONLY) fmode |= FileMode.In;
-			if (flags & PSP_O_WRONLY) fmode |= FileMode.Out;
-			if (flags & PSP_O_APPEND) fmode |= FileMode.Append;
-			if (flags & PSP_O_CREAT ) fmode |= FileMode.OutNew;
-			
-			//.writefln("Open: Flags:%08X, Mode:%03o, File:'%s'", flags, mode, file);
-			
-			vfs = locateParentAndUpdateFile(file);
-			logInfo("sceIoOpen('%s':'%s', %d, %d)", file, vfs.full_name, flags, mode);
-			//.writefln("%d", fmode);
-			return hleEmulatorState.uniqueIdFactory.add(vfs.open(file, fmode, mode));
+			logInfo("sceIoOpen('%s', %d, %d)", file, flags, mode);
+			return hleEmulatorState.uniqueIdFactory.add(_open(file, flags, mode));
 		} catch (Throwable o) {
-			logInfo("sceIoOpen failed to open '%s' for '%d' : '%s'", file, fmode, o);
+			logWarning("sceIoOpen failed to open '%s' for '%d' : '%s'", file, flags, o);
 			return -1;
 		}
 	}
@@ -656,10 +667,21 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return < 0 on error, otherwise the reopened fd.
 	 */
 	int sceIoReopen(string file, int flags, SceMode mode, SceUID fd) {
-		Logger.log(Logger.Level.WARNING, "IoFileMgrForKernel", "Not implemented sceIoReopen");
-		Logger.log(Logger.Level.INFO, "IoFileMgrForKernel", "sceIoReopen('%s', %d, %d, %d)", file, flags, mode, cast(int)fd);
-		unimplemented();
-		return -1;
+		logWarning("Not implemented sceIoReopen");
+		logInfo("sceIoReopen('%s', %d, %d, %d)", file, flags, mode, cast(int)fd);
+		
+		try {
+			Stream newStream = _open(file, flags, mode);
+			
+			hleEmulatorState.uniqueIdFactory.get!Stream(fd).close();
+			hleEmulatorState.uniqueIdFactory.set(fd, newStream);
+			
+			return fd;
+		} catch (Throwable o) {
+			logError("Can't reopen file");
+			//return fd;
+			return -1;
+		}
 	}
 
 	/** 

@@ -1,21 +1,25 @@
 module pspemu.utils.sync.WaitMultipleEvents;
 
-import pspemu.utils.sync.WaitEvent;
+import pspemu.utils.sync.WaitObject;
 
 import core.thread;
 
 class WaitMultipleEvents {
-	WaitEvent[] events;
+	WaitObject[] waitObjects;
 	public Object object;
 	
-	public void add(WaitEvent event) {
-		this.events ~= event;
+	this(Object object = null) {
+		this.object = object;
 	}
 	
-	public WaitEvent waitAny(uint timeoutMilliseconds = uint.max) {
-		if (events.length) {
-			scope handles = new HANDLE[events.length]; 
-			foreach (k, event; events) handles[k] = event.handle;
+	public void add(WaitObject waitObject) {
+		this.waitObjects ~= waitObject;
+	}
+	
+	public WaitObject waitAny(uint timeoutMilliseconds = uint.max) {
+		if (waitObjects.length) {
+			scope handles = new HANDLE[this.waitObjects .length]; 
+			foreach (index, waitObject; waitObjects) handles[index] = waitObject.handle;
 			uint result;
 			switch (result = WaitForMultipleObjects(handles.length, handles.ptr, false, timeoutMilliseconds)) {
 				case WAIT_ABANDONED:
@@ -25,9 +29,9 @@ class WaitMultipleEvents {
 				case WAIT_FAILED:
 				break;
 				default:
-					WaitEvent event = events[result - WAIT_OBJECT_0];
-					event.callCallback(object);
-					return event;
+					WaitObject waitObject = this.waitObjects[result - WAIT_OBJECT_0];
+					waitObject.callCallback(object);
+					return waitObject;
 				break;
 			}
 		} else {

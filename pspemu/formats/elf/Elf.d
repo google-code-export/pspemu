@@ -15,6 +15,8 @@ import std.stream;
 import std.stdio;
 import std.math;
 
+import pspemu.utils.Logger;
+
 //debug = MODULE_LOADER;
 
 // http://hitmen.c02.at/files/yapspd/psp_doc/chap26.html#sec26.2
@@ -189,7 +191,7 @@ class Elf {
 
 	bool needsRelocation() { return (header.entryPoint < 0x08000000) || (header.type == Header.Type.Prx); }
 	Stream SectionStream(SectionHeader sectionHeader) {
-		writefln("SectionStream(Address=%08X, Offset=%08X, Size=%08X, Type=%08X)", sectionHeader.address, sectionHeader.offset, sectionHeader.size, sectionHeader.type);
+		Logger.log(Logger.Level.TRACE, "ElfLoader", "SectionStream(Address=%08X, Offset=%08X, Size=%08X, Type=%08X)", sectionHeader.address, sectionHeader.offset, sectionHeader.size, sectionHeader.type);
 
 		switch (sectionHeader.type) {
 			case SectionHeader.Type.PROGBITS:

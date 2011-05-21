@@ -13,6 +13,13 @@ class Controller {
 		sceCtrlDataFrames = new CircularList!(SceCtrlData)();
 	}
 	
+	public void reset() {
+		this.sceCtrlDataFrames.clear();
+		this.sceCtrlData   = this.sceCtrlData.init;
+		this.samplingMode  = this.samplingMode.init;
+		this.samplingCycle = this.samplingCycle.init;
+	}
+	
 	public void push() {
 		sceCtrlDataFrames.enqueue(sceCtrlData);
 		sceCtrlData.TimeStamp++;

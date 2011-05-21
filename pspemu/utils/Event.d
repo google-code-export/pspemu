@@ -7,6 +7,10 @@ struct Event {
 		callbacks ~= callback;
 	}
 	
+	void reset() {
+		callbacks.length = 0;
+	}
+	
 	void opCall() {
 		foreach (callback; callbacks) {
 			callback();

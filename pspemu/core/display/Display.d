@@ -12,6 +12,7 @@ import std.datetime;
 import pspemu.core.Memory;
 
 import pspemu.utils.Logger;
+import pspemu.utils.Event;
 
 import pspemu.core.RunningState;
 public import pspemu.hle.kd.display.Types;
@@ -38,6 +39,7 @@ class Display {
 	protected Thread thread;
 	Condition drawRow0Condition;
 	Condition vblankStartCondition;
+	Event vblankEvent;
 
 	/**
 	 * Mode of the screen.
@@ -76,6 +78,10 @@ class Display {
 		sceDisplaySetMode(0, 480, 272);
 		sceDisplaySetFrameBuf(0x44000000, 512, PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_8888, PspDisplaySetBufSync.PSP_DISPLAY_SETBUF_IMMEDIATE);
 	}
+	
+	void reset() {
+		vblankEvent.reset();
+	}
 
 	public void sceDisplaySetMode(int mode = 0, int width = 480, int height = 272) {
 		Logger.log(Logger.Level.TRACE, "Display", "sceDisplaySetMode(%d, %d, %d)", mode, width, height);
@@ -109,6 +115,7 @@ class Display {
 			this.drawRow0Condition.notifyAll();
 			Thread.sleep(dur!"usecs"(cast(ulong)(1_000_000 * (vsync_row / hsync_hz))));
 
+			this.vblankEvent();
 			this.vblankStartCondition.notifyAll();
 			VBLANK_COUNT++;
 			Thread.sleep(dur!"usecs"(cast(ulong)(1_000_000 * ((number_of_rows - vsync_row) / hsync_hz))));

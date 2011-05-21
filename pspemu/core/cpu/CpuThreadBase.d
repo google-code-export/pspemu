@@ -64,6 +64,7 @@ abstract class CpuThreadBase : InstructionHandler {
 				execute();
 			});
 		}
+		
 		threadState.emulatorState.cpuThreads.remove(this);
 		running = false;
 		threadState.sceKernelThreadInfo.status = PspThreadStatus.PSP_THREAD_STOPPED;

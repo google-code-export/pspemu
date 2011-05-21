@@ -121,15 +121,19 @@ abstract class Module {
 	@property static public Registers currentRegisters() {
 		return currentThreadState.registers;
 	}
-	
-	void logInfo(T...)(T args) {
-		if (currentThreadState().thid == 5) return;
+
+	void logLevel(T...)(Logger.Level level, T args) {
 		try {
-			Logger.log(Logger.Level.INFO, this.baseName, "nPC(%08X) :: Thread(%d:%s) :: %s", currentThreadState().registers.RA, currentThreadState().thid, currentThreadState().name, std.string.format(args));
+			Logger.log(level, this.baseName, "nPC(%08X) :: Thread(%d:%s) :: %s", currentThreadState().registers.RA, currentThreadState().thid, currentThreadState().name, std.string.format(args));
 		} catch (Throwable o) {
-			Logger.log(Logger.Level.ERROR, "FORMAT_ERROR", "There was an error formating a logInfo");
+			Logger.log(Logger.Level.ERROR, "FORMAT_ERROR", "There was an error formating a logInfo for ('%s')", this.baseName);
 		}
 	}
+	
+	void logTrace(T...)(T args) { logLevel(Logger.Level.TRACE, args); }
+	void logInfo(T...)(T args) { logLevel(Logger.Level.INFO, args); }
+	void logWarning(T...)(T args) { logLevel(Logger.Level.WARNING, args); }
+	void logError(T...)(T args) { logLevel(Logger.Level.ERROR, args); }
 	
 	/*
 	static public void writefln(T...)(T args) {
