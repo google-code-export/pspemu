@@ -38,9 +38,9 @@ class StdioForUser : ModuleNative {
 	}
 	
 	void initModule() {
-		hleEmulatorState.uniqueIdFactory.set!Stream(cast(uint)STDIN , new FileWrapperStream(stdin ));
-		hleEmulatorState.uniqueIdFactory.set!Stream(cast(uint)STDOUT, new FileWrapperStream(stdout));
-		hleEmulatorState.uniqueIdFactory.set!Stream(cast(uint)STDERR, new FileWrapperStream(stderr));
+		hleEmulatorState.uniqueIdFactory.set!Stream(cast(uint)1 , new FileWrapperStream(stdin ));
+		hleEmulatorState.uniqueIdFactory.set!Stream(cast(uint)2, new FileWrapperStream(stdout));
+		hleEmulatorState.uniqueIdFactory.set!Stream(cast(uint)3, new FileWrapperStream(stderr));
 	}
 
 	/**

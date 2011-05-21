@@ -13,7 +13,8 @@ import pspemu.core.ThreadState;
 class SysTimer {
 	ThreadState threadState;
 	Thread sysTimerThread;
-	int cycle = 4194303;
+	const uint CYCLES_PER_CSECOND = 4194303;
+	int cycles = 4194303;
 	uint handler;
 	uint delegate() nativeHandler;
 	int unk1;
@@ -28,22 +29,17 @@ class SysTimer {
 		//while (emulatorState.runningState.running)
 		try {
 			while (true) {
-				//this.nativeHandler();
-				//writefln("%s", threadState);
-				//writefln("%s", threadState.threadModule);
-				//writefln("%s", threadState.threadModule.hleEmulatorState);
 				threadState.threadModule.hleEmulatorState.executeGuestCode(threadState, handler);
-				ulong usecs = cycle / 40;
-				//writefln("%s, %s", cycle, usecs);
-				Thread.sleep(dur!("usecs")(usecs));
+				uint msecsToWait = (cycles * 100) / CYCLES_PER_CSECOND;
+				Thread.sleep(dur!("msecs")(msecsToWait));
 			}
 		} catch (Throwable o) {
 			writefln("SysTimer.Exception: %s", o);
 		}
 	}
 	
-	public void setHandler(int cycle, uint handler, int unk1) {
-		this.cycle = cycle;
+	public void setHandler(int cycles, uint handler, int unk1) {
+		this.cycles = cycles;
 		this.handler = handler;
 		//this.nativeHandler = threadState.threadModule.hleEmulatorState.createExecuteGuestCode(threadState, handler);
 		this.unk1 = unk1;

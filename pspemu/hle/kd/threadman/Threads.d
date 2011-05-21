@@ -4,6 +4,8 @@ import pspemu.hle.kd.threadman.Types;
 import pspemu.core.ThreadState;
 import pspemu.hle.ModuleNative;
 
+import pspemu.utils.sync.WaitMultipleEvents;
+
 import pspemu.utils.Logger;
 
 template ThreadManForUser_Threads() {
@@ -62,16 +64,6 @@ template ThreadManForUser_Threads() {
 	 * @return UID of the created thread, or an error code.
 	 */
 	SceUID sceKernelCreateThread(string name, SceKernelThreadEntry entry, int initPriority, int stackSize, SceUInt attr, SceKernelThreadOptParam *option) {
-		/*
-		string name         = get_argument_str(0);
-		//void*  entry        = get_argument_ptr!void(1);
-		uint   entry        = get_argument_int(1);
-		int    initPriority = get_argument_int(2);
-		int    stackSize    = get_argument_int(3);
-		int    attr         = get_argument_int(4);
-		void*  option       = get_argument_ptr!void(5);
-		*/
-
 		ThreadState newThreadState = new ThreadState(currentEmulatorState, new Registers());
 		
 		newThreadState.threadModule = currentThreadState.threadModule;
@@ -100,44 +92,6 @@ template ThreadManForUser_Threads() {
 		newThreadState.name = cast(string)newThreadState.sceKernelThreadInfo.name[0..name.length];
 		
 		return newThreadState.thid;
-		
-		/*
-		auto pspThread = new PspThread(threadManager);
-
-		SceUID thid = 0; foreach (thid_cur; threadManager.createdThreads.keys) if (thid < thid_cur) thid = thid_cur; thid++;
-
-		threadManager.createdThreads[thid] = pspThread;
-		
-		pspThread.thid = thid;
-
-		pspThread.name = cast(string)pspThread.info.name[0..name.length];
-
-		pspThread.info.name[0..name.length] = name[0..name.length];
-		pspThread.info.currentPriority = pspThread.info.initPriority = initPriority;
-		pspThread.info.size      = pspThread.info.sizeof;
-		pspThread.info.stackSize = stackSize;
-		pspThread.info.entry     = entry;
-		pspThread.info.attr      = attr;
-		pspThread.info.status    = PspThreadStatus.PSP_THREAD_STOPPED;
-
-		// Set stack.
-		pspThread.createStack(moduleManager.get!(SysMemUserForUser));
-		
-		// Set extra info.
-		pspThread.info.gpReg = cast(void *)cpu.registers.GP;
-
-		// Set thread registers.
-		with (pspThread.registers) {
-			pspThread.registers.R[] = 0; // Clears all the registers (though it's not necessary).
-			pcSet(entry);
-			GP = cpu.registers.GP;
-			SP = pspThread.stack.block.high - 0x600;
-			//K0 = pspThread.stack.block.high - 0x600; //?
-			RA = 0x08000200; // sceKernelExitDeleteThread
-		}
-
-		return thid;
-		*/
 	}
 	
 	/**
@@ -157,14 +111,6 @@ template ThreadManForUser_Threads() {
 		
 		CpuThreadBase newCpuThread = currentCpuThread().createCpuThread(newThreadState);
 		
-		//writefln("sceKernelStartThread(%d, %d, %08X)", thid, arglen, argp);
-
-		/*
-		newCpuThread.executeBefore = delegate() {
-			writefln("started new thread");
-		};
-		*/
-		
 		newCpuThread.start();
 
 		newThreadState.sceKernelThreadInfo.status = PspThreadStatus.PSP_THREAD_RUNNING;
@@ -173,36 +119,7 @@ template ThreadManForUser_Threads() {
 		newCpuThread.thisThreadWaitCyclesAtLeast(1_000_000);
 		
 		
-		// @TODO
-		
 		return 0;
-		
-		//callLibrary("ThreadManForUser", "sceKernelStartThread");
-		//throw(new Exception("sceKernelStartThread"));
-
-		/*
-		if (thid < 0) return -1;
-		auto pspThread = getThreadFromId(thid);
-		if (pspThread is null) {
-			writefln("sceKernelStartThread: Null");
-			return -1;
-		}
-		//writefln("sceKernelStartThread:%d,%d,%d", thid, arglen, cpu.memory.getPointerReverseOrNull(argp));
-		pspThread.info.status  = PspThreadStatus.PSP_THREAD_RUNNING;
-		threadManager.addToRunningList(pspThread);
-
-		// NOTE: It's mandatory to switch immediately to this thread, because the new thread
-		// may use volatile data (por example a value that will be change in the parent thread)
-		// in a few instructions.
-		// Set the value to the current thread.
-		returnValue = 0;
-		avoidAutosetReturnValue();
-
-		// Then change to the next thread and avoid writting the return value to that thread.
-		pspThread.switchToThisThread();
-
-		return 0;
-		*/
 	}
 
 	/**
@@ -226,20 +143,48 @@ template ThreadManForUser_Threads() {
 		throw(new HaltException(std.string.format("sceKernelExitDeleteThread(%d)", status)));
 		return 0;
 	}
+	
+	WaitMultipleEvents _getWaitMultipleEvents(bool handleCallbacks) {
+		WaitMultipleEvents waitMultipleEvents = new WaitMultipleEvents();
 
-	int _sceKernelSleepThreadCB(bool CallBack) {
+		// We will listen to the stopping event that will launch a HaltException when triggered.		
+		waitMultipleEvents.add(currentEmulatorState.runningState.stopEvent);
+		
+		// If while sleeping we hav to handle callbacks, we will listen to that to.
+		if (handleCallbacks) {
+			waitMultipleEvents.add(hleEmulatorState.callbacksHandler.waitEvent);
+			// @TODO
+		}
+		
+		waitMultipleEvents.object = currentThreadState;
+		
+		return waitMultipleEvents;
+	}
+
+	int _sceKernelSleepThreadCB(bool handleCallbacks) {
+		scope waitMultipleEvents = _getWaitMultipleEvents(handleCallbacks);
+		
 		currentCpuThread.threadState.waitingBlock({
-			//.writefln("sceKernelSleepThreadCB()");
-			while (currentEmulatorState().runningState.running) {
-				Thread.sleep(dur!("msecs")(1));
+			while (true) {
+				waitMultipleEvents.waitAny();
 			}
-			throw(new HaltException("Halt"));
 		});
+		
+		return 0;
+	}
+	
+	int _sceKernelDelayThread(SceUInt delayInMicroseconds, bool handleCallbacks) {
+		scope waitMultipleEvents = _getWaitMultipleEvents(handleCallbacks);
+
+		currentCpuThread.threadState.waitingBlock({
+			waitMultipleEvents.waitAny(delayInMicroseconds / 1000);
+		});
+
 		return 0;
 	}
 	
 	/**
-	 * Sleep thread
+	 * Sleep thread forever.
 	 *
 	 * @return < 0 on error.
 	 */
@@ -262,40 +207,6 @@ template ThreadManForUser_Threads() {
 		return _sceKernelSleepThreadCB(true);
 	}
 	
-	/**
-	 * Modify the attributes of the current thread.
-	 *
-	 * @param unknown - Set to 0.
-	 * @param attr    - The thread attributes to modify.  One of ::PspThreadAttributes.
-	 *
-	 * @return < 0 on error.
-	 */
-	int sceKernelChangeCurrentThreadAttr(int unknown, SceUInt attr) {
-		writefln("UNIMPLEMENTED: sceKernelChangeCurrentThreadAttr(%d, %d)", unknown, attr);
-		//threadManager.currentThread.info.attr = attr;
-		return 0;
-	}
-
-	int _sceKernelDelayThread(SceUInt delay, bool callbacks) {
-		currentCpuThread.threadState.waitingBlock({
-			//writefln("sceKernelDelayThread(%d)", delay);
-			
-			//long delay2 = delay;
-			
-			Thread.sleep(dur!("usecs")(delay));
-			
-			/*
-			while (delay > 0) {
-				// @TODO This should be done with a set of mutexs, and a wait for any.
-				if (!currentEmulatorState.runningState.running) throw(new HaltException("Halt"));
-				Thread.sleep(dur!("usecs")(1000));
-				delay -= 1000;
-			}
-			*/
-		});
-		return 0;
-	}
-
 	/**
 	 * Delay the current thread by a specified number of microseconds
 	 *
@@ -324,6 +235,20 @@ template ThreadManForUser_Threads() {
 	int sceKernelDelayThreadCB(SceUInt delay) {
 		logInfo("sceKernelDelayThreadCB(%d)", delay);
 		return _sceKernelDelayThread(delay, /*callbacks = */true);
+	}
+	
+	/**
+	 * Modify the attributes of the current thread.
+	 *
+	 * @param unknown - Set to 0.
+	 * @param attr    - The thread attributes to modify.  One of ::PspThreadAttributes.
+	 *
+	 * @return < 0 on error.
+	 */
+	int sceKernelChangeCurrentThreadAttr(int unknown, SceUInt attr) {
+		writefln("UNIMPLEMENTED: sceKernelChangeCurrentThreadAttr(%d, %d)", unknown, attr);
+		//threadManager.currentThread.info.attr = attr;
+		return 0;
 	}
 
 	/** 

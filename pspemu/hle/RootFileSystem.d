@@ -5,15 +5,18 @@ import std.string;
 import pspemu.utils.Logger;
 import pspemu.utils.Path;
 
+import pspemu.hle.HleEmulatorState;
 import pspemu.utils.VirtualFileSystem;
 import pspemu.hle.kd.iofilemgr.Devices;
 
 class RootFileSystem {
+	HleEmulatorState hleEmulatorState;
 	VFS fsroot, gameroot;
 	IoDevice[string] devices;
 	string fscurdir;
 	
-	this() {
+	this(HleEmulatorState hleEmulatorState) {
+		this.hleEmulatorState = hleEmulatorState;
 		init();
 	}
 
@@ -23,10 +26,10 @@ class RootFileSystem {
 		//.writefln("[2]");
 
 		// Devices.
-		devices["ms0:"   ] = new MemoryStickDevice(new FileSystem(ApplicationPaths.exe ~ "/pspfs/ms0", "ms0:"));
-		devices["flash0:"] = new IoDevice         (new FileSystem(ApplicationPaths.exe ~ "/pspfs/flash0", "flash0:"));
-		devices["flash1:"] = new IoDevice         (new FileSystem(ApplicationPaths.exe ~ "/pspfs/flash1", "flash1:"));
-		devices["umd0:"  ] = new UmdDevice        (new FileSystem(ApplicationPaths.exe ~ "/pspfs/umd0", "umd0:"));
+		devices["ms0:"   ] = new MemoryStickDevice(hleEmulatorState, new FileSystem(ApplicationPaths.exe ~ "/pspfs/ms0", "ms0:"));
+		devices["flash0:"] = new IoDevice         (hleEmulatorState, new FileSystem(ApplicationPaths.exe ~ "/pspfs/flash0", "flash0:"));
+		devices["flash1:"] = new IoDevice         (hleEmulatorState, new FileSystem(ApplicationPaths.exe ~ "/pspfs/flash1", "flash1:"));
+		devices["umd0:"  ] = new UmdDevice        (hleEmulatorState, new FileSystem(ApplicationPaths.exe ~ "/pspfs/umd0", "umd0:"));
 		//.writefln("[3]");
 	
 		// Aliases.

@@ -24,31 +24,31 @@ import pspemu.hle.MemoryManager;
 import pspemu.hle.ModuleLoader;
 import pspemu.hle.Syscall;
 import pspemu.hle.RootFileSystem;
+import pspemu.hle.Callbacks;
 
 import pspemu.core.exceptions.NotImplementedException;
 
 import pspemu.core.cpu.interpreter.CpuThreadInterpreted;
 
 class HleEmulatorState : ISyscall {
-	public EmulatorState   emulatorState;
-	//public MemoryPartition memoryPartition;
-	public ModuleManager   moduleManager;
-	public ModuleLoader    moduleLoader;
-	public UniqueIdFactory uniqueIdFactory;
-	public Syscall         syscallObject;
-	public MemoryManager   memoryManager;
-	public RootFileSystem  rootFileSystem;
+	public EmulatorState    emulatorState;
+	public ModuleManager    moduleManager;
+	public ModuleLoader     moduleLoader;
+	public UniqueIdFactory  uniqueIdFactory;
+	public Syscall          syscallObject;
+	public MemoryManager    memoryManager;
+	public RootFileSystem   rootFileSystem;
+	public CallbacksHandler callbacksHandler;
 	
 	public this(EmulatorState emulatorState) {
-		this.emulatorState   = emulatorState;
-		//this.memoryPartition = new MemoryPartition(Memory.Segments.mainMemory.low, Memory.Segments.mainMemory.high);
-		this.moduleManager   = new ModuleManager(this);
-		this.memoryManager   = new MemoryManager(this.emulatorState.memory, this.moduleManager);
-		//this.moduleLoader    = new ModuleLoader(this.emulatorState.memory, this.memoryManager, this.moduleManager);
-		this.moduleLoader    = new ModuleLoader(this);
-		this.uniqueIdFactory = new UniqueIdFactory();
-		this.syscallObject   = new Syscall(this);
-		this.rootFileSystem  = new RootFileSystem();
+		this.emulatorState    = emulatorState;
+		this.moduleManager    = new ModuleManager(this);
+		this.memoryManager    = new MemoryManager(this.emulatorState.memory, this.moduleManager);
+		this.moduleLoader     = new ModuleLoader(this);
+		this.uniqueIdFactory  = new UniqueIdFactory();
+		this.syscallObject    = new Syscall(this);
+		this.rootFileSystem   = new RootFileSystem(this);
+		this.callbacksHandler = new CallbacksHandler(this);
 		
 		this.emulatorState.syscall = this;
 	}
@@ -66,6 +66,14 @@ class HleEmulatorState : ISyscall {
 	public uint executeGuestCode(ThreadState threadState, uint pointer) {
 		//new CpuThreadBase();
 		CpuThreadBase tempCpuThread = new CpuThreadInterpreted(threadState);
+
+		uint PC_back  = tempCpuThread.threadState.registers.PC;
+		uint nPC_back = tempCpuThread.threadState.registers.nPC;
+		scope (exit) {
+			tempCpuThread.threadState.registers.PC = PC_back;
+			tempCpuThread.threadState.registers.nPC = nPC_back;
+		} 
+
 		tempCpuThread.threadState.registers.pcSet = pointer;
 		//tempCpuThread.threadState.registers.RA = EmulatorHelper.CODE_PTR_END_CALLBACK;
 		tempCpuThread.threadState.registers.RA = 0x08000004;

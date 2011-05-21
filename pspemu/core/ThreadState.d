@@ -38,8 +38,11 @@ class ThreadState {
 	
 	public void waitingBlock(void delegate() callback) {
 		waiting = true;
-		callback();
-		waiting = false;
+		try {
+			callback();
+		} finally {
+			waiting = false;
+		}
 	}
 	
 	public this(EmulatorState emulatorState, Registers registers) {

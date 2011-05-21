@@ -33,13 +33,15 @@ class Logger {
 		if (level >= currentLogLevel) {
 			auto message = Message(std.c.time.time(null), level, component, std.string.format(args));
 			//messages ~= message;
-			if (component == "sceAudio_driver") return;
-			if (component == "sceAudio") return;
-			if (component == "IoFileMgrForUser") return;
-			if (component == "ThreadManForUser") return;
-			if (component == "sceHprm") return;
-			if (component == "sceCtrl") return;
-			//if (component == "Module") return;
+			if (level <= Level.INFO) {
+				if (component == "sceAudio_driver") return;
+				if (component == "sceAudio") return;
+				//if (component == "IoFileMgrForUser") return;
+				if (component == "ThreadManForUser") return;
+				if (component == "sceHprm") return;
+				if (component == "sceCtrl") return;
+				//if (component == "Module") return;
+			}
 			message.print();
 		}
 	}

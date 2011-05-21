@@ -118,7 +118,10 @@ class SysMemUserForUser : ModuleNative {
 	SceSize sceKernelMaxFreeMemSize() {
 		SceSize maxFreeMemSize = pspMemorySegment[2].getMaxAvailableMemoryBlock;
 		Logger.log(Logger.Level.INFO, "sysmem", "maxFreeMemSize(%d)", maxFreeMemSize);
-		return maxFreeMemSize;
+		// maxFreeMemSize
+		// @TODO Maybe game allocates all the memory, but alloc an stack can overlap the memory. Check this.
+		//return maxFreeMemSize - 20000;
+		return maxFreeMemSize - 1 * 1024 * 1024;
 	}
 
 	/**

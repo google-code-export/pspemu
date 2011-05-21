@@ -1,8 +1,8 @@
 module pspemu.hle.ModuleNative;
 
-import std.stdio;
-import std.conv;
-import std.traits;
+public import std.stdio;
+public import std.conv;
+public import std.traits;
 
 public import pspemu.utils.MathUtils;
 public import pspemu.utils.MemoryPartition;

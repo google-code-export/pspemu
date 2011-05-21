@@ -116,7 +116,7 @@ int main(string[] args) {
 			emulatorHelper.emulator.hleEmulatorState.moduleManager.get!(KDebugForKernel).outputKprintf = true;
 		}
 		emulatorHelper.initComponents();
-		GuiSdl gui = new GuiSdl(emulatorHelper.emulator.emulatorState);
+		GuiSdl gui = new GuiSdl(emulatorHelper.emulator.hleEmulatorState);
 		gui.start();
 		emulatorHelper.loadModule(args[1]);
 		emulatorHelper.start();
