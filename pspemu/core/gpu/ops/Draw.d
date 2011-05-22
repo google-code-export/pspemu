@@ -9,6 +9,8 @@ static assert(byte.sizeof  == 1);
 static assert(short.sizeof == 2);
 static assert(float.sizeof == 4);
 
+import std.datetime;
+
 template Gpu_Draw() {
 	/**
 	 * Set the current clear-color
@@ -304,7 +306,8 @@ template Gpu_Draw() {
 		// Need to have the framebuffer updated.
 		// @TODO: Check which buffers are going to be used (using the state).
 		gpu.performBufferOp(BufferOperation.LOAD, BufferType.ALL);
-		scope microSecondsStart = microSecondsTick;
+		StopWatch stopWatch;
+		stopWatch.start();
 		try {
 			gpu.impl.draw(
 				vertexListBuffer[0..vertexCount],
@@ -322,7 +325,9 @@ template Gpu_Draw() {
 			writefln("gpu.impl.draw Error: %s", o);
 			//throw(o);
 		}
-		debug (DEBUG_DRAWING) writefln("PRIM(0x%08X, %d, %d) : microseconds:%d", gpu.state.drawBuffer.address, primitiveType, vertexCount, microSecondsTick - microSecondsStart);
+		debug (DEBUG_DRAWING) {
+			writefln("PRIM(0x%08X, %d, %d) : microseconds:%d", gpu.state.drawBuffer.address, primitiveType, vertexCount, stopWatch.time);
+		}
 		// Now we should store the updated framebuffer when required.
 		// @TODO: Check which buffers have been updated (using the state).
 		//gpu.impl.test("prim");

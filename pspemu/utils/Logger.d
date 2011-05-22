@@ -46,4 +46,13 @@ class Logger {
 			message.print();
 		}
 	}
+	
+	template LogPerComponent() {
+		void logTrace   (T...)(T args) { logLevel(Logger.Level.TRACE   , args); }
+		void logDebug   (T...)(T args) { logLevel(Logger.Level.DEBUG   , args); }
+		void logInfo    (T...)(T args) { logLevel(Logger.Level.INFO    , args); }
+		void logWarning (T...)(T args) { logLevel(Logger.Level.WARNING , args); }
+		void logError   (T...)(T args) { logLevel(Logger.Level.ERROR   , args); }
+		void logCritical(T...)(T args) { logLevel(Logger.Level.CRITICAL, args); }
+	}
 }

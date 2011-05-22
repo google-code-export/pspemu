@@ -1,12 +1,25 @@
 module pspemu.core.gpu.DisplayList;
 
-import pspemu.utils.Utils;
+//import pspemu.utils.Utils;
+import std.conv;
+import pspemu.utils.CircularList;
+
+import pspemu.utils.sync.WaitEvent;
 
 import pspemu.core.gpu.Commands;
 import pspemu.core.gpu.Types;
 
-static struct DisplayList {
+static class DisplayList {
 	Command* base, pointer, stall;
+	WaitEvent displayListEndedEvent;
+	WaitEvent displayListStalledEvent;
+	WaitEvent displayListNewDataEvent;
+	
+	this() {
+		displayListEndedEvent = new WaitEvent("DisplayList.displayListEndedEvent");
+		displayListStalledEvent = new WaitEvent("DisplayList.displayListStalledEvent");
+		displayListNewDataEvent = new WaitEvent("DisplayList.displayListNewDataEvent");
+	}
 
 	string toString() {
 		return std.string.format("DisplayList(%08X-%08X-%08X):%08X", cast(uint)base, cast(uint)pointer, cast(uint)stall, cast(uint)(pointer - base));
@@ -16,6 +29,8 @@ static struct DisplayList {
 		this.base  = cast(Command*)base;
 		this.stall = cast(Command*)stall;
 		this.pointer = this.base;
+		displayListEndedEvent.reset();
+		displayListNewDataEvent.signal();
 	}
 
 	void jump(void* pointer) {
@@ -24,6 +39,7 @@ static struct DisplayList {
 
 	void end() {
 		base = pointer = stall = null;
+		displayListEndedEvent.signal();
 	}
 
 	bool isStalled() {
@@ -37,6 +53,11 @@ static struct DisplayList {
 	}
 
 	Command read() {
+		scope (exit) {
+			if (pointer == stall) {
+				displayListStalledEvent.signal();
+			}
+		}
 		return *pointer++;
 	}
 

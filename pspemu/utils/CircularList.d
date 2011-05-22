@@ -1,5 +1,7 @@
 module pspemu.utils.CircularList;
 
+import pspemu.utils.sync.WaitEvent;
+
 class CircularList(Type, bool CheckAvailable = true) {
 	/*
 	struct Node {
@@ -13,9 +15,13 @@ class CircularList(Type, bool CheckAvailable = true) {
 	*/
 
 	Type[] list;
+	WaitEvent readAvailableEvent;
+	WaitEvent writeAvailableEvent;
 
 	this(uint capacity = 1024) {
 		list = new Type[capacity];
+		readAvailableEvent  = new WaitEvent("CircularList.readAvailableEvent");
+		writeAvailableEvent = new WaitEvent("CircularList.writeAvailableEvent");
 	}
 	
 	public void clear() {

@@ -14,7 +14,7 @@ import std.conv;
 
 import pspemu.hle.ModuleNative;
 
-import pspemu.utils.Utils;
+//import pspemu.utils.Utils;
 import pspemu.utils.Path;
 import pspemu.utils.Logger;
 import pspemu.utils.VirtualFileSystem;
