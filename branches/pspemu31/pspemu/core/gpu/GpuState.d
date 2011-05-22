@@ -192,6 +192,11 @@ struct TextureState {
 	uint paletteRequiredComponents() { return hasPalette ? (1 << (4 + (format - PixelFormats.GU_PSM_T4))) : 0; }
 }
 
+struct Patch {
+	float div_s;
+	float div_t;
+}
+
 static struct GpuState {
 	Memory memory;
 	uint baseAddress, vertexAddress, indexAddress;
@@ -221,6 +226,7 @@ static struct GpuState {
 			Matrix projectionMatrix, worldMatrix, viewMatrix, textureMatrix;
 			Matrix[8] boneMatrix;
 			uint boneMatrixIndex;
+			Patch patch;
 			
 			LightModel lightModel;
 			

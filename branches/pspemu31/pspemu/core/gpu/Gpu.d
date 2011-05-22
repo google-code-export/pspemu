@@ -43,6 +43,7 @@ import pspemu.core.gpu.ops.Clut;
 import pspemu.core.gpu.ops.Fog;
 import pspemu.core.gpu.ops.Dither;
 import pspemu.core.gpu.ops.Depth;
+import pspemu.core.gpu.ops.Spline;
 
 import pspemu.core.exceptions.HaltException;
 
@@ -150,6 +151,7 @@ class Gpu {
 		mixin Gpu_Fog;
 		mixin Gpu_Dither;
 		mixin Gpu_Depth;
+		mixin Gpu_Spline;
 
 		mixin({
 			string s;
