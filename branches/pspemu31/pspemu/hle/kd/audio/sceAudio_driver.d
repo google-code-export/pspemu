@@ -49,7 +49,7 @@ class sceAudio_driver : ModuleNative {
 
 	void initModule() {
 		audio = new Audio;
-		currentEmulatorState.runningState.onStop += delegate() {
+		currentEmulatorState.runningState.onStop += delegate(...) {
 			audio.stop();
 		};
 	}

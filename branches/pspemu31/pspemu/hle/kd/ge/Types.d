@@ -6,7 +6,8 @@ struct PspGeContext {
 }
 
 /** Typedef for a GE callback */
-alias void function(int id, void *arg) PspGeCallback;
+//alias void function(int id, void *arg) PspGeCallback;
+alias uint PspGeCallback;
 
 /** Structure to hold the callback data */
 struct PspGeCallbackData {

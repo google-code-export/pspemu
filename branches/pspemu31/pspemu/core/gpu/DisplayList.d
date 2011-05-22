@@ -9,14 +9,14 @@ import pspemu.utils.sync.WaitEvent;
 import pspemu.core.gpu.Commands;
 import pspemu.core.gpu.Types;
 
-static class DisplayList {
+static struct DisplayList {
 	Command* base, pointer, stall;
 	WaitEvent displayListEndedEvent;
 	WaitEvent displayListStalledEvent;
 	WaitEvent displayListNewDataEvent;
 	
-	this() {
-		displayListEndedEvent = new WaitEvent("DisplayList.displayListEndedEvent");
+	void init() {
+		displayListEndedEvent   = new WaitEvent("DisplayList.displayListEndedEvent");
 		displayListStalledEvent = new WaitEvent("DisplayList.displayListStalledEvent");
 		displayListNewDataEvent = new WaitEvent("DisplayList.displayListNewDataEvent");
 	}
@@ -63,6 +63,7 @@ static class DisplayList {
 
 	static DisplayList opCall(void* base, void* stall) {
 		DisplayList dl = void;
+		dl.init();
 		dl.set(base, stall);
 		return dl;
 	}

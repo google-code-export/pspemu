@@ -92,7 +92,7 @@ template Gpu_Flow() {
 	auto OP_FINISH() {
 		//gpu.storeFrameBuffer();
 		gpu.impl.flush();
-		finishEvent();
+		gpu.finishEvent();
 	}
 
 	auto OP_CALL() {
@@ -103,12 +103,10 @@ template Gpu_Flow() {
 		doassert();
 	}
 
-	/*
 	enum GU_BEHAVIOR {
 		GU_BEHAVIOR_SUSPEND = 1,
 		GU_BEHAVIOR_CONTINUE = 2
 	}
-	*/
 
 	/**
 	 * Trigger signal to call code from the command stream
@@ -122,17 +120,15 @@ template Gpu_Flow() {
 	 **/
 	// void sceGuSignal(int signal, int behavior);
 	auto OP_SIGNAL() {
-		//auto signal = command.param24;
-		//auto signal   = command.extract!(uint, 16,  8);
-		/*
+		auto signal   = command.extract!(uint, 16,  8);
 		auto behavior = cast(GU_BEHAVIOR)command.extract!(uint,  0, 16);
+		writefln("*OP_SIGNAL(%d, %d)", signal, behavior);
+
 		auto call = delegate() {
-			signalEvent();
+			gpu.signalEvent(signal);
 		};
-		*/
 		
-		//return;
-		/*
+
 		switch (behavior) {
 			case GU_BEHAVIOR.GU_BEHAVIOR_SUSPEND:
 				call();
@@ -143,6 +139,5 @@ template Gpu_Flow() {
 				thread.start();
 			break;
 		}
-		*/
 	}
 }

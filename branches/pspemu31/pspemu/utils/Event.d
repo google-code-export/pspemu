@@ -1,9 +1,9 @@
 module pspemu.utils.Event;
 
 struct Event {
-	void delegate()[] callbacks;
+	void delegate(...)[] callbacks;
 	
-	void opAddAssign(void delegate() callback) {
+	void opAddAssign(void delegate(...) callback) {
 		callbacks ~= callback;
 	}
 	
@@ -11,9 +11,9 @@ struct Event {
 		callbacks.length = 0;
 	}
 	
-	void opCall() {
+	void opCall(T...)(T args) {
 		foreach (callback; callbacks) {
-			callback();
+			callback(args);
 		}
 	}
 }

@@ -11,6 +11,7 @@ import pspemu.core.EmulatorState;
 import pspemu.core.ThreadState;
 
 class SysTimer {
+	HleEmulatorState hleEmulatorState;
 	ThreadState threadState;
 	Thread sysTimerThread;
 	const uint CYCLES_PER_CSECOND = 4194303;
@@ -20,6 +21,7 @@ class SysTimer {
 	int unk1;
 	
 	this(HleEmulatorState hleEmulatorState, ThreadState threadState) {
+		this.hleEmulatorState = hleEmulatorState;
 		this.threadState = threadState.clone();
 		this.threadState.registers.SP = hleEmulatorState.memoryManager.allocStack(PspPartition.User, "STACK", 0x8000);
 		this.sysTimerThread = new Thread(&run);
@@ -29,7 +31,8 @@ class SysTimer {
 		//while (emulatorState.runningState.running)
 		try {
 			while (true) {
-				threadState.threadModule.hleEmulatorState.executeGuestCode(threadState, handler);
+				//threadState.threadModule.hleEmulatorState.executeGuestCode(threadState, handler);
+				hleEmulatorState.callbacksHandler.addToExecuteQueue(handler);
 				uint msecsToWait = (cycles * 100) / CYCLES_PER_CSECOND;
 				Thread.sleep(dur!("msecs")(msecsToWait));
 			}
