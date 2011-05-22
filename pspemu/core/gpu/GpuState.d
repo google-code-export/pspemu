@@ -6,6 +6,8 @@ import pspemu.utils.MathUtils;
 import pspemu.utils.StructUtils;
 //import pspemu.utils.Utils;
 
+import pspemu.hle.kd.ge.Types;
+
 import std.bitmanip;
 
 enum TransformMode {
@@ -193,7 +195,8 @@ static struct GpuState {
 	TextureTransfer textureTransfer;
 	
 	union {
-		uint[1024] RealState;
+		//PspGeContext RealState;
+		uint[512] RealState;
 		struct {
 			VertexType vertexType; // here because of transform2d
 			Viewport viewport;
@@ -280,11 +283,14 @@ static struct GpuState {
 			LogicalOperation logicalOperation; // LogicalOperation.GU_COPY
 			
 			ubyte[4] colorMask; // [0xFF, 0xFF, 0xFF, 0xFF];
-			//static assert (this.sizeof <= 512);
 		}
 	}
-
-	static assert (this.RealState.offsetof + this.RealState.sizeof == this.sizeof); // RealState ends the struct
+	
+	// Size of the inner state if less than PspGeContext.sizeof
+	static assert((colorMask.offsetof + colorMask.sizeof - vertexType.offsetof) <= PspGeContext.sizeof);
+	
+	// RealState ends the struct
+	static assert (this.RealState.offsetof + this.RealState.sizeof == this.sizeof);
 }
 
 struct PrimitiveFlags {

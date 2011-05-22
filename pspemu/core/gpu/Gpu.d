@@ -47,6 +47,7 @@ import pspemu.core.gpu.ops.Depth;
 import pspemu.core.exceptions.HaltException;
 
 import pspemu.utils.Logger;
+import pspemu.utils.Event;
 
 import std.datetime;
 
@@ -68,6 +69,8 @@ class Gpu {
 	Thread thread;
 
 	WaitEvent endedExecutingListsEvent;
+	Event signalEvent;
+	Event finishEvent;
 
 	this(EmulatorState emulatorState, GpuImpl impl) {
 		this.endedExecutingListsEvent = new WaitEvent();
@@ -90,6 +93,8 @@ class Gpu {
 		this.state.memory = memory;
 		this.impl.reset();
 		this.impl.setState(&state);
+		this.signalEvent.reset();
+		this.finishEvent.reset();
 	}
 
 	// Utility.
@@ -120,9 +125,9 @@ class Gpu {
 		Command command = displayList.read;
 		Gpu gpu = this;
 
-		void doassert() {
-			writefln("0x%08X: Stop %s", reinterpret!(uint)(&command), command);
-			throw(new Exception("Unimplemented"));
+		void doassert(string file = __FILE__, int line = __LINE__) {
+			writefln("0x%08X: Stop %s : %s:%d", reinterpret!(uint)(&command), command, file, line);
+			throw(new Exception(std.string.format("Unimplemented %s:%d", file, line)));
 		}
 		void unimplemented() {
 			Logger.log(Logger.Level.WARNING, "Gpu", "0x%08X: Unimplemented %s", reinterpret!(uint)(&command), command);
@@ -152,7 +157,7 @@ class Gpu {
 					string opname = to!string(cast(Opcode)n);
 					string func = "OP_" ~ opname;
 					debug (DEBUG_GPU_SHOW_COMMAND) s ~= "writefln(\"%08X:%s: %06X\", memory.getPointerReverseOrNull(commandPointer), \"" ~ opname ~ "\", command.param24);";
-					s ~= "mixin(\"static if (__traits(compiles, " ~ func ~ ")) { " ~ func ~ "(); } else { unimplemented(); }\");";
+					s ~= "mixin(\"static if (__traits(compiles, " ~ func ~ ")) { " ~ func ~ "(); } else { writefln(\\\"no compiles\\\"); unimplemented(); }\");";
 				}
 				s ~= "break;";
 			}

@@ -78,7 +78,7 @@ template Gpu_Flow() {
 	 * @param context - Temporary storage for the GE context
 	 **/
 	// void sceGuSendList(int mode, const void* list, PspGeContext* context);
-
+	
 	auto OP_JUMP() {
 		auto address = (gpu.state.baseAddress | command.param24) & (~0b_11);
 		displayList.jump(gpu.memory.getPointer(address));
@@ -92,6 +92,7 @@ template Gpu_Flow() {
 	auto OP_FINISH() {
 		//gpu.storeFrameBuffer();
 		gpu.impl.flush();
+		finishEvent();
 	}
 
 	auto OP_CALL() {
@@ -101,6 +102,13 @@ template Gpu_Flow() {
 	auto OP_RET() {
 		doassert();
 	}
+
+	/*
+	enum GU_BEHAVIOR {
+		GU_BEHAVIOR_SUSPEND = 1,
+		GU_BEHAVIOR_CONTINUE = 2
+	}
+	*/
 
 	/**
 	 * Trigger signal to call code from the command stream
@@ -114,6 +122,27 @@ template Gpu_Flow() {
 	 **/
 	// void sceGuSignal(int signal, int behavior);
 	auto OP_SIGNAL() {
-		doassert();
+		//auto signal = command.param24;
+		//auto signal   = command.extract!(uint, 16,  8);
+		/*
+		auto behavior = cast(GU_BEHAVIOR)command.extract!(uint,  0, 16);
+		auto call = delegate() {
+			signalEvent();
+		};
+		*/
+		
+		//return;
+		/*
+		switch (behavior) {
+			case GU_BEHAVIOR.GU_BEHAVIOR_SUSPEND:
+				call();
+			break;
+			case GU_BEHAVIOR.GU_BEHAVIOR_CONTINUE:
+				Thread thread = new Thread(call);
+				thread.name = "Gpu.OP_SIGNAL";
+				thread.start();
+			break;
+		}
+		*/
 	}
 }
