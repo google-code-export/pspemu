@@ -39,6 +39,10 @@ abstract class ModuleNative : Module {
 		return hleEmulatorState.executeGuestCode(threadState, pointer);
 	}
 	*/
+	
+	string dupStr(string str) {
+		return cast(string)((cast(char[])str).dup);
+	}
 
 	template Parameters() {
 		void* vparam_ptr(T)(int n) {

@@ -85,7 +85,35 @@ class CpuThreadInterpreted : CpuThreadBase {
 		    } catch (HaltException haltException) {
 				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "halted thread: %s", this);
 		    } catch (Exception exception) {
-		    	.writefln("at 0x%08X", registers.PC);
+		    	.writefln("at 0x%08X : %s", registers.PC, threadState);
+		    	.writefln("THREADSTATE: %s", threadState);
+		    	.writefln("MODULE: %s", threadState.threadModule);
+		    	
+		    	//.,writefln();
+		    	.writefln("CALLSTACK:");
+		    	foreach (callPC; registers.RealCallStack) {
+		    		//.writef("   ");
+		    		.writef("   %08X", callPC);
+		    		bool printed = false;
+		    		if (threadState.threadModule !is null) {
+		    			if (threadState.threadModule.dwarf !is null) {
+		    				auto state = threadState.threadModule.dwarf.find(callPC);
+		    				if (state !is null) {
+		    					writef(":%s", (*state).toString);
+		    					printed = true;
+		    				}
+		    			}
+		    		}
+		    		if (!printed) {
+		    			//.writef("%08X", callPC);
+		    		}
+		    		.writefln("");
+		    	}
+		    	.writefln("REGISTERS:");
+		    	foreach (k, value; registers.R) {
+		    		.writef("   r%2d: %08X", k, value);
+		    		if ((k % 4) == 3) .writefln("");
+		    	}
 		    	.writefln("%s", exception);
 		    	.writefln("%s", this);
 		    } finally {

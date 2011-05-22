@@ -186,6 +186,8 @@ class ModuleLoader {
 		
 		countInstructions();
 		
+		loadDwarfInformation();
+		
 		//memoryManager
 		//SceModule
 		//this.memoryManager.
@@ -195,6 +197,8 @@ class ModuleLoader {
 		modulePsp.sceModule.modname[0..27] = moduleInfo.name[0..27];
 		modulePsp.sceModule.gp_value = moduleInfo.gp;
 		modulePsp.sceModule.entry_addr = PC;
+		
+		modulePsp.dwarf = this.dwarf;
 		
 		return modulePsp;
 	}
@@ -346,19 +350,21 @@ class ModuleLoader {
 		}
 	}
 
-	/+
 	void loadDwarfInformation() {
 		try {
 			dwarf = new ElfDwarf;
 			dwarf.parseDebugLine(elf.SectionStream(".debug_line"));
-			dwarf.find(0x089004C8);
+			//auto state = dwarf.find(0x0890BBB0);
+			//writefln("%s", *state);
 			//executionState.debugSource = this;
-			writefln("Loaded debug information");
-		} catch (Object o) {
-			writefln("Can't find debug information: '%s'", o);
+			Logger.log(Logger.Level.TRACE, "ModuleLoader", "Loaded debug information");
+		} catch (Throwable o) {
+			Logger.log(Logger.Level.WARNING, "ModuleLoader", "Can't find debug information: '%s'", o);
 		}
+		//throw(new Exception("aaaaaaaaaaaaaaaa"));
 	}
 	
+	/*
 	bool lookupDebugSourceLine(ref DebugSourceLine debugSourceLine, uint address) {
 		if (dwarf is null) return false;
 		auto state = dwarf.find(address);
@@ -372,9 +378,7 @@ class ModuleLoader {
 	bool lookupDebugSymbol(ref DebugSymbol debugSymbol, uint address) {
 		return false;
 	}
-
-
-	+/
+	*/
 }
 
 //public import pspemu.All;

@@ -50,6 +50,10 @@ final class Registers {
 	uint[1024] CallStack;
 	int CallStackPos;
 	
+	uint[] RealCallStack() {
+		return CallStack[0..CallStackPos];
+	}
+	
 	void CallStackPush() {
 		if (CallStackPos < CallStack.length - 1) {
 			CallStack[CallStackPos] = PC;

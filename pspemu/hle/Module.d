@@ -16,6 +16,8 @@ import pspemu.core.Memory;
 
 import pspemu.utils.Logger;
 
+import pspemu.formats.elf.ElfDwarf;
+
 import pspemu.hle.HleEmulatorState;
 
 import pspemu.hle.kd.loadcore.Types;
@@ -29,6 +31,7 @@ static string classInfoBaseName(ClassInfo ci) {
 
 abstract class Module {
 	public SceModule *sceModule;
+	public ElfDwarf dwarf;
 
 	class ImportLibrary {
 		string name;
