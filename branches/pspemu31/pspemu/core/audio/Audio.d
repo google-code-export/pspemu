@@ -6,6 +6,8 @@ import core.thread;
 import std.stream;
 
 import pspemu.utils.MathUtils;
+import pspemu.utils.sync.WaitEvent;
+import pspemu.utils.sync.WaitMultipleEvents;
 
 //import pspemu.utils.Utils;
 
@@ -211,8 +213,10 @@ class Audio {
 	class Channel {
 		int index;
 		RingBuffer!(short) samples;
+		WaitEvent endedPlayingWaitEvent;
 		
 		this(int index) {
+			endedPlayingWaitEvent = new WaitEvent("Audio.endedPlayingWaitEvent");
 			samples = new typeof(samples)(44100 * 2 * 2); // 2 seconds for two channels
 		}
 		
@@ -224,12 +228,7 @@ class Audio {
 		}
 		
 		void wait() {
-			//writefln("read:%d, write:%d, capacity:%d, readpos:%d, writepos:%d", samples.readLeft, samples.writeLeft, samples.capacity, samples.readingPosition, samples.writtingPosition);
-			while (isPlaying) {
-				Thread.sleep(dur!"msecs"(1));
-				//Sleep(0);
-			}
-			//while (samples.writeLeft < samples.capacity / 2) sleep(1);
+			while (isPlaying) endedPlayingWaitEvent.wait();
 		}
 		
 		uint samplesLeft() {
@@ -238,6 +237,9 @@ class Audio {
 		
 		void read(short[] samplesToRead) {
 			samples.read(samplesToRead);
+			if (!isPlaying()) {
+				endedPlayingWaitEvent.signal();
+			}
 			//writefln("%s", samplesToRead);
 		}
 
@@ -379,9 +381,7 @@ class Audio {
 					}
 				}
 
-				//Sleep(didsomething ? 1 : 0);
-				Sleep(1);
-				//Sleep(0);
+				if (didsomething) Sleep(1);
 			}
 		} catch (Throwable o) {
 			writefln("Audio.playThread: %s", o);

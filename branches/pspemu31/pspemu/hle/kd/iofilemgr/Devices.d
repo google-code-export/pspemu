@@ -4,7 +4,7 @@ module pspemu.hle.kd.iofilemgr.Devices;
 
 import pspemu.hle.ModuleNative;
 
-import pspemu.utils.Utils;
+//import pspemu.utils.Utils;
 import pspemu.utils.Path;
 import pspemu.utils.Logger;
 import pspemu.utils.VirtualFileSystem;

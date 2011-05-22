@@ -54,7 +54,7 @@ class EmulatorHelper {
 			//memory.writeString("umd0:/PSP_GAME/SYSDIR/BOOT.BIN\0");
 		}
 		
-		// @TODO: hack because not all threads are stopping.
+		// @TODO: @FIX: @HACK because not all threads are stopping.
 		emulator.emulatorState.runningState.onStop += delegate() {
 			Thread.sleep(dur!("msecs")(100));
 			std.c.stdlib.exit(0);

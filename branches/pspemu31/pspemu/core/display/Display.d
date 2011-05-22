@@ -111,6 +111,7 @@ class Display {
 	protected void run() {
 		StopWatch stopWatch;
 		
+		// @TODO: use stopWatch to allow frameskipping
 		while (this.runningState.running) {
 			this.drawRow0Condition.notifyAll();
 			Thread.sleep(dur!"usecs"(cast(ulong)(1_000_000 * (vsync_row / hsync_hz))));

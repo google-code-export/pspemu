@@ -12,8 +12,13 @@ import core.thread;
 import std.stdio;
 import std.conv;
 
-import pspemu.utils.Utils;
+import pspemu.utils.TaskQueue;
+import pspemu.utils.CircularList;
 import pspemu.utils.MathUtils;
+import pspemu.utils.String;
+
+import pspemu.utils.sync.WaitEvent;
+import pspemu.utils.sync.WaitMultipleEvents;
 //import pspemu.utils.Logger;
 
 import pspemu.core.EmulatorState;
@@ -43,6 +48,8 @@ import pspemu.core.exceptions.HaltException;
 
 import pspemu.utils.Logger;
 
+import std.datetime;
+
 class Gpu {
 	//bool componentInitialized;
 	bool running = true;
@@ -56,8 +63,15 @@ class Gpu {
 	DisplayLists displayLists;
 
 	TaskQueue externalActions;
-	
+
+	bool implInitialized;
+	Thread thread;
+
+	WaitEvent endedExecutingListsEvent;
+
 	this(EmulatorState emulatorState, GpuImpl impl) {
+		this.endedExecutingListsEvent = new WaitEvent();
+
 		this.emulatorState = emulatorState;
 		this.impl   = impl;
 		this.memory = emulatorState.memory;
@@ -163,10 +177,10 @@ class Gpu {
 		try {
 			while (displayList.hasMore) {
 				while (displayList.isStalled) {
-					debug (DEBUG_GPU_VERBOSE) writefln("  stalled() : %s", displayList);
-					WaitAndCheck;
+					logTrace("  stalled() : %s", displayList);
+					newWaitAndCheck([displayList.displayListNewDataEvent]);
 				}
-				WaitAndCheck(0);
+				newWaitAndCheck2();
 				lastCommandPointer = displayList.pointer;
 				executeSingleCommand(displayList);
 			}
@@ -179,13 +193,9 @@ class Gpu {
 			currentDisplayList = null;
 		}
 	}
-
+	
 	bool executingDisplayList() { return (currentDisplayList !is null); }
 
-	bool implInitialized;
-
-	Thread thread;
-	
 	public void start() {
 		thread = new Thread(&run);
 		thread.name = "GpuThread";
@@ -201,6 +211,7 @@ class Gpu {
 			//componentInitialized = true;
 			while (running) {
 				//writefln("displayLists.readAvailable");
+				endedExecutingListsEvent.reset();
 				while (displayLists.readAvailable) {
 					impl.startDisplayList();
 					{
@@ -208,111 +219,75 @@ class Gpu {
 					}
 					impl.endDisplayList();
 				}
+				endedExecutingListsEvent.signal();
 				//if (runningState != RunningState.RUNNING) waitUntilResume();
-				WaitAndCheck;
+				newWaitAndCheck([displayLists.readAvailableEvent]);
 			}
 		} catch (HaltException e) {
-			Logger.log(Logger.Level.DEBUG, "Gpu", "Gpu.run HaltException: %s", e);
+			logDebug("Gpu.run HaltException: %s", e);
 		} catch (Throwable e) {
-			Logger.log(Logger.Level.CRITICAL, "Gpu", "Gpu.run exception: %s", e);
+			logCritical("Gpu.run exception: %s", e);
 		} finally {
-			Logger.log(Logger.Level.DEBUG, "Gpu", "Gpu.shutdown");
+			logDebug("Gpu.shutdown");
 		}
 	}
 
 	template ExternalInterface() {
-		DisplayList* sceGeListEnQueue(void* list, void* stall = null) {
-			//InfiniteLoop!(512) loop;
-			while (!displayLists.writeAvailable) {
-				//loop.increment();
-				sleep(1);
-			}
-			DisplayList* ret = &displayLists.queue(DisplayList(list, stall));
-			//writefln("%s", *ret);
-			return ret;
-		}
-
 		// @TODO!!!! @FIXME!! change queue for queueHead
-		DisplayList* sceGeListEnQueueHead(void* list, void* stall = null) {
-			//InfiniteLoop!(512) loop;
+		DisplayList* _sceGeListEnQueue(void* list, void* stall = null, bool enqueueHead = false) {
 			while (!displayLists.writeAvailable) {
-				//loop.increment();
-				sleep(1);
+				// @TODO: Must handle the ended execution event
+				displayLists.writeAvailableEvent.wait();
 			}
-			DisplayList* ret = &displayLists.queue(DisplayList(list, stall));
+			DisplayList* ret = &displayLists.enqueue(DisplayList(list, stall));
 			return ret;
 		}
-
-		void sceGeListUpdateStallAddr(DisplayList* displayList, void* stall) {
-			displayList.stall = cast(Command*)stall;
-		}
-
-		void sceGeListDeQueue(DisplayList* displayList) {
-		}
+		
+		DisplayList* sceGeListEnQueue(void* list, void* stall = null) { return _sceGeListEnQueue(list, stall, false); }
+		DisplayList* sceGeListEnQueueHead(void* list, void* stall = null) { return _sceGeListEnQueue(list, stall, true); }
+		void sceGeListUpdateStallAddr(DisplayList* displayList, void* stall) { displayList.stall = cast(Command*)stall; }
+		void sceGeListDeQueue(DisplayList* displayList) { logWarning("Not implemented sceGeListDeQueue"); }
 
 		/**
 		 * Wait until the specified list have been executed.
 		 */
 		void sceGeListSync(DisplayList* displayList, int syncType) {
-			// While this displayList has more items to read.
-			//writefln("sceGeListSync[1]");
-			try {
-				//InfiniteLoop!(512) loop;
-				while (displayList.hasMore) {
-					//writefln("sceGeListSync[2] : %d", displayList.hasMore);
-					//loop.increment();
-					WaitAndCheck;
-				}
-			} catch {
-			}
+			while (displayList.hasMore) newWaitAndCheck([displayList.displayListEndedEvent]);
 
-			//writefln("sceGeListSync[3]");
 			performBufferOp(BufferOperation.STORE);
-			//writefln("sceGeListSync[4]");
 		}
 		
 		/**
 		 * Wait until all the remaining commands have been executed.
 		 */
 		void sceGeDrawSync(int syncType) {
-			// While we have display lists queued
-			// Or if we are currently executing a displayList
 			//writefln("sceGeDrawSync [1]");
-			try {
-				//InfiniteLoop!(512) loop;
-				while (displayLists.readAvailable || executingDisplayList) {
-					//writefln("sceGeDrawSync [2] %d, %d", displayLists.readAvailable, executingDisplayList);
-					/*
-					loop.increment({
-						writefln("  executingDisplayList: %s", executingDisplayList);
-						writefln("  displayLists.readAvailable: %d", displayLists.readAvailable);
-					});
-					*/
-					WaitAndCheck;
-				}
-			} catch {
+			while (displayLists.readAvailable || executingDisplayList) {
+				newWaitAndCheck([displayLists.readAvailableEvent, endedExecutingListsEvent]);
 			}
 			
-			//writefln("sceGeDrawSync [3]");
-			
 			performBufferOp(BufferOperation.STORE);
-			
-			//writefln("sceGeDrawSync [4]");
 		}
 	}
 
 	bool inDrawingThread() { return Thread.getThis == thread; }
+	
+	void newWaitAndCheck(WaitEvent[] waitEvents) {
+		scope WaitMultipleEvents waitMultipleEvents = new WaitMultipleEvents();
+		waitMultipleEvents.add(emulatorState.runningState.stopEvent);
+		if (inDrawingThread) waitMultipleEvents.add(externalActions.newAvailableTasksEvent);
+		foreach (waitEvent; waitEvents) waitMultipleEvents.add(waitEvent);
+		waitMultipleEvents.waitAny();
+	}
 
-	void WaitAndCheck(uint count = 1) {
-		if (!running) throw(new Exception("Gpu Stopping Execution"));
+	void newWaitAndCheck2() {
+		if (!running) throw(new HaltException("Gpu Stopping Execution"));
 		if (inDrawingThread) externalActions();
-		if (count > 0) sleep(count);
 	}
 
 	void externalActionAdd(TaskQueue.Task task) {
 		externalActions.add(task);
-		if (inDrawingThread) externalActions(); else externalActions.waitEmpty();
-		//externalActions.waitEmpty();
+		if (inDrawingThread) externalActions(); else externalActions.waitExecutedAll();
 	}
 	
 	void loadBuffer(ScreenBuffer* buffer) {
@@ -360,29 +335,22 @@ class Gpu {
 	}
 	
 	void performBufferOp(BufferOperation bufferOperation, BufferType bufferType = BufferType.ALL) {
-		//writefln("performBufferOp[1]");
 		if (bufferOperation == BufferOperation.LOAD) {
-			if (state.drawBuffer.storeAddress) {
-				debug (DEBUG_WARNING_PERFORM_BUFFER_OP) writefln("WARNING! performBufferOp(LOAD) has state.drawBuffer.mustStore. It wasn't stored yet!");
-				//return;
-			}
-			//writefln("performBufferOp[2]");
+			if (state.drawBuffer.storeAddress) logTrace("performBufferOp(LOAD) has state.drawBuffer.mustStore. It wasn't stored yet!");
 			if (bufferType & BufferType.COLOR) loadBuffer(&state.drawBuffer);
-			//writefln("performBufferOp[3]");
 			if (bufferType & BufferType.DEPTH) loadBuffer(&state.depthBuffer);
-			//writefln("performBufferOp[4]");
 		} else {
-			if (state.drawBuffer.loadAddress) {
-				debug (DEBUG_WARNING_PERFORM_BUFFER_OP) writefln("WARNING! performBufferOp(STORE) has state.drawBuffer.mustLoad. It wasn't stored yet!");
-			}
-			//writefln("performBufferOp[2]");
+			if (state.drawBuffer.loadAddress) logTrace("performBufferOp(STORE) has state.drawBuffer.mustLoad. It wasn't stored yet!");
 			if (bufferType & BufferType.COLOR) storeBuffer(&state.drawBuffer);
-			//writefln("performBufferOp[3]");
 			if (bufferType & BufferType.DEPTH) storeBuffer(&state.depthBuffer);
-			//writefln("performBufferOp[4]");
 		}
-		//writefln("performBufferOp[5]");
 	}
 
 	mixin ExternalInterface;
+	
+	void logLevel(T...)(Logger.Level level, T args) {
+		Logger.log(level, "Gpu", "%s", std.string.format(args));
+	}
+
+	mixin Logger.LogPerComponent;
 }

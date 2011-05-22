@@ -8,7 +8,7 @@ import std.windows.syserror;
 import std.stdio;
 import std.zlib;
 
-import pspemu.utils.Utils;
+//import pspemu.utils.Utils;
 
 import derelict.opengl.gl;
 import derelict.opengl.glext;
