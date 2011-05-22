@@ -108,7 +108,7 @@ static struct VertexState {
 	float r = 0.0, g = 0.0, b = 0.0, a = 0.0;  // Color components.
 	float nx = 0.0, ny = 0.0, nz = 0.0;  // Normal vector.
 	float px = 0.0, py = 0.0, pz = 0.0;  // Position vector.
-	float weights[8] = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];  // Weights for skinning and morphing.
+	float weights[8] = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];  // Weights for skinning
 	
 	float[] floatValues() {
 		return (&u)[0..20];
@@ -219,6 +219,8 @@ static struct GpuState {
 
 			// Matrix.
 			Matrix projectionMatrix, worldMatrix, viewMatrix, textureMatrix;
+			Matrix[8] boneMatrix;
+			uint boneMatrixIndex;
 			
 			LightModel lightModel;
 			
