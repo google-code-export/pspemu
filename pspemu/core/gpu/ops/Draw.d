@@ -200,7 +200,16 @@ template Gpu_Draw() {
 		auto primitiveType = command.extractEnum!(PrimitiveType, 16);
 		auto vertexType    = gpu.state.vertexType;
 		int  vertexSize    = vertexType.vertexSize;
-		auto vertexCount   = command.param16 * vertexType.morphingVertexCount;
+		auto vertexCount   = command.param16;
+		auto morphingVertexCount = vertexType.morphingVertexCount;
+		auto vertexCountWithMorph   = vertexCount * morphingVertexCount;
+		int  vertexSizeWithMorph    = vertexSize * morphingVertexCount;
+		
+		float[] morphWeights = gpu.state.morphWeights;
+		
+		if (vertexType.morphingVertexCount == 1) {
+			gpu.state.morphWeights[0] = 1.0;
+		}
 
 		debug (EXTRACT_PRIM) writefln(
 			"Prim(%d) PrimitiveType(%d) Size(%d)"
@@ -228,7 +237,7 @@ template Gpu_Draw() {
 
 		void moveIndexGen(T)() {
 			auto TIndexPointer = cast(T *)indexPointer;
-			vertexPointer = vertexPointerBase + (*TIndexPointer * vertexSize);
+			vertexPointer = vertexPointerBase + (*TIndexPointer * vertexSizeWithMorph);
 			indexPointer += T.sizeof;
 		}
 
@@ -273,8 +282,6 @@ template Gpu_Draw() {
 		auto moveIndex       = (indexPointer !is null) ? moveIndexTable[vertexType.index] : null;
 
 		void extractVertex(ref VertexState vertex) {
-			if (moveIndex) moveIndex();
-			
 			if (extractWeights) {
 				extractWeights(vertex.weights[0..vertexType.skinningWeightCount]);
 				debug (EXTRACT_PRIM) writef("| weights(...) ");
@@ -299,9 +306,21 @@ template Gpu_Draw() {
 		}
 
 		//vertexListBufferArrays.reserve(vertexCount);
-
 		if (vertexListBuffer.length < vertexCount) vertexListBuffer.length = vertexCount;
-		for (int n = 0; n < vertexCount; n++) extractVertex(vertexListBuffer[n]);
+
+		for (int n = 0; n < vertexCount; n++) {
+			VertexState vertexStateMorphed;
+			VertexState currentVertexState;
+			
+			if (moveIndex) moveIndex();
+			
+			for (int m = 0; m < morphingVertexCount; m++) {
+				extractVertex(currentVertexState);
+				vertexStateMorphed.floatValues[] += currentVertexState.floatValues[] * morphWeights[m];
+			}
+
+			vertexListBuffer[n] = vertexStateMorphed;
+		}
 
 		// Need to have the framebuffer updated.
 		// @TODO: Check which buffers are going to be used (using the state).
