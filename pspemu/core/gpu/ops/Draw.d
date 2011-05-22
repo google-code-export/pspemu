@@ -330,6 +330,7 @@ template Gpu_Draw() {
 					extractIndex(indexListBuffer[n]);
 					if (maxVertexCount < indexListBuffer[n]) maxVertexCount = indexListBuffer[n];
 				}
+				maxVertexCount++;
 			} else {
 				for (int n = 0; n < vertexCount; n++) indexListBuffer[n] = cast(ushort)n;
 				maxVertexCount = vertexCount;
