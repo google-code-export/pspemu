@@ -205,6 +205,7 @@ template Gpu_Draw() {
 		auto morphingVertexCount = vertexType.morphingVertexCount;
 		auto vertexCountWithMorph   = vertexCount * morphingVertexCount;
 		int  vertexSizeWithMorph    = vertexSize * morphingVertexCount;
+		auto transform2D = vertexType.transform2D;
 		
 		float[] morphWeights = gpu.state.morphWeights;
 		
@@ -334,26 +335,89 @@ template Gpu_Draw() {
 				maxVertexCount = vertexCount;
 			}
 		}
+		
+		void multiplyVectorPerMatrix(out float[3] outf, float[] inf, in Matrix matrix, float weight) {
+			for (int i = 0; i < 3; i++) {
+				outf[i] = (
+					inf[0] * matrix.cells[0 + i] +
+					inf[1] * matrix.cells[4 + i] +
+					inf[2] * matrix.cells[8 + i] +
+					1      * matrix.cells[12 + i] +
+				0) * weight;
+			}
+		}
+		
+		bool shouldPerformSkin = (!transform2D) && (vertexType.skinningWeightCount > 1);
+		
+		VertexState performSkin(VertexState vertexState) {
+			//writefln("%s", gpu.state.boneMatrix[0]);
+			VertexState skinnedVertexState = vertexState;
+			(cast(float *)&skinnedVertexState.px)[0..3] = 0.0;
+			(cast(float *)&skinnedVertexState.nx)[0..3] = 0.0;
+			
+			float[3] p, n;
+
+			for (int m = 0; m < vertexType.skinningWeightCount; m++) {
+				//vertexStateMorphed.weights[m];
+				
+				multiplyVectorPerMatrix(
+					p,
+					(cast(float *)&vertexState.px)[0..3],
+					gpu.state.boneMatrix[m],
+					vertexState.weights[m]
+				);
+
+				multiplyVectorPerMatrix(
+					n,
+					(cast(float *)&vertexState.nx)[0..3],
+					gpu.state.boneMatrix[m],
+					vertexState.weights[m]
+				);
+				
+				//writefln("%s", p);
+				
+				(cast(float *)&skinnedVertexState.px)[0..3] += p[];
+				(cast(float *)&skinnedVertexState.nx)[0..3] += n[];
+			}
+			
+			return skinnedVertexState;
+		}
 
 		// Extract vertex list.
 		{
 			if (vertexListBuffer.length < maxVertexCount) vertexListBuffer.length = maxVertexCount;
 			
+			auto extractAllVertex(bool doMorph)() {
+				for (int n = 0; n < maxVertexCount; n++) {
+					static if (!doMorph) {
+						extractVertex(vertexListBuffer[n]);
+					} else {
+						VertexState vertexStateMorphed;
+						VertexState currentVertexState = void;
+						
+						for (int m = 0; m < morphingVertexCount; m++) {
+							extractVertex(currentVertexState);
+							vertexStateMorphed.floatValues[] += currentVertexState.floatValues[] * morphWeights[m];
+						}
+			
+						vertexListBuffer[n] = vertexStateMorphed;
+					}
+					
+					if (shouldPerformSkin) vertexListBuffer[n] = performSkin(vertexListBuffer[n]);
+				}
+			}
+			
+			if (morphingVertexCount == 1) {
+				extractAllVertex!(false)();
+			} else {
+				extractAllVertex!(true)();
+			}
+			
 			//writefln("%d", maxVertexCount);
 	
-			for (int n = 0; n < maxVertexCount; n++) {
-				VertexState vertexStateMorphed;
-				VertexState currentVertexState = void;
-				
-				for (int m = 0; m < morphingVertexCount; m++) {
-					extractVertex(currentVertexState);
-					vertexStateMorphed.floatValues[] += currentVertexState.floatValues[] * morphWeights[m];
-				}
-	
-				vertexListBuffer[n] = vertexStateMorphed;
-			}
-		}
 
+		}
+		
 		// Need to have the framebuffer updated.
 		// @TODO: Check which buffers are going to be used (using the state).
 		gpu.performBufferOp(BufferOperation.LOAD, BufferType.ALL);
