@@ -55,7 +55,7 @@ class EmulatorHelper {
 		}
 		
 		// @TODO: @FIX: @HACK because not all threads are stopping.
-		emulator.emulatorState.runningState.onStop += delegate() {
+		emulator.emulatorState.runningState.onStop += delegate(...) {
 			Thread.sleep(dur!("msecs")(100));
 			std.c.stdlib.exit(0);
 		};

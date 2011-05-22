@@ -42,3 +42,18 @@ struct uidControlBlock {
     short attribute;
     uidControlBlock* nextEntry;
 }
+
+//typedef int(* 	PspSysEventHandlerFunc )(int ev_id, char *ev_name, void *param, int *result)
+alias uint PspSysEventHandlerFunc;
+
+struct PspSysEventHandler{
+  int size;
+  char* name;
+  int type_mask;
+  //int (*handler)(int ev_id, char* ev_name, void* param, int* result);
+  PspSysEventHandlerFunc handler;
+  int r28;
+  int busy;
+  PspSysEventHandler *next;
+  int reserved[9];
+}

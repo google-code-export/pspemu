@@ -123,29 +123,10 @@ class sceGe_driver : ModuleNative {
 	 * @return The callback ID, < 0 on error
 	 */
 	int sceGeSetCallback(PspGeCallbackData* cb) {
-		/*
-		int n;
-		PspGeCallbackData* callbackDataPtr;
-		for (n = 0; n < callbackDataList.length; n++) {
-			callbackDataPtr = &callbackDataList[n];
-			if (*callbackDataPtr == PspGeCallbackData.init) {
-				*callbackDataPtr = *cb;
-				break;
-			}
-		}
+		currentEmulatorState().gpu.pspGeCallbackData = *cb;
 
-		if (n == callbackDataList.length) {
-			callbackDataList ~= *cb;
-			callbackDataPtr = &callbackDataList[$ - 1];
-		}
-		
-		return cast(int)cast(void *)callbackDataPtr;
-		*/
-		//unimplemented();
-
-		Logger.log(Logger.Level.ERROR, "sceGe_driver", "Not Implemented: sceGeSetCallback");
-		//unimplemented();
-		return -1;
+		logInfo("Partially Implemented: sceGeSetCallback (should be able to create several callbacks?)");
+		return 0;
 	}
 
 	/**

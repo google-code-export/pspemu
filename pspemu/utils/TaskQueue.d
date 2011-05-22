@@ -48,17 +48,16 @@ class TaskQueue {
 	}
 
 	void waitExecuted(Task task) {
-		bool inList;
-		do {
+		while (true) {
 			synchronized (this) {
-				inList = ((task in tasks) !is null);
+				if ((task in tasks) !is null) break;
 			}
-			if (!inList) executedTasksEvent.wait();
-		} while (inList);
+			executedTasksEvent.wait(1);
+		}
 	}
 
 	void waitExecutedAll() {
-		while (tasks.length) executedTasksEvent.wait();
+		while (tasks.length) executedTasksEvent.wait(1);
 	}
 
 	void opCall() {

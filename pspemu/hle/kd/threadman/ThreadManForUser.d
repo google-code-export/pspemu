@@ -9,6 +9,8 @@ import std.math;
 
 import pspemu.hle.kd.threadman.Threads;
 import pspemu.hle.kd.threadman.Semaphores;
+import pspemu.hle.kd.threadman.Events;
+import pspemu.hle.kd.threadman.Callbacks;
 import pspemu.hle.kd.threadman.Types;
 import pspemu.hle.MemoryManager;
 
@@ -27,20 +29,23 @@ import pspemu.hle.Callbacks;
 class ThreadManForUser : ModuleNative {
 	mixin ThreadManForUser_Threads;
 	mixin ThreadManForUser_Semaphores;
+	mixin ThreadManForUser_Events;
+	mixin ThreadManForUser_Callbacks;
 
 	void initModule() {
 		initModule_Threads();
 		initModule_Semaphores();
+		initModule_Events();
+		initModule_Callbacks();
 		//moduleManager.getCurrentThreadName = { return threadManager.currentThread.name; };
 	}
 
 	void initNids() {
 		initNids_Threads();
 		initNids_Semaphores();
-		mixin(registerd!(0xE81CAF8F, sceKernelCreateCallback));
-		mixin(registerd!(0x55C20A00, sceKernelCreateEventFlag));
-		mixin(registerd!(0xEF9E4C70, sceKernelDeleteEventFlag));
-		mixin(registerd!(0x1FB15A32, sceKernelSetEventFlag));
+		initNids_Events();
+		initNids_Callbacks();
+		
 		mixin(registerd!(0x7C0DC2A0, sceKernelCreateMsgPipe));
 		mixin(registerd!(0xF0B7DA1C, sceKernelDeleteMsgPipe));
 		mixin(registerd!(0x876DBFAD, sceKernelSendMsgPipe));
@@ -48,15 +53,9 @@ class ThreadManForUser : ModuleNative {
 		mixin(registerd!(0x74829B76, sceKernelReceiveMsgPipe));
 		mixin(registerd!(0xDF52098F, sceKernelTryReceiveMsgPipe));
 		mixin(registerd!(0x33BE4024, sceKernelReferMsgPipeStatus));
-		mixin(registerd!(0x812346E4, sceKernelClearEventFlag));
-		mixin(registerd!(0x402FCF22, sceKernelWaitEventFlag));
-		mixin(registerd!(0x328C546A, sceKernelWaitEventFlagCB));
-		mixin(registerd!(0x30FD48F0, sceKernelPollEventFlag));
+		
 		mixin(registerd!(0x369ED59D, sceKernelGetSystemTimeLow));
-		mixin(registerd!(0xA66B0120, sceKernelReferEventFlagStatus));
 
-		mixin(registerd!(0xEDBA5844, sceKernelDeleteCallback));
-		mixin(registerd!(0x349D6D6C, sceKernelCheckCallback));
 		mixin(registerd!(0x82BC5777, sceKernelGetSystemTimeWide));
 
 		mixin(registerd!(0x8125221D, sceKernelCreateMbx));
@@ -303,17 +302,6 @@ class ThreadManForUser : ModuleNative {
 		return 0;
 	}
 
-	void sceKernelReferEventFlagStatus() {
-		unimplemented();
-	}
-	
-	/**
-	 * Process callbacks in sceKernel*ThreadCB() methods.
-	 */
-	void processCallbacks() {
-		// @TODO
-	}
-
 	/**
 	 * Get the low 32bits of the current system time
 	 *
@@ -324,161 +312,9 @@ class ThreadManForUser : ModuleNative {
 		return 0;
 	}
 
-	/**
-	 * Events related stuff.
-	 */
-	template TemplateEvent() {
-		/** 
-		  * Create an event flag.
-		  *
-		  * @param name - The name of the event flag.
-		  * @param attr - Attributes from ::PspEventFlagAttributes
-		  * @param bits - Initial bit pattern.
-		  * @param opt  - Options, set to NULL
-		  * @return < 0 on error. >= 0 event flag id.
-		  *
-		  * @par Example:
-		  * @code
-		  * int evid;
-		  * evid = sceKernelCreateEventFlag("wait_event", 0, 0, 0);
-		  * @endcode
-		  */
-		SceUID sceKernelCreateEventFlag(string name, int attr, int bits, SceKernelEventFlagOptParam *opt) {
-			//unimplemented();
-			return -1;
-		}
-
-		/** 
-		 * Delete an event flag
-		 *
-		 * @param evid - The event id returned by sceKernelCreateEventFlag.
-		 *
-		 * @return < 0 On error
-		 */
-		int sceKernelDeleteEventFlag(int evid) {
-			//unimplemented();
-			return -1;
-		}
-
-		/**
-		 * Clear a event flag bit pattern
-		 *
-		 * @param evid - The event id returned by ::sceKernelCreateEventFlag
-		 * @param bits - The bits to clean
-		 *
-		 * @return < 0 on Error
-		 */
-		int sceKernelClearEventFlag(SceUID evid, u32 bits) {
-			unimplemented();
-			return -1;
-		}
-
-		/** 
-		 * Wait for an event flag for a given bit pattern.
-		 *
-		 * @param evid - The event id returned by sceKernelCreateEventFlag.
-		 * @param bits - The bit pattern to poll for.
-		 * @param wait - Wait type, one or more of ::PspEventFlagWaitTypes or'ed together
-		 * @param outBits - The bit pattern that was matched.
-		 * @param timeout  - Timeout in microseconds
-		 * @return < 0 On error
-		 */
-		int sceKernelWaitEventFlag(int evid, u32 bits, u32 wait, u32 *outBits, SceUInt *timeout) {
-			unimplemented();
-			return -1;
-		}
-
-		/** 
-		 * Wait for an event flag for a given bit pattern with callback.
-		 *
-		 * @param evid - The event id returned by sceKernelCreateEventFlag.
-		 * @param bits - The bit pattern to poll for.
-		 * @param wait - Wait type, one or more of ::PspEventFlagWaitTypes or'ed together
-		 * @param outBits - The bit pattern that was matched.
-		 * @param timeout  - Timeout in microseconds
-		 * @return < 0 On error
-		 */
-		int sceKernelWaitEventFlagCB(int evid, u32 bits, u32 wait, u32 *outBits, SceUInt *timeout) {
-			unimplemented();
-			return -1;
-		}
-
-		/** 
-		  * Set an event flag bit pattern.
-		  *
-		  * @param evid - The event id returned by sceKernelCreateEventFlag.
-		  * @param bits - The bit pattern to set.
-		  *
-		  * @return < 0 On error
-		  */
-		int sceKernelSetEventFlag(SceUID evid, u32 bits) {
-			unimplemented();
-			return -1;
-		}
-
-		/** 
-		  * Poll an event flag for a given bit pattern.
-		  *
-		  * @param evid - The event id returned by sceKernelCreateEventFlag.
-		  * @param bits - The bit pattern to poll for.
-		  * @param wait - Wait type, one or more of ::PspEventFlagWaitTypes or'ed together
-		  * @param outBits - The bit pattern that was matched.
-		  * @return < 0 On error
-		  */
-		int sceKernelPollEventFlag(int evid, u32 bits, u32 wait, u32 *outBits) {
-			unimplemented();
-			return -1;
-		}
-	}
-
-	/**
-	 * Callbacks related stuff.
-	 */
-	template TemplateCallback() {
-		/**
-		 * Create callback
-		 *
-		 * @par Example:
-		 * @code
-		 * int cbid;
-		 * cbid = sceKernelCreateCallback("Exit Callback", exit_cb, NULL);
-		 * @endcode
-		 *
-		 * @param name - A textual name for the callback
-		 * @param func - A pointer to a function that will be called as the callback
-		 * @param arg  - Argument for the callback ?
-		 *
-		 * @return >= 0 A callback id which can be used in subsequent functions, < 0 an error.
-		 */
-		int sceKernelCreateCallback(string name, SceKernelCallbackFunction func, void* arg) {
-			PspCallback pspCallback = new PspCallback(name, func, arg);
-			int uid = hleEmulatorState.uniqueIdFactory.add(pspCallback);
-			logInfo("sceKernelCreateCallback('%s':%d, %08X, %08X)", name, uid, cast(uint)func, cast(uint)arg);
-			return uid;
-		}
-		
-		/**
-		 * Delete a callback
-		 *
-		 * @param cb - The UID of the specified callback
-		 *
-		 * @return 0 on success, < 0 on error
-		 */
-		int sceKernelDeleteCallback(SceUID cb) {
-			unimplemented();
-			return -1;
-		}
 	
-		/**
-		 * Check callback ?
-		 *
-		 * @return Something or another
-		 */
-		int sceKernelCheckCallback() {
-			unimplemented();
-			return -1;
-		}
-	}
+
+	
 	
 	template TemplateMsgPipe() {
 		/**
@@ -589,8 +425,6 @@ class ThreadManForUser : ModuleNative {
 		}
 	}
 
-	mixin TemplateEvent;
-	mixin TemplateCallback;
 	mixin TemplateMsgPipe;
 }
 

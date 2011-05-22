@@ -77,8 +77,18 @@ class CallbacksHandler {
 			executeQueued(cast(ThreadState)object);
 		};
 		
-		hleEmulatorState.emulatorState.display.vblankEvent += delegate() {
+		hleEmulatorState.emulatorState.display.vblankEvent += delegate(...) {
 			trigger(Type.VerticalBlank, []);
+		};
+		
+		hleEmulatorState.emulatorState.gpu.signalEvent += delegate(...) {
+			uint signal = *cast(uint *)_argptr;
+			writefln("SIGNAL! : %08X, %d", hleEmulatorState.emulatorState.gpu.pspGeCallbackData.signal_func, signal);
+			addToExecuteQueue(
+				hleEmulatorState.emulatorState.gpu.pspGeCallbackData.signal_func,
+				[signal, cast(uint)hleEmulatorState.emulatorState.gpu.pspGeCallbackData.signal_arg]
+			);
+			
 		};
 	}
 
@@ -99,6 +109,17 @@ class CallbacksHandler {
 			callback(threadState);
 		}
 	}
+	
+	void addToExecuteQueue(uint pspFunctionAddr, uint[] arguments = null) {
+		synchronized (this) {
+			queuedCallbacks ~= delegate(ThreadState threadState) {
+				Logger.log(Logger.Level.INFO, "CallbacksHandler", std.string.format("Executing queued callbacks"));
+				hleEmulatorState.executeGuestCode(threadState, pspFunctionAddr, arguments);
+			};
+		}
+		
+		waitEvent.signal();
+	}
 
 	/**
 	 * Trigger an event type. This will queue for executing all the registered callbacks for
@@ -117,9 +138,7 @@ class CallbacksHandler {
 					Logger.log(Logger.Level.INFO, "CallbacksHandler", std.string.format("Executing queued callbacks"));
 					foreach (pspCallback; queuedPspCallbacks) {
 						Logger.log(Logger.Level.INFO, "CallbacksHandler", std.string.format("Executing callback: %s", pspCallback));
-
-						foreach (k, argument; arguments) threadState.registers.R[4 + k] = argument;
-						hleEmulatorState.executeGuestCode(threadState, pspCallback.func);
+						hleEmulatorState.executeGuestCode(threadState, pspCallback.func, arguments);
 					}
 				};
 			}

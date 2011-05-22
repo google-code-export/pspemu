@@ -49,6 +49,8 @@ import pspemu.core.exceptions.HaltException;
 import pspemu.utils.Logger;
 import pspemu.utils.Event;
 
+import pspemu.hle.kd.ge.Types;
+
 import std.datetime;
 
 class Gpu {
@@ -71,6 +73,7 @@ class Gpu {
 	WaitEvent endedExecutingListsEvent;
 	Event signalEvent;
 	Event finishEvent;
+	PspGeCallbackData pspGeCallbackData;
 
 	this(EmulatorState emulatorState, GpuImpl impl) {
 		this.endedExecutingListsEvent = new WaitEvent();
@@ -80,7 +83,7 @@ class Gpu {
 		this.memory = emulatorState.memory;
 		this.reset();
 		
-		emulatorState.runningState.onStop += delegate() {
+		emulatorState.runningState.onStop += delegate(...) {
 			running = false;
 		};
 
@@ -126,11 +129,11 @@ class Gpu {
 		Gpu gpu = this;
 
 		void doassert(string file = __FILE__, int line = __LINE__) {
-			writefln("0x%08X: Stop %s : %s:%d", reinterpret!(uint)(&command), command, file, line);
+			logWarning("0x%08X: Stop %s : %s:%d", reinterpret!(uint)(&command), command, file, line);
 			throw(new Exception(std.string.format("Unimplemented %s:%d", file, line)));
 		}
-		void unimplemented() {
-			Logger.log(Logger.Level.WARNING, "Gpu", "0x%08X: Unimplemented %s", reinterpret!(uint)(&command), command);
+		void unimplemented(string file = __FILE__, int line = __LINE__) {
+			logWarning("0x%08X: Unimplemented %s : %s:%d", reinterpret!(uint)(&command), command, file, line);
 		}
 		uint BaseIndex(uint base) { return command.opcode - base; }
 
@@ -157,7 +160,7 @@ class Gpu {
 					string opname = to!string(cast(Opcode)n);
 					string func = "OP_" ~ opname;
 					debug (DEBUG_GPU_SHOW_COMMAND) s ~= "writefln(\"%08X:%s: %06X\", memory.getPointerReverseOrNull(commandPointer), \"" ~ opname ~ "\", command.param24);";
-					s ~= "mixin(\"static if (__traits(compiles, " ~ func ~ ")) { " ~ func ~ "(); } else { writefln(\\\"no compiles\\\"); unimplemented(); }\");";
+					s ~= "mixin(\"static if (__traits(compiles, " ~ func ~ ")) { " ~ func ~ "(); } else { unimplemented(); }\");";
 				}
 				s ~= "break;";
 			}
@@ -242,7 +245,7 @@ class Gpu {
 		DisplayList* _sceGeListEnQueue(void* list, void* stall = null, bool enqueueHead = false) {
 			while (!displayLists.writeAvailable) {
 				// @TODO: Must handle the ended execution event
-				displayLists.writeAvailableEvent.wait();
+				displayLists.writeAvailableEvent.wait(1);
 			}
 			DisplayList* ret = &displayLists.enqueue(DisplayList(list, stall));
 			return ret;
@@ -257,7 +260,9 @@ class Gpu {
 		 * Wait until the specified list have been executed.
 		 */
 		void sceGeListSync(DisplayList* displayList, int syncType) {
-			while (displayList.hasMore) newWaitAndCheck([displayList.displayListEndedEvent]);
+			while (displayList.hasMore) {
+				newWaitAndCheck([displayList.displayListEndedEvent]);
+			}
 
 			performBufferOp(BufferOperation.STORE);
 		}
@@ -277,12 +282,14 @@ class Gpu {
 
 	bool inDrawingThread() { return Thread.getThis == thread; }
 	
-	void newWaitAndCheck(WaitEvent[] waitEvents) {
+	void newWaitAndCheck(WaitEvent[] waitEvents, string file = __FILE__, int line = __LINE__) {
 		scope WaitMultipleEvents waitMultipleEvents = new WaitMultipleEvents();
 		waitMultipleEvents.add(emulatorState.runningState.stopEvent);
 		if (inDrawingThread) waitMultipleEvents.add(externalActions.newAvailableTasksEvent);
 		foreach (waitEvent; waitEvents) waitMultipleEvents.add(waitEvent);
-		waitMultipleEvents.waitAny();
+		//writefln("[1 %s:%d]", file, line);
+		waitMultipleEvents.waitAny(1);
+		//writefln("[2]");
 	}
 
 	void newWaitAndCheck2() {

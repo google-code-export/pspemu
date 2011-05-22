@@ -66,7 +66,7 @@ class HleEmulatorState : ISyscall {
 		};
 	}
 	
-	public uint executeGuestCode(ThreadState threadState, uint pointer) {
+	public uint executeGuestCode(ThreadState threadState, uint pointer, uint[] arguments = null) {
 		//new CpuThreadBase();
 		CpuThreadBase tempCpuThread = new CpuThreadInterpreted(threadState);
 		
@@ -76,13 +76,18 @@ class HleEmulatorState : ISyscall {
 		scope (exit) {
 			tempCpuThread.threadState.registers.copyFrom(backRegisters);
 		} 
+		
+		if (arguments !is null) {
+			foreach (k, argument; arguments) tempCpuThread.threadState.registers.R[4 + k] = argument;
+		}
 
 		tempCpuThread.threadState.registers.pcSet = pointer;
 		//tempCpuThread.threadState.registers.RA = EmulatorHelper.CODE_PTR_END_CALLBACK;
 		tempCpuThread.threadState.registers.RA = 0x08000004;
-		//writefln("[1]");
+		
+		//writefln("**%08X", tempCpuThread.threadState.registers.PC);
 		tempCpuThread.execute(false);
-		//writefln("[2]");
+		//tempCpuThread.execute(true);
 		return tempCpuThread.threadState.registers.V0;
 	}
 
@@ -90,3 +95,4 @@ class HleEmulatorState : ISyscall {
 		this.syscallObject.syscall(cpuThread, syscallNum);
 	}
 }
+
