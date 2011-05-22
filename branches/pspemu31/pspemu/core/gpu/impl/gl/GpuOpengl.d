@@ -17,6 +17,8 @@ version = VERSION_ENABLED_STATE_CORTOCIRCUIT_EX;
 //debug = DEBUG_PRIM_PERFORMANCE;
 //debug = DEBUG_FRAME_TRANSFER;
 
+import std.conv;
+
 import std.c.windows.windows;
 import std.windows.syserror;
 import std.stdio;
@@ -48,6 +50,7 @@ class GpuOpengl : GpuImplAbstract {
 
 	/// Previous state to check changes in the new state and perform new operations.
 	GpuState prevState;
+	PrimitiveFlags prevPrimitiveFlags;
 	//glProgram program;
 	
 	ubyte[4 * 512 * 272] tempBufferData;
@@ -180,7 +183,7 @@ class GpuOpengl : GpuImplAbstract {
 		debug (DEBUG_CLEAR_MODE) if (state.clearingMode) writefln("--");
 
 		//writefln("draw[1]");
-		drawBegin();
+		drawBegin(flags);
 		//writefln("draw[2]");
 		{
 			switch (type) {
@@ -259,14 +262,19 @@ class GpuOpengl : GpuImplAbstract {
 						glBegin(PrimitiveTypeTranslate[type]);
 						{
 							//foreach (ref vertex; vertexList) putVertex(vertex);
-							foreach (index; indexList) putVertex(vertexList[index]);
+							foreach (index; indexList) {
+								//vertexList[index].nx = 0;
+								//vertexList[index].ny = 0;
+								//vertexList[index].nz = 0;
+								putVertex(vertexList[index]);
+							}
 						}
 						glEnd();
 					}
 				} break;
 			}
 		}
-		drawEnd();
+		drawEnd(flags);
 	}
 
 	void flush() {
@@ -441,7 +449,7 @@ template OpenglUtils() {
 		prepareMatrix();
 	}
 
-	void drawBeginClear() {
+	void drawBeginClear(PrimitiveFlags flags) {
 		bool ccolorMask, calphaMask;
 		
 		//glGetTexEnvfv(GL_TEXTURE_ENV, GL_RGB_SCALE, clearModeRgbScale, 0);
@@ -490,7 +498,7 @@ template OpenglUtils() {
 		//if (state.clearFlags & ClearBufferMask.GU_COLOR_BUFFER_BIT) glClear(GL_DEPTH_BUFFER_BIT);
 	}
 	
-	void drawBeginNormal() {
+	void drawBeginNormal(PrimitiveFlags flags) {
 		void prepareTexture() {
 			//writefln("prepareTexture[1]");
 			if (!glEnableDisable(GL_TEXTURE_2D, state.textureMappingEnabled)) {
@@ -552,10 +560,11 @@ template OpenglUtils() {
 			//return;
 
 			glEnableDisable(GL_COLOR_LOGIC_OP, state.logicalOperationEnabled);		
-			//glEnableDisable(GL_COLOR_MATERIAL, cast(bool)state.materialColorComponents);
+			glEnableDisable(GL_COLOR_MATERIAL, flags.hasColor && cast(bool)state.materialColorComponents && state.lightingEnabled);
+
 			glColor4fv(state.ambientModelColor.ptr);
 			
-			if (state.lightingEnabled) {
+			if (!flags.hasColor && state.lightingEnabled) {
 				int flags;
 				/*
 				glMaterialfv(faces, GL_AMBIENT , [0.0f, 0.0f, 0.0f, 0.0f].ptr);
@@ -584,6 +593,8 @@ template OpenglUtils() {
 					flags = GL_DIFFUSE;
 				} else if (state.materialColorComponents & LightComponents.GU_SPECULAR) {
 					flags = GL_SPECULAR;
+				} else {
+					throw(new NotImplementedException("Error!"));
 				}
 				//flags = GL_SPECULAR;
             	glColorMaterial(GL_FRONT_AND_BACK, flags);
@@ -649,7 +660,6 @@ template OpenglUtils() {
 				}
 				*/
 				glLightfv(GL_LIGHT_n, GL_SPECULAR , light.specularColor.pointer);
-				
 				glLightfv(GL_LIGHT_n, GL_AMBIENT  , light.ambientColor.pointer);
 				glLightfv(GL_LIGHT_n, GL_DIFFUSE  , light.diffuseColor.pointer);
 
@@ -740,7 +750,7 @@ template OpenglUtils() {
 			glFogf(GL_FOG_END, state.fogEnd);
 		}
 
-		//glEnable(GL_NORMALIZE);
+		glEnable(GL_NORMALIZE);
 		//glColorMask(cast(bool)state.colorMask[0], cast(bool)state.colorMask[1], cast(bool)state.colorMask[2], cast(bool)state.colorMask[3]);
 		glColorMask(true, true, true, true);
 		glEnableDisable(GL_LINE_SMOOTH, state.lineSmoothEnabled);
@@ -748,6 +758,16 @@ template OpenglUtils() {
 		glShadeModel(state.shadeModel ? GL_SMOOTH : GL_FLAT);
 		glMaterialf(GL_FRONT, GL_SHININESS, state.specularPower);
 		glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, state.textureEnviromentColor.ptr);
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
+		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE);
+		glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
+		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_PREVIOUS);
+		glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
+		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_REPLACE);
+		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_ALPHA, GL_PREVIOUS);
+		glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA);
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
 
 		//writefln("drawBeginNormal[1]");
 		prepareStencil();
@@ -765,15 +785,15 @@ template OpenglUtils() {
 		prepareDepthWrite();
 		//writefln("drawBeginNormal[4]");
 		prepareFog();
-		prepareColors();
 		prepareLighting();
+		prepareColors();
 		//writefln("drawBeginNormal[5]");
 		//glDisable(GL_COLOR_MATERIAL);
 	}
 
-	void drawBegin() {
-		if (prevState.RealState == (*state).RealState) {
-			version (VERSION_ENABLED_STATE_CORTOCIRCUIT_EX) {
+	void drawBegin(PrimitiveFlags flags) {
+		version (VERSION_ENABLED_STATE_CORTOCIRCUIT_EX) {
+			if (prevState.RealState == (*state).RealState && (flags == prevPrimitiveFlags)) {
 				//prepareTexture();
 				//if (state.textureMappingEnabled) getTexture(state.textures[0], state.clut).bind();
 				return;
@@ -783,18 +803,19 @@ template OpenglUtils() {
 		//writefln("drawBegin[1]");
 		if (state.clearingMode) {
 			//writefln("drawBegin[1a]");
-			drawBeginClear();
+			drawBeginClear(flags);
 		} else {
 			//writefln("drawBegin[1b]");
-			drawBeginNormal();
+			drawBeginNormal(flags);
 		}
 		//writefln("drawBegin[2]");
 		drawBeginCommon();
 		//writefln("drawBegin[3]");
 	}
 	
-	void drawEnd() {
+	void drawEnd(PrimitiveFlags flags) {
 		prevState = *state;
+		prevPrimitiveFlags = flags;
 	}
 }
 
