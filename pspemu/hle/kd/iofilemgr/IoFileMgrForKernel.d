@@ -22,18 +22,28 @@ import pspemu.utils.VirtualFileSystem;
 import pspemu.hle.kd.iofilemgr.Types;
 import pspemu.hle.kd.iofilemgr.Devices;
 
+import pspemu.hle.kd.iofilemgr.Directories;
+import pspemu.hle.kd.iofilemgr.FilesAsync;
+
 import pspemu.Emulator;
 
 class IoFileMgrForKernel : ModuleNative {
+	mixin IoFileMgrForKernel_Directories;
+	mixin IoFileMgrForKernel_FilesAsync;
+	
 	VFS fsroot() {
 		return hleEmulatorState.rootFileSystem.fsroot;
 	}
 
 	void initModule() {
+		initModule_Directories();
+		initModule_FilesAsync();
 	}
 
 	void initNids() {
-		mixin(registerd!(0x55F4717D, sceIoChdir));
+		initNids_Directories();
+		initNids_FilesAsync();
+		
 		mixin(registerd!(0x810C4BC3, sceIoClose));
 		mixin(registerd!(0x109F50BC, sceIoOpen));
 		mixin(registerd!(0x6A638D83, sceIoRead));
@@ -47,28 +57,12 @@ class IoFileMgrForKernel : ModuleNative {
 		mixin(registerd!(0xB8A740F4, sceIoChstat));
 		mixin(registerd!(0xF27A9C51, sceIoRemove));
 		mixin(registerd!(0x779103A0, sceIoRename));
-
-		mixin(registerd!(0xB29DDF9C, sceIoDopen));
-		mixin(registerd!(0xEB092469, sceIoDclose));
-		mixin(registerd!(0xE3EB004C, sceIoDread));
-		mixin(registerd!(0x06A70004, sceIoMkdir));
-		mixin(registerd!(0x1117C65F, sceIoRmdir));
-
-		mixin(registerd!(0x89AA9906, sceIoOpenAsync));
-		mixin(registerd!(0x71B19E77, sceIoLseekAsync));
-		mixin(registerd!(0xFF5940B6, sceIoCloseAsync));
-		mixin(registerd!(0xA0B5A7C2, sceIoReadAsync));
-		mixin(registerd!(0xB293727F, sceIoChangeAsyncPriority));
-		mixin(registerd!(0xE23EEC33, sceIoWaitAsync));
-		mixin(registerd!(0x3251EA56, sceIoPollAsync));
-		mixin(registerd!(0x0FACAB19, sceIoWriteAsync));
-		
+	
 		mixin(registerd!(0x63632449, sceIoIoctl));
 
 		mixin(registerd!(0x3C54E908, sceIoReopen));
 		mixin(registerd!(0x8E982A74, sceIoAddDrv));
 		mixin(registerd!(0xC7F35804, sceIoDelDrv));
-		mixin(registerd!(0x35DBD746, sceIoWaitAsyncCB));
 	}
 
 	/*
@@ -82,39 +76,6 @@ class IoFileMgrForKernel : ModuleNative {
 		return openedStreams[uid];
 	}
 	*/
-
-	/**
-	 * Make a directory file
-	 *
-	 * @param path -
-	 * @param mode - Access mode.
-	 *
-	 * @return Returns the value 0 if its succesful otherwise -1
-	 */
-	int sceIoMkdir(string path, SceMode mode) {
-		logInfo("sceIoMkdir('%s, %d)", path, mode);
-		auto vfs = locateParentAndUpdateFile(path);
-		try {
-			vfs.mkdir(path);
-			return 0;
-		} catch (Exception e) {
-			//throw(e);
-			return -1;
-		}
-	}
-
-	/**
-	 * Remove a directory file
-	 *
-	 * @param path - Removes a directory file pointed by the string path
-	 *
-	 * @return Returns the value 0 if its succesful otherwise -1
-	 */
-	int sceIoRmdir(string path) {
-		logInfo("sceIoRmdir('%s)", path);
-		unimplemented();
-		return -1;
-	}
 
 	/**
 	 * Change the name of a file
@@ -147,94 +108,6 @@ class IoFileMgrForKernel : ModuleNative {
 		}
 	}
 
-	DirectoryIterator[SceUID] openedDirectories;
-
-	/**
-	 * Open a directory
-	 * 
-	 * @par Example:
-	 * <code>
-	 *     int dfd;
-	 *     dfd = sceIoDopen("device:/");
-	 *     if (dfd >= 0) { Do something with the file descriptor }
-	 * </code>
-	 *
-	 * @param dirname - The directory to open for reading.
-	 *
-	 * @return If >= 0 then a valid file descriptor, otherwise a Sony error code.
-	 */
-	SceUID sceIoDopen(string dirname) {
-		logInfo("sceIoDopen('%s')", dirname);
-		try {
-			SceUID uid = openedDirectories.length + 1;
-			openedDirectories[uid] = new DirectoryIterator(dirname);
-			return uid;
-		} catch (Throwable o) {
-			.writefln("sceIoDopen: %s", o);
-			return -1;
-		}
-	}
-
-	/** 
-	  * Reads an entry from an opened file descriptor.
-	  *
-	  * @param fd - Already opened file descriptor (using sceIoDopen)
-	  * @param dir - Pointer to an io_dirent_t structure to hold the file information
-	  *
-	  * @return Read status
-	  * -   0 - No more directory entries left
-	  * - > 0 - More directory entired to go
-	  * - < 0 - Error
-	  */
-	int sceIoDread(SceUID fd, SceIoDirent *dir) {
-		logInfo("sceIoDread('%d')", fd);
-		if (fd !in openedDirectories) return -1;
-		auto cdir = openedDirectories[fd];
-		uint lastLeft = cdir.left;
-		if (lastLeft) {
-			auto entry = cdir.extract;
-
-			fillStats(&dir.d_stat, entry.stats);
-			putStringz(dir.d_name, entry.name);
-			dir.d_private = null;
-			dir.dummy = 0;
-			//writefln(""); writefln("sceIoDread:'%s':'%s'", entry.name, dir.d_name[0]);
-		}
-		return lastLeft;
-	}
-
-	/**
-	 * Close an opened directory file descriptor
-	 *
-	 * @param fd - Already opened file descriptor (using sceIoDopen)
-	 *
-	 * @return < 0 on error
-	 */
-	int sceIoDclose(SceUID fd) {
-		logInfo("sceIoDclose('%d')", fd);
-		if (fd !in openedDirectories) return -1;
-		openedDirectories.remove(fd);
-		return 0;
-	}
-
-	/**
-	 * Change the current directory.
-	 *
-	 * @param path - The path to change to.
-	 *
-	 * @return < 0 on error.
-	 */
-	int sceIoChdir(string path) {
-		logInfo("sceIoChdir('%s')", path);
-		try {
-			fsroot.access(path);
-			hleEmulatorState.rootFileSystem.fscurdir = path;
-			return 0;
-		} catch (Throwable o) {
-			.writefln("sceIoChdir: %s", o);
-			return -1;
-		}
-	}
 
 	/** 
 	 * Send a devctl command to a device.
@@ -528,122 +401,6 @@ class IoFileMgrForKernel : ModuleNative {
 		logWarning("sceIoRemove('%s')", file);
 		unimplemented_notice();
 		return 0;
-	}
-
-	/**
-	 * Open or create a file for reading or writing (asynchronous)
-	 *
-	 * @param file  - Pointer to a string holding the name of the file to open
-	 * @param flags - Libc styled flags that are or'ed together
-	 * @param mode  - File access mode.
-	 *
-	 * @return A non-negative integer is a valid fd, anything else an error
-	 */
-	SceUID sceIoOpenAsync(string file, int flags, SceMode mode) {
-		return hleEmulatorState.uniqueIdFactory.add(_open(file, flags, mode));
-	}
-
-	/**
-	 * Reposition read/write file descriptor offset (asynchronous)
-	 *
-	 * @param fd     - Opened file descriptor with which to seek
-	 * @param offset - Relative offset from the start position given by whence
-	 * @param whence - Set to SEEK_SET to seek from the start of the file, SEEK_CUR
-	 *                 seek from the current position and SEEK_END to seek from the end.
-	 *
-	 * @return < 0 on error. Actual value should be passed returned by the ::sceIoWaitAsync call.
-	 */
-	int sceIoLseekAsync(SceUID fd, SceOff offset, int whence) {
-		unimplemented();
-		return -1;
-	}
-
-	/**
-	 * Delete a descriptor (asynchronous)
-	 *
-	 * @param fd - File descriptor to close
-	 * @return < 0 on error
-	 */
-	int sceIoCloseAsync(SceUID fd) {
-		unimplemented();
-		return -1;
-	}
-
-	/**
-	 * Read input (asynchronous)
-	 *
-	 * @par Example:
-	 * @code
-	 * bytes_read = sceIoRead(fd, data, 100);
-	 * @endcode
-	 *
-	 * @param fd - Opened file descriptor to read from
-	 * @param data - Pointer to the buffer where the read data will be placed
-	 * @param size - Size of the read in bytes
-	 * 
-	 * @return < 0 on error.
-	 */
-	int sceIoReadAsync(SceUID fd, void *data, SceSize size) {
-		unimplemented();
-		return -1;
-	}
-
-	/**
-	 * Change the priority of the asynchronous thread.
-	 *
-	 * @param fd - The opened fd on which the priority should be changed.
-	 * @param pri - The priority of the thread.
-	 *
-	 * @return < 0 on error.
-	 */
-	int sceIoChangeAsyncPriority(SceUID fd, int pri) {
-		unimplemented();
-		return -1;
-	}
-
-	/**
-	 * Wait for asyncronous completion.
-	 * 
-	 * @param fd - The file descriptor which is current performing an asynchronous action.
-	 * @param res - The result of the async action.
-	 *
-	 * @return < 0 on error.
-	 */
-	int sceIoWaitAsync(SceUID fd, SceInt64* res) {
-		unimplemented();
-		return -1;
-	}
-	
-	int sceIoWaitAsyncCB(SceUID fd, SceInt64* res) {
-		unimplemented();
-		return -1;
-	}
-
-	/**
-	 * Poll for asyncronous completion.
-	 * 
-	 * @param fd - The file descriptor which is current performing an asynchronous action.
-	 * @param res - The result of the async action.
-	 *
-	 * @return < 0 on error.
-	 */
-	int sceIoPollAsync(SceUID fd, SceInt64 *res) {
-		unimplemented();
-		return -1;
-	}
-
-	/**
-	 * Write output (asynchronous)
-	 *
-	 * @param fd - Opened file descriptor to write to
-	 * @param data - Pointer to the data to write
-	 * @param size - Size of data to write
-	 *
-	 * @return < 0 on error.
-	 */
-	int sceIoWriteAsync(SceUID fd, void* data, SceSize size) {
-		unimplemented();
-		return -1;
 	}
 
 	/**

@@ -59,7 +59,7 @@ template TemplateCpu_MEMORY() {
 
 	// CACHE
 	void OP_CACHE() {
-		std.stdio.writefln("Unimplemented CACHE");
+		//std.stdio.writefln("Unimplemented CACHE");
 		registers.pcAdvance(4);
 	}
 }

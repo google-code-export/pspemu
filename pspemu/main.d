@@ -63,13 +63,18 @@ int main(string[] args) {
 	bool showHelp;
 	bool nolog, log, trace;
 	
+	void disableLogComponent(string opt, string nologmod) {
+		Logger.disableLogComponent(nologmod);
+	}
+	
 	getopt(
 		args,
 		"help|h|?", &showHelp,
 		"tests", &doTestsEx,
 		"nolog", &nolog,
 		"trace", &trace,
-		"log", &log
+		"log", &log,
+		"nologmod", &disableLogComponent
 	);
 	
 	void displayHelp() {
@@ -78,11 +83,12 @@ int main(string[] args) {
 		writefln("pspemu.exe [<args>] [<file>]");
 		writefln("");
 		writefln("Arguments:");
-		writefln("  --help   - Show this help");
-		writefln("  --tests  - Run tests on 'tests_ex' folder");
-		writefln("  --trace  - Enables cpu tracing at start");
-		writefln("  --log    - Enables logging");
-		writefln("  --nolog  - Disables logging");
+		writefln("  --help         - Show this help");
+		writefln("  --tests        - Run tests on 'tests_ex' folder");
+		writefln("  --trace        - Enables cpu tracing at start");
+		writefln("  --log          - Enables logging");
+		writefln("  --nolog        - Disables logging");
+		writefln("  --nologmod=MOD - Disables logging of a module");
 		writefln("");
 		writefln("Examples:");
 		writefln("  pspemu.exe --help");
