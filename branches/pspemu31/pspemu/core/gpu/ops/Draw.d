@@ -337,20 +337,24 @@ template Gpu_Draw() {
 			}
 		}
 		
-		void multiplyVectorPerMatrix(out float[3] outf, float[] inf, in Matrix matrix, float weight) {
+		void multiplyVectorPerMatrix(bool translate)(out float[3] outf, float[] inf, in Matrix matrix, float weight) {
 			for (int i = 0; i < 3; i++) {
-				outf[i] = (
-					inf[0] * matrix.cells[0 + i] +
-					inf[1] * matrix.cells[4 + i] +
-					inf[2] * matrix.cells[8 + i] +
-					1      * matrix.cells[12 + i] +
-				0) * weight;
+				float f = 0;
+				f += inf[0] * matrix.cells[0 + i]; 
+				f += inf[1] * matrix.cells[4 + i];
+				f += inf[2] * matrix.cells[8 + i];
+				static if (translate) {
+					f += 1 * matrix.cells[12 + i];
+				}
+				outf[i] = f * weight;
 			}
 		}
 		
 		bool shouldPerformSkin = (!transform2D) && (vertexType.skinningWeightCount > 1);
 		
 		VertexState performSkin(VertexState vertexState) {
+			if (!shouldPerformSkin) return vertexState;
+			
 			//writefln("%s", gpu.state.boneMatrix[0]);
 			VertexState skinnedVertexState = vertexState;
 			(cast(float *)&skinnedVertexState.px)[0..3] = 0.0;
@@ -359,16 +363,14 @@ template Gpu_Draw() {
 			float[3] p, n;
 
 			for (int m = 0; m < vertexType.skinningWeightCount; m++) {
-				//vertexStateMorphed.weights[m];
-				
-				multiplyVectorPerMatrix(
+				multiplyVectorPerMatrix!(true)(
 					p,
 					(cast(float *)&vertexState.px)[0..3],
 					gpu.state.boneMatrix[m],
 					vertexState.weights[m]
 				);
 
-				multiplyVectorPerMatrix(
+				multiplyVectorPerMatrix!(false)(
 					n,
 					(cast(float *)&vertexState.nx)[0..3],
 					gpu.state.boneMatrix[m],
@@ -391,20 +393,18 @@ template Gpu_Draw() {
 			auto extractAllVertex(bool doMorph)() {
 				for (int n = 0; n < maxVertexCount; n++) {
 					static if (!doMorph) {
-						extractVertex(vertexListBuffer[n]);
+						extractVertex(vertexListBuffer[n]); vertexListBuffer[n] = performSkin(vertexListBuffer[n]);
 					} else {
 						VertexState vertexStateMorphed;
 						VertexState currentVertexState = void;
 						
 						for (int m = 0; m < morphingVertexCount; m++) {
-							extractVertex(currentVertexState);
+							extractVertex(currentVertexState); currentVertexState = performSkin(currentVertexState);
 							vertexStateMorphed.floatValues[] += currentVertexState.floatValues[] * morphWeights[m];
 						}
 			
 						vertexListBuffer[n] = vertexStateMorphed;
 					}
-					
-					if (shouldPerformSkin) vertexListBuffer[n] = performSkin(vertexListBuffer[n]);
 				}
 			}
 			

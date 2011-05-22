@@ -750,7 +750,7 @@ template OpenglUtils() {
 			glFogf(GL_FOG_END, state.fogEnd);
 		}
 
-		glEnable(GL_NORMALIZE);
+		//glEnable(GL_NORMALIZE);
 		//glColorMask(cast(bool)state.colorMask[0], cast(bool)state.colorMask[1], cast(bool)state.colorMask[2], cast(bool)state.colorMask[3]);
 		glColorMask(true, true, true, true);
 		glEnableDisable(GL_LINE_SMOOTH, state.lineSmoothEnabled);
