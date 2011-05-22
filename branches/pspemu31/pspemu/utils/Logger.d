@@ -28,25 +28,24 @@ class Logger {
 
 	//__gshared Message[] messages;
 	__gshared Level currentLogLevel = Level.NONE;
+	__gshared string[] disabledLogComponents;
 	
 	static public void setLevel(Level level) {
 		currentLogLevel = level;
 	}
-
+	
+	static public void disableLogComponent(string componentToDisable) {
+		disabledLogComponents ~= componentToDisable;
+	}
+	
 	static void log(T...)(Level level, string component, T args) {
 		if (level < currentLogLevel) return;
 		if (level == Level.NONE) return;
 
 		if (level <= Level.INFO) {
-			//if (component == "sceAudio_driver") return;
-			//if (component == "sceAudio") return;
-			//if (component == "IoFileMgrForUser") return;
-			//if (component == "ThreadManForUser") return;
-			//if (component == "sceHprm") return;
-			//if (component == "sceCtrl") return;
-			if (component == "CallbacksHandler") return;
-			if (component == "sceSuspendForUser") return;
-			//if (component == "Module") return;
+			foreach (disabledLogComponent; disabledLogComponents) {
+				if (component == disabledLogComponent) return;
+			}
 		}
 
 		auto message = Message(std.c.time.time(null), level, component, std.string.format(args));
