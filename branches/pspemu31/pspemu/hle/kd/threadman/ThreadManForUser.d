@@ -20,6 +20,10 @@ import pspemu.utils.sync.WaitMultipleEvents;
 
 import pspemu.hle.Callbacks;
 
+import std.datetime;
+
+import pspemu.hle.kd.rtc.Types;
+
 //debug = DEBUG_THREADS;
 //debug = DEBUG_SYSCALL;
 
@@ -308,13 +312,8 @@ class ThreadManForUser : ModuleNative {
 	 * @return The low 32bits of the system time
 	 */
 	uint sceKernelGetSystemTimeLow() {
-		unimplemented();
-		return 0;
+		return cast(uint)systime_to_tick(Clock.currTime(UTC()));
 	}
-
-	
-
-	
 	
 	template TemplateMsgPipe() {
 		/**
