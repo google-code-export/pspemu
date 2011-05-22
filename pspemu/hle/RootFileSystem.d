@@ -1,6 +1,10 @@
 module pspemu.hle.RootFileSystem;
 
+import std.stdio;
+import std.regex;
+import std.file;
 import std.string;
+import std.array;
 
 import pspemu.utils.Logger;
 import pspemu.utils.Path;
@@ -33,9 +37,10 @@ class RootFileSystem {
 		//.writefln("[3]");
 	
 		// Aliases.
-		devices["disc0:" ] = devices["umd0:"];
-		devices["ms:"    ] = devices["ms0:"];
-		devices["fatms0:"] = devices["ms0:"];
+		devices["disc0:"  ] = devices["umd0:"];
+		devices["ms:"     ] = devices["ms0:"];
+		devices["mscmhc0:"] = devices["ms0:"];
+		devices["fatms0:" ] = devices["ms0:"];
 		//.writefln("[4]");
 
 		// Mount registered devices:
@@ -57,6 +62,14 @@ class RootFileSystem {
 			path = std.file.getcwd() ~ '/' ~ path;
 		}
 		//writefln("setVirtualDir('%s')", path);
+		
+		auto r = regex(r"PSP_GAME\\SYSDIR$");
+		auto m = match(path, r);
+		
+		if (!m.empty) {
+			auto path2 = replace(path, r, "PSP_GAME");
+			fsroot["disc0:"].addChild(new FileSystem(path2), "PSP_GAME");
+		}
 
 		fsroot["ms0:/PSP/GAME"].addChild(new FileSystem(path), "virtual");
 		gameroot = new VFS_Proxy("<gameroot>", fsroot[fscurdir]);

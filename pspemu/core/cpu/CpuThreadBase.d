@@ -6,6 +6,7 @@ import core.thread;
 import pspemu.core.ThreadState;
 import pspemu.core.Memory;
 import pspemu.core.exceptions.HaltException;
+import pspemu.core.exceptions.NotImplementedException;
 
 import pspemu.core.cpu.tables.Table;
 import pspemu.core.cpu.tables.SwitchGen;
@@ -27,6 +28,7 @@ abstract class CpuThreadBase : InstructionHandler {
 	Memory memory;
 	Registers registers;
 	bool running = true;
+	bool trace = false;
 	//static CpuThreadBase[Thread] cpuThreadBasePerThread;
 	
 	ulong executedInstructionsCount;
@@ -61,7 +63,7 @@ abstract class CpuThreadBase : InstructionHandler {
 		threadState.emulatorState.cpuThreads[this] = true;
 		{
 			threadState.emulatorState.cpuThreadRunningBlock({
-				execute();
+				execute(trace);
 			});
 		}
 		
@@ -83,6 +85,7 @@ abstract class CpuThreadBase : InstructionHandler {
 	}
 	
     void execute(bool trace = false) {
+    	/+
     	try {
 			Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: START (%s)", Thread.getThis().name);
     		
@@ -116,6 +119,8 @@ abstract class CpuThreadBase : InstructionHandler {
 	    } finally {
 			Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: END (%s)", Thread.getThis().name);
 	    }
+	    +/
+	    throw(new NotImplementedException("Implemented by CpuThreadInterpreted"));
     }
 
     string toString() {

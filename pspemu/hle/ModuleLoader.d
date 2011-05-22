@@ -179,9 +179,12 @@ class ModuleLoader {
 		this.importsStream = getMemorySliceRelocated(moduleInfo.importsStart, moduleInfo.importsEnd);
 		this.exportsStream = getMemorySliceRelocated(moduleInfo.exportsStart, moduleInfo.exportsEnd);
 		
-		Logger.log(Logger.Level.TRACE, "ModuleLoader", "@EXPORTS-START: %08X-%08X", moduleInfo.exportsStart, moduleInfo.exportsEnd);
+		logTrace("@EXPORTS-START: %08X-%08X", moduleInfo.exportsStart, moduleInfo.exportsEnd);
 		
 		processImports();
+		
+		logTrace("beforeProcessExports");
+		
 		processExports();
 		
 		countInstructions();
@@ -207,110 +210,122 @@ class ModuleLoader {
 	
 	public void processImports() {
 		// Load Imports.
-		Logger.log(Logger.Level.TRACE, "ModuleLoader", "Imports (0x%08X-0x%08X):", moduleInfo.importsStart, moduleInfo.importsEnd);
+		logTrace("Imports (0x%08X-0x%08X):", moduleInfo.importsStart, moduleInfo.importsEnd);
 
 		uint[][string] unimplementedNids;
 	
-		while (!importsStream.eof) {
-			auto moduleImport     = read!(ModuleImport)(importsStream);
-			//writefln("%08X", moduleImport.name);
-			auto moduleImportName = moduleImport.name ? readStringz(memoryStream, moduleImport.name) : "<null>";
-			//assert(moduleImport.entry_size == moduleImport.sizeof);
-			version (DEBUG_LOADER) {
-				writefln("  '%s'", moduleImportName);
-				writefln("  {");
-			}
-			try {
-				moduleImports ~= moduleImport;
-				auto nidStream  = getMemorySlice(moduleImport.nidAddress , moduleImport.nidAddress  + moduleImport.func_count * 4);
-				auto callStream = getMemorySlice(moduleImport.callAddress, moduleImport.callAddress + moduleImport.func_count * 8);
-				//writefln("%08X", moduleImport.callAddress);
-				
-				Module pspModule;
+		try {
+			while (!importsStream.eof) {
+				auto moduleImport     = read!(ModuleImport)(importsStream);
+				//writefln("%08X", moduleImport.name);
+				auto moduleImportName = moduleImport.name ? readStringz(memoryStream, moduleImport.name) : "<null>";
+				//assert(moduleImport.entry_size == moduleImport.sizeof);
+				logTrace("  '%s'", moduleImportName);
+				logTrace("  {");
 				try {
-					pspModule = moduleManager[moduleImportName];
-				} catch (Throwable o) {
-					writefln("ERROR LOADING MODULE '%s': %s", moduleImportName, o);
-				}
-				
-				if (pspModule is null) {
-					writefln("MODULE '%s' NOT FOUND", moduleImportName);
-				}
-				
-				Module.ImportLibrary moduleImportLibrary = modulePsp.addImportLibrary(moduleImportName);
-				//moduleImportLibrary
-				
-				uint stubStartAddr = moduleImport.callAddress;
-				uint stubAddr = stubStartAddr; 
-				while (!nidStream.eof) {
-					uint nid = read!(uint)(nidStream);
+					moduleImports ~= moduleImport;
+					auto nidStream  = getMemorySlice(moduleImport.nidAddress , moduleImport.nidAddress  + moduleImport.func_count * 4);
+					auto callStream = getMemorySlice(moduleImport.callAddress, moduleImport.callAddress + moduleImport.func_count * 8);
+					//writefln("%08X", moduleImport.callAddress);
 					
-					moduleImportLibrary.funcImports[nid] = stubAddr;
-					
-					if ((pspModule !is null) && (nid in pspModule.nids)) {
-						Logger.log(Logger.Level.TRACE, "ModuleLoader", "    %s", pspModule.nids[nid]);
-						//auto Instruction syscallInstruction;
-						callStream.write(cast(uint)(0x0000000C | (0x1000 << 6))); // syscall 0x2307
-						callStream.write(cast(uint)cast(void *)&pspModule.nids[nid]);
-					} else {
-						Logger.log(Logger.Level.TRACE, "ModuleLoader", "    0x%08X:<unimplemented>", nid);
-						callStream.write(cast(uint)(0x0000000C | (0x1001 << 6))); // syscall 0x2307
-						auto func = new Syscall.Function(delegate(Syscall.Function func) {
-							.writefln("trying to call %s", func.info);
-						}, std.string.format("'%s':%08X", moduleImportName, nid));
-						funcs ~= func;
-						callStream.write(cast(uint)cast(void *)func);
-						
-						Logger.log(Logger.Level.TRACE, "ModuleLoader", "@FUNC: %08X", cast(uint)cast(void *)func);
-
-						//callStream.write(cast(uint)(0x70000000));
-						//callStream.write(cast(uint)0);
-						unimplementedNids[moduleImportName] ~= nid;
+					Module pspModule;
+					try {
+						pspModule = moduleManager[moduleImportName];
+					} catch (Throwable o) {
+						logError("ERROR LOADING MODULE '%s': %s", moduleImportName, o);
 					}
-					//writefln("++");
-					//writefln("--");
 					
-					stubAddr += 4;
+					if (pspModule is null) {
+						logWarning("MODULE '%s' NOT FOUND", moduleImportName);
+					}
+					
+					Module.ImportLibrary moduleImportLibrary = modulePsp.addImportLibrary(moduleImportName);
+					//moduleImportLibrary
+					
+					uint stubStartAddr = moduleImport.callAddress;
+					uint stubAddr = stubStartAddr; 
+					while (!nidStream.eof) {
+						uint nid = read!(uint)(nidStream);
+						
+						moduleImportLibrary.funcImports[nid] = stubAddr;
+						
+						if ((pspModule !is null) && (nid in pspModule.nids)) {
+							logTrace("    %s", pspModule.nids[nid]);
+							//auto Instruction syscallInstruction;
+							callStream.write(cast(uint)(0x0000000C | (0x1000 << 6))); // syscall 0x2307
+							callStream.write(cast(uint)cast(void *)&pspModule.nids[nid]);
+						} else {
+							logTrace("    0x%08X:<unimplemented>", nid);
+							callStream.write(cast(uint)(0x0000000C | (0x1001 << 6))); // syscall 0x2307
+							auto func = new Syscall.Function(delegate(Syscall.Function func) {
+								.writefln("trying to call %s", func.info);
+							}, std.string.format("'%s':%08X", moduleImportName, nid));
+							funcs ~= func;
+							callStream.write(cast(uint)cast(void *)func);
+							
+							logTrace("@FUNC: %08X", cast(uint)cast(void *)func);
+	
+							//callStream.write(cast(uint)(0x70000000));
+							//callStream.write(cast(uint)0);
+							unimplementedNids[moduleImportName] ~= nid;
+						}
+						//writefln("++");
+						//writefln("--");
+						
+						stubAddr += 4;
+					}
+				} catch (Throwable o) {
+					.writefln("  ERRROR!: %s", o);
+					throw(o);
 				}
-			} catch (Throwable o) {
-				writefln("  ERRROR!: %s", o);
-				throw(o);
+				
+				logTrace("   }");
 			}
-			version (DEBUG_LOADER) {
-				writefln("  }");
-			}
+		} catch (Throwable o) {
+			logTrace("Error processing Imports : %s", o);
 		}
+		
+		logTrace("ended Imports");
 	}
 	
 	public void processExports() {
-		// Load Exports.
-		while (!exportsStream.eof) {
-			ModuleExport moduleExport = read!(ModuleExport)(exportsStream);
-			string moduleExportName = moduleExport.name ? readStringz(memoryStream, moduleExport.name) : "<null>";
-			
-			Module.ExportLibrary moduleExportLibrary = modulePsp.addExportLibrary(moduleExportName);
-			Logger.log(Logger.Level.TRACE, "ModuleLoader", "@EXPORT: %s:'%s'", moduleExport, moduleExportName);
-			
-			uint[] func_nids;
-			uint[] var_nids;
-			memoryStream.position = moduleExport.exports;
-			for (int n = 0; n < moduleExport.func_count; n++) func_nids ~= read!uint(memoryStream);
-			for (int n = 0; n < moduleExport.var_count ; n++) var_nids ~= read!uint(memoryStream);
-			for (int n = 0; n < moduleExport.func_count; n++) {
-				uint nid  = func_nids[n];
-				uint addr = read!uint(memoryStream);  
-				moduleExportLibrary.funcExports[nid] = addr; 
-				Logger.log(Logger.Level.TRACE, "ModuleLoader", "  FUNC:%08X:%08X", nid, addr);
+		logTrace("Exports:");
+		logTrace("Exports (0x%08X-0x%08X):", moduleInfo.exportsStart, moduleInfo.exportsEnd);
+
+		try {
+			// Load Exports.
+			while (!exportsStream.eof) {
+				ModuleExport moduleExport = read!(ModuleExport)(exportsStream);
+				string moduleExportName = moduleExport.name ? readStringz(memoryStream, moduleExport.name) : "<null>";
+				
+				Module.ExportLibrary moduleExportLibrary = modulePsp.addExportLibrary(moduleExportName);
+				Logger.log(Logger.Level.TRACE, "ModuleLoader", "@EXPORT: %s:'%s'", moduleExport, moduleExportName);
+				
+				uint[] func_nids;
+				uint[] var_nids;
+				memoryStream.position = moduleExport.exports;
+				for (int n = 0; n < moduleExport.func_count; n++) func_nids ~= read!uint(memoryStream);
+				for (int n = 0; n < moduleExport.var_count ; n++) var_nids ~= read!uint(memoryStream);
+				for (int n = 0; n < moduleExport.func_count; n++) {
+					uint nid  = func_nids[n];
+					uint addr = read!uint(memoryStream);  
+					moduleExportLibrary.funcExports[nid] = addr; 
+					Logger.log(Logger.Level.TRACE, "ModuleLoader", "  FUNC:%08X:%08X", nid, addr);
+				}
+				for (int n = 0; n < moduleExport.var_count ; n++) {
+					uint nid  = var_nids[n];
+					uint addr = read!uint(memoryStream);  
+					moduleExportLibrary.varExports[nid] = addr;
+					Logger.log(Logger.Level.TRACE, "ModuleLoader", "  VAR:%08X:%08X", nid, addr);
+				}
+				
+				moduleExports ~= moduleExport;
 			}
-			for (int n = 0; n < moduleExport.var_count ; n++) {
-				uint nid  = var_nids[n];
-				uint addr = read!uint(memoryStream);  
-				moduleExportLibrary.varExports[nid] = addr;
-				Logger.log(Logger.Level.TRACE, "ModuleLoader", "  VAR:%08X:%08X", nid, addr);
-			}
-			
-			moduleExports ~= moduleExport;
+		} catch (Throwable o) {
+			logTrace("Error processing Exports : %s", o);
 		}
+		
+		logTrace("ended Exports");
 	}
 	
 	uint PC() {
@@ -363,6 +378,8 @@ class ModuleLoader {
 		}
 		//throw(new Exception("aaaaaaaaaaaaaaaa"));
 	}
+	
+	mixin Logger.DebugLogPerComponent!("ModuleLoader");
 	
 	/*
 	bool lookupDebugSourceLine(ref DebugSourceLine debugSourceLine, uint address) {

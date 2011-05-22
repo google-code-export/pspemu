@@ -14,6 +14,7 @@ import pspemu.hle.MemoryManager;
 import std.stream;
 import std.stdio;
 import std.math;
+import std.conv;
 
 import pspemu.utils.Logger;
 
@@ -124,13 +125,29 @@ class Elf {
 	}
 	
 	static struct Reloc {
-		enum Type : byte { None = 0, Mips16 = 1, Mips32 = 2, MipsRel32 = 3, Mips26 = 4, MipsHi16 = 5, MipsLo16 = 6, MipsGpRel16 = 7, MipsLiteral = 8, MipsGot16 = 9, MipsPc16 = 10, MipsCall16 = 11, MipsGpRel32 = 12 }
+		enum Type : byte {
+			None        = 0,
+			Mips16      = 1,
+			Mips32      = 2,
+			MipsRel32   = 3,
+			Mips26      = 4,
+			MipsHi16    = 5,
+			MipsLo16    = 6,
+			MipsGpRel16 = 7, 
+			MipsLiteral = 8,
+			MipsGot16   = 9,
+			MipsPc16    = 10,
+			MipsCall16  = 11,
+			MipsGpRel32 = 12,
+		}
 		uint offset;
 		union {
 			uint _info;
 			struct {
 				Type type;
-				ubyte[3] _dummy;
+				ubyte offsetBase;
+				ubyte addressBase;
+				ubyte _dummy;
 				uint symbolIndex() { return _info >> 8; }
 			}
 		}
@@ -191,7 +208,7 @@ class Elf {
 
 	bool needsRelocation() { return (header.entryPoint < 0x08000000) || (header.type == Header.Type.Prx); }
 	Stream SectionStream(SectionHeader sectionHeader) {
-		Logger.log(Logger.Level.TRACE, "ElfLoader", "SectionStream(Address=%08X, Offset=%08X, Size=%08X, Type=%08X)", sectionHeader.address, sectionHeader.offset, sectionHeader.size, sectionHeader.type);
+		logTrace("SectionStream(Address=%08X, Offset=%08X, Size=%08X, Type=%08X)", sectionHeader.address, sectionHeader.offset, sectionHeader.size, sectionHeader.type);
 
 		switch (sectionHeader.type) {
 			case SectionHeader.Type.PROGBITS:
@@ -220,7 +237,9 @@ class Elf {
 		// Checks that it's an ELF file and that it's a PSP ELF file.
 		if (header.magic   != Header.init.magic  ) throw(new Exception(std.string.format("Magic '%s' != '%s'", header.magic, Header.init.magic)));
 		if (header.machine != Header.init.machine) throw(new Exception(std.string.format("Machine %d != %d", header.machine, Header.init.machine)));
-
+		
+		logTrace("It's an Elf file processing...");
+		
 		// Program Headers
 		extractProgramHeaders();
 
@@ -230,6 +249,8 @@ class Elf {
 	}
 	
 	void extractSectionHeaders() {
+		logTrace("Extracting SectionHeaders...");
+		
 		sectionHeaders = []; assert(SectionHeader.sizeof >= header.sectionHeaderEntrySize);
 		try {
 			//uint offsetLow = 0xFFFFFFFF, offsetHigh = 0;
@@ -250,6 +271,8 @@ class Elf {
 	}
 
 	void extractSectionHeaderNames() {
+		logTrace("Extracting SectionHeaderNames...");
+		
 		auto stringTableStream = SectionStream(sectionHeaderStringTable);
 		//foreach (sectionHeader; sectionHeaders) writefln("%s", sectionHeader);
 		stringTable = cast(char[])stringTableStream.readString(cast(uint)stringTableStream.size);
@@ -291,6 +314,8 @@ class Elf {
 	}
 
 	void extractProgramHeaders() {
+		logTrace("Extracting ProgramHeaders...");
+		
 		programHeaders = []; assert(SectionHeader.sizeof >= header.sectionHeaderEntrySize);
 		try {
 			foreach (index; 0 .. header.programHeaderCount) {
@@ -319,7 +344,8 @@ class Elf {
 		}
 		
 		if ((baseAddress & 0xFFFF) != 0) {
-			throw(new Exception("Relocation base address not aligned to 64K"));
+			//throw(new Exception("Relocation base address not aligned to 64K"));
+			logWarning("Relocation base address not aligned to 64K");
 		}
 
 		foreach (sectionHeader; sectionHeaders) {
@@ -330,67 +356,123 @@ class Elf {
 			
 			auto stream = SectionStream(sectionHeader);
 			
-			while (!stream.eof) {
+			uint RelocCount = cast(uint)stream.size / Reloc.sizeof;
+			
+			uint AHL = 0; // (AHI << 16) | (ALO & 0xFFFF)
+			
+			scope uint[] deferredHi16;
+			
+			for (int n = 0; n < RelocCount; n++) {
 				auto reloc = read!(Reloc)(stream);
 				// Filtra las relocalizaciones nulas
 				if (reloc.type == Reloc.Type.None) continue;
+				
+				// Program header offset of the reference we want to relocate. 
+				int phOffset     = programHeaders[reloc.offsetBase].vaddr;
+				
+				// Program header offset of the program header referenced by this relocation.
+            	int phBaseOffset = programHeaders[reloc.addressBase].vaddr;
 
 				// Obtiene el offset real a relocalizar 
-				uint offset = reloc.offset + baseAddress;
+				uint data_addr = baseAddress + reloc.offset + phOffset;
+				
+				int A = 0; // addend
+				int S = baseAddress + phBaseOffset;
+				int GP_ADDR = baseAddress + reloc.offset;
+				int GP_OFFSET = GP_ADDR - (baseAddress & 0xFFFF0000);
+				
+				long result = 0; // Used to hold the result of relocation, OR this back into data
 				
 				// Lee la palabra original
-				Instruction instruction = Instruction(memory_read32(offset));
+				Instruction instruction = Instruction(memory_read32(data_addr));
 				
 				//writefln("Patching offset: %08X, type:%d", offset, reloc.type);
+
+				uint prev_data = instruction.v;
 				
+				Elf elf = this;
+				
+				void logAsJpcsp(T...)(T args) {
+					//writefln("TRACE   memory - GUI - %s", std.string.format(args));
+					elf.logTrace(args);
+				}
+
+				logAsJpcsp("Relocation #%d type=%d,base=%08X,addr=%08X", n, reloc.type, reloc.offsetBase, reloc.addressBase);
+
 				// Modifica la palabra según el tipo de relocalización
-				switch (reloc.type) { default: throw(new Exception(std.string.format("RELOC: unknown reloc type '%02X'", reloc.type)));
+				switch (reloc.type) {
+					default: throw(new Exception(std.string.format("RELOC: unknown reloc type '%02X'", reloc.type)));
+					//case Reloc.Type.MipsNone:
 					// LUI
 					case Reloc.Type.MipsHi16: { 
 						//regs[instruction.RT] ~= offset;
-						instruction.IMMU = instruction.IMMU + (baseAddress >> 16);
+						//instruction.IMMU = instruction.IMMU + (baseAddress >> 16);
+
+						A = instruction.IMMU;
+						AHL = A << 16;
+						deferredHi16 ~= data_addr;
+
+                        logAsJpcsp(std.string.format("R_MIPS_HI16 addr=%08X", data_addr));
 					} break;
 					
 					// ADDI, ORI ...
 					case Reloc.Type.MipsLo16: {
-						/*
-						uint reg = instruction.RS;
-						uint vlo = ((instruction.v & 0x0000FFFF) ^ 0x00008000) - 0x00008000;
-						
-						foreach (hiaddr; regs[reg]) {
-							uint DATA2 = memory_read32(hiaddr);
-
-							uint temp = ((DATA2 & 0x0000FFFF) << 16) + vlo + baseAddress;
-							
-							temp = ((temp >> 16) + (((temp & 0x00008000) != 0) ? 1 : 0)) & 0x0000FFFF;
-							DATA2 = (DATA2 & ~0x0000FFFF) | temp;
-
-							memory_write32(hiaddr, DATA2);
+						A = instruction.IMMU;
+						AHL &= ~0x0000FFFF; // delete lower bits, since many R_MIPS_LO16 can follow one R_MIPS_HI16
+						AHL |= A & 0x0000FFFF;
+						result = AHL + S;
+						instruction.v &= ~0x0000FFFF;
+						instruction.v |= result & 0x0000FFFF; // truncate
+						// Process deferred R_MIPS_HI16
+						foreach (data_addr2; deferredHi16) {
+							int data2 = memory_read32(data_addr2);
+							result = ((data2 & 0x0000FFFF) << 16) + A + S;
+							// The low order 16 bits are always treated as a signed
+							// value. Therefore, a negative value in the low order bits
+							// requires an adjustment in the high order bits. We need
+							// to make this adjustment in two ways: once for the bits we
+							// took from the data, and once for the bits we are putting
+							// back in to the data.
+							if ((A & 0x8000) != 0) {
+							    result -= 0x10000;
+							}
+							if ((result & 0x8000) != 0) {
+							     result += 0x10000;
+							}
+							data2 &= ~0x0000FFFF;
+							data2 |= (result >> 16) & 0x0000FFFF; // truncate
+							logAsJpcsp(std.string.format("R_MIPS_HILO16 addr=%08X before=%08X after=%08X", data_addr2, memory_read32(data_addr2), data2));
+						    memory_write32(data_addr2, data2);
 						}
-						
-						regs[reg].length = 0;
-						
-						instruction.v = (instruction.v & ~0x0000FFFF) | ((baseAddress + vlo) & 0x0000FFFF);
-						*/
+					    deferredHi16.length = 0;
+
+						logAsJpcsp(std.string.format("R_MIPS_LO16 addr=%08X before=%08X after=%08X", data_addr, prev_data, instruction.v));
 					} break;
 					
 					// J, JAL
 					case Reloc.Type.Mips26:
 						instruction.JUMP2 = instruction.JUMP2 + baseAddress;
+						
+						logAsJpcsp(std.string.format("R_MIPS_26 addr=%08X before=%08X after=%08X", data_addr, prev_data, instruction.v));
 					break;
 		
 					// *POINTER*
 					case Reloc.Type.Mips32:
-						instruction.v = instruction.v + baseAddress;
+						//instruction.v = instruction.v + baseAddress;
+						instruction.v += S;
+						logAsJpcsp(std.string.format("R_MIPS_32 addr=%08X before=%08X after=%08X", data_addr, prev_data, instruction.v));
 					break;
 					
 					case Reloc.Type.MipsGpRel16: {
-						//Logger.log(Logger.Level.WARNING, "Loader", "Reloc.Type.MipsGpRel16: %08X -> %08X", offset, instruction.v);
+						logWarning("Reloc.Type.MipsGpRel16: %08X -> %08X", data_addr, instruction.v);
 					} break;
 				} // switch
+
+				//logTrace("%s addr=%08X before=%08X after=%08X", to!string(reloc.type), offset, prev_data, instruction.v);
+				//writefln("TRACE   memory - GUI - %s addr=%08X before=%08X after=%08X", to!string(cast(Reloc.Type2)reloc.type), offset, prev_data, instruction.v);
 				
 				// Escribe la palabra modificada
-				memory_write32(offset, instruction.v);
+				memory_write32(data_addr, instruction.v);
 				
 			} // while
 			
@@ -489,4 +571,6 @@ class Elf {
 		}
 		return list;
 	}
+	
+	mixin Logger.DebugLogPerComponent!("ElfLoader");
 }

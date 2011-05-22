@@ -4,6 +4,8 @@ import pspemu.utils.sync.WaitEvent;
 
 import pspemu.hle.kd.threadman.Types;
 
+import pspemu.utils.Logger;
+
 class PspWaitEvent {
 	WaitEvent waitEvent;
 	string name;
@@ -15,6 +17,37 @@ class PspWaitEvent {
 		this.name = cast(string)((cast(char [])name).dup);
 		this.attr = attr;
 		this.bits = bits;		
+	}
+	
+	public void setBits(uint bits) {
+		this.bits = bits;
+		this.waitEvent.signal();
+	}
+	
+	public uint waitEventFlag(uint bitsToMatch, PspEventFlagWaitTypes wait, bool callbacks) {
+		PspWaitEvent pspWaitEvent;
+		bool delegate() matches;
+		
+		if (wait & PspEventFlagWaitTypes.PSP_EVENT_WAITOR) {
+			matches = delegate() { return ((pspWaitEvent.bits & bitsToMatch) != 0); };
+		} else {
+			matches = delegate() { return ((pspWaitEvent.bits & bitsToMatch) == bitsToMatch); };
+		}
+		
+		if (callbacks) {
+			Logger.log(Logger.Level.WARNING, "ThreadManForUser", "Not implemented PspWaitEvent.waitEventFlag.callbacks");
+		}
+
+		uint matchedBits = bits;
+		
+		while (!matches) {
+			waitEvent.wait();
+		}
+		
+		if (wait & PspEventFlagWaitTypes.PSP_EVENT_WAITCLEAR) {
+			bits = 0;
+		}
+		return matchedBits;
 	}
 }
 
@@ -65,8 +98,8 @@ template ThreadManForUser_Events() {
 	 * @return < 0 On error
 	 */
 	int sceKernelDeleteEventFlag(int evid) {
-		unimplemented();
-		return -1;
+		hleEmulatorState.uniqueIdFactory.remove!PspWaitEvent(evid);
+		return 0;
 	}
 
 	/**
@@ -81,6 +114,24 @@ template ThreadManForUser_Events() {
 		unimplemented();
 		return -1;
 	}
+	
+	/** 
+	 * Wait for an event flag for a given bit pattern with callback.
+	 *
+	 * @param evid    - The event id returned by sceKernelCreateEventFlag.
+	 * @param bits    - The bit pattern to poll for.
+	 * @param wait    - Wait type, one or more of ::PspEventFlagWaitTypes or'ed together
+	 * @param outBits - The bit pattern that was matched.
+	 * @param timeout - Timeout in microseconds
+	 * @return < 0 On error
+	 */
+	int _sceKernelWaitEventFlagCB(int evid, u32 bits, PspEventFlagWaitTypes wait, u32 *outBits, SceUInt *timeout, bool callback) {
+		PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
+		uint matchedBits = pspWaitEvent.waitEventFlag(bits, wait, callback);
+		if (outBits !is null) *outBits = matchedBits;
+		return 0;
+	}
+
 
 	/** 
 	 * Wait for an event flag for a given bit pattern.
@@ -92,24 +143,22 @@ template ThreadManForUser_Events() {
 	 * @param timeout  - Timeout in microseconds
 	 * @return < 0 On error
 	 */
-	int sceKernelWaitEventFlag(int evid, u32 bits, u32 wait, u32 *outBits, SceUInt *timeout) {
-		unimplemented();
-		return -1;
+	int sceKernelWaitEventFlag(int evid, u32 bits, PspEventFlagWaitTypes wait, u32 *outBits, SceUInt *timeout) {
+		return _sceKernelWaitEventFlagCB(evid, bits, wait, outBits, timeout, false);
 	}
 
 	/** 
 	 * Wait for an event flag for a given bit pattern with callback.
 	 *
-	 * @param evid - The event id returned by sceKernelCreateEventFlag.
-	 * @param bits - The bit pattern to poll for.
-	 * @param wait - Wait type, one or more of ::PspEventFlagWaitTypes or'ed together
+	 * @param evid    - The event id returned by sceKernelCreateEventFlag.
+	 * @param bits    - The bit pattern to poll for.
+	 * @param wait    - Wait type, one or more of ::PspEventFlagWaitTypes or'ed together
 	 * @param outBits - The bit pattern that was matched.
-	 * @param timeout  - Timeout in microseconds
+	 * @param timeout - Timeout in microseconds
 	 * @return < 0 On error
 	 */
-	int sceKernelWaitEventFlagCB(int evid, u32 bits, u32 wait, u32 *outBits, SceUInt *timeout) {
-		unimplemented();
-		return -1;
+	int sceKernelWaitEventFlagCB(int evid, u32 bits, PspEventFlagWaitTypes wait, u32 *outBits, SceUInt *timeout) {
+		return _sceKernelWaitEventFlagCB(evid, bits, wait, outBits, timeout, true);
 	}
 
 	/** 
@@ -122,7 +171,7 @@ template ThreadManForUser_Events() {
 	  */
 	int sceKernelSetEventFlag(SceUID evid, u32 bits) {
 		PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
-		pspWaitEvent.bits = bits;
+		pspWaitEvent.setBits(bits);
 		return 0;
 	}
 

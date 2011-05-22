@@ -2,6 +2,8 @@ module pspemu.utils.MathUtils;
 
 import std.conv;
 
+//public import std.algorithm;;
+
 enum : bool { Unsigned, Signed }	
 enum Sign : bool { Unsigned, Signed }
 

@@ -117,12 +117,15 @@ class SysMemUserForUser : ModuleNative {
 	 * @return The size of the largest free memory block, in bytes.
 	 */
 	SceSize sceKernelMaxFreeMemSize() {
-		SceSize maxFreeMemSize = pspMemorySegment[2].getMaxAvailableMemoryBlock;
-		Logger.log(Logger.Level.INFO, "sysmem", "maxFreeMemSize(%d)", maxFreeMemSize);
+		//writefln("%s", pspMemorySegment[2]);
+		SceSize maxFreeMemSize = pspMemorySegment[2].getMaxAvailableMemoryBlock();
+		Logger.log(Logger.Level.INFO, "sysmem", "maxFreeMemSize(%d, %.2f MB)", maxFreeMemSize, (cast(real)maxFreeMemSize) / 1024 / 1024);
 		// maxFreeMemSize
 		// @TODO Maybe game allocates all the memory, but alloc an stack can overlap the memory. Check this.
 		//return maxFreeMemSize - 20000;
-		return maxFreeMemSize - 1 * 1024 * 1024;
+		//return maxFreeMemSize - 1 * 1024 * 1024;
+		return maxFreeMemSize;
+		//return 5 * 1024 * 1024;
 	}
 
 	/**
@@ -139,7 +142,11 @@ class SysMemUserForUser : ModuleNative {
 	SceUID sceKernelAllocPartitionMemory(SceUID partitionid, string name, PspSysMemBlockTypes type, SceSize size, /* void* */uint addr) {
 		MemorySegment memorySegment;
 
+		Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%s:%d)", partitionid, name, std.conv.to!string(type), size);
+		//Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%d:%d)", partitionid, name, (type), size);
+
 		switch (type) {
+			default:
 			case PspSysMemBlockTypes.PSP_SMEM_Low : memorySegment = pspMemorySegment[partitionid].allocByLow (size, dupStr(name)); break;
 			case PspSysMemBlockTypes.PSP_SMEM_High: memorySegment = pspMemorySegment[partitionid].allocByHigh(size, dupStr(name)); break;
 			case PspSysMemBlockTypes.PSP_SMEM_Addr: memorySegment = pspMemorySegment[partitionid].allocByAddr(addr, size, dupStr(name)); break;
@@ -149,7 +156,8 @@ class SysMemUserForUser : ModuleNative {
 		
 		SceUID sceUid = hleEmulatorState.uniqueIdFactory.add(memorySegment);
 		
-		Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%s:%d) :: (%d) -> (%08X-%08X)", partitionid, name, std.conv.to!string(type), size, sceUid, memorySegment.block.low, memorySegment.block.high);
+		Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%s:%d) :: (%d) -> %s", partitionid, name, std.conv.to!string(type), size, sceUid, memorySegment.block);
+		//Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%d:%d) :: (%d) -> %s", partitionid, name, (type), size, sceUid, memorySegment.block);
 
 		return sceUid;
 	}

@@ -23,12 +23,11 @@ class ThreadState {
 	public Module threadModule;
 	
 	ThreadState clone() {
-		ThreadState threadState = new ThreadState(emulatorState, new Registers());
+		ThreadState threadState = new ThreadState(name, emulatorState, new Registers());
 		{
 			threadState.waiting = waiting;
 			threadState.registers.copyFrom(registers);
 			threadState.nativeThread = Thread.getThis;
-			threadState.name = name;
 			threadState.thid = -1;
 			threadState.threadModule = threadModule;
 			threadState.sceKernelThreadInfo = sceKernelThreadInfo;
@@ -45,13 +44,14 @@ class ThreadState {
 		}
 	}
 	
-	public this(EmulatorState emulatorState, Registers registers) {
+	public this(string name, EmulatorState emulatorState, Registers registers) {
+		this.name = name;
 		this.emulatorState = emulatorState;
 		this.registers = registers;
 	}
 
-	public this(EmulatorState emulatorState) {
-		this(emulatorState, new Registers());
+	public this(string name, EmulatorState emulatorState) {
+		this(name, emulatorState, new Registers());
 	}
 	
 	string toString() {

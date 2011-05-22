@@ -8,9 +8,12 @@ import pspemu.utils.MathUtils;
 class MemorySegment {
 	static struct Block {
 		uint low, high;
+		bool valid() { return low <= high; }
 		uint size() in { assert(low <= high); } body { return high - low; }
 		bool overlap(Block that) { return (this.high > that.low) && (that.high > this.low); }
 		bool inside(Block that) { return (this.low >= that.low) && (this.high <= that.high); }
+		
+		string toString() { return std.string.format("Block(%08X-%08X)", low, high); }
 	}
 	
 	MemorySegment parent;
@@ -32,6 +35,7 @@ class MemorySegment {
 	}
 
 	this(uint low, uint high, string name = "<unknown>") {
+		if (!(low <= high)) throw(new Exception("Invalid MemorySegment low <= high"));
 		block.low  = low;
 		block.high = high;
 		this.name  = name;
@@ -133,13 +137,20 @@ class MemorySegment {
 
 	uint getFreeMemory() {
 		uint size;
-		foreach (block; availableBlocks) size += block.size;
+		foreach (block; availableBlocks) {
+			if (!block.valid) continue;
+			size += block.size;
+		}
 		return size;
 	}
 
 	uint getMaxAvailableMemoryBlock() {
 		uint size = 0;
-		foreach (block; availableBlocks) size = pspemu.utils.MathUtils.max(size, block.size);
+		foreach (block; availableBlocks) {
+			if (!block.valid) continue;
+			size = std.algorithm.max(size, block.size);
+			//writefln("getMaxAvailableMemoryBlock(%s): %d", block, block.size);
+		}
 		return size;
 	}
 

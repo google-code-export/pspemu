@@ -38,9 +38,11 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 		// @TODO
 	}
 
-	// @TODO: Unknown.
-	void sceDisplayGetCurrentHcount() {
-		unimplemented();
+	/**
+	 * Get current HSYNC count
+	 */
+	int sceDisplayGetCurrentHcount() {
+		return hleEmulatorState.emulatorState.display.CURRENT_HCOUNT;
 	}
 
 	/**

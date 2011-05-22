@@ -20,7 +20,9 @@ enum PspSysMemBlockTypes {
 	/** Allocate from the highest available address. */
 	PSP_SMEM_High,
 	/** Allocate from the specified address. */
-	PSP_SMEM_Addr
+	PSP_SMEM_Addr,
+	
+	PSP_SMEM_Unk1
 }
 
 struct PspSysmemPartitionInfo {

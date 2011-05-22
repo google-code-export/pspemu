@@ -14,6 +14,7 @@ import std.conv;
 
 import pspemu.utils.TaskQueue;
 import pspemu.utils.CircularList;
+import pspemu.utils.Stack;
 import pspemu.utils.MathUtils;
 import pspemu.utils.String;
 

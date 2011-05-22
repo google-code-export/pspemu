@@ -44,7 +44,9 @@ class CpuThreadInterpreted : CpuThreadBase {
 	}
 	
 	public CpuThreadBase createCpuThread(ThreadState threadState) {
-		return new CpuThreadInterpreted(threadState);
+		auto cpuThreadBase = new CpuThreadInterpreted(threadState);
+		cpuThreadBase.trace = this.trace;
+		return cpuThreadBase;
 	}
 	
 	version (FASTER_INTERPRETED_CPU) {
@@ -70,12 +72,19 @@ class CpuThreadInterpreted : CpuThreadBase {
 			
 	    	try {
 				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: START (%s)", Thread.getThis().name);
+				
+				if (threadState.name == "mainCpuThread") {
+					//trace = true;
+					//threadState.registers.dump();
+				}
+				
+				//trace = true;
 	    		
 		    	while (running) {
 			    	instruction.v = memory.tread!(uint)(registers.PC);
 			    	
 			    	if (trace) {
-			    		writefln("%s :: PC:%08X: %08X", threadState, registers.PC - 0x08800000, instruction.v);
+			    		writefln("%s :: nPC:%08X: INSTRUCTION:%08X : RA:%08X", threadState, registers.nPC, instruction.v, registers.RA);
 			    	}
 			    	
 			    	mixin(genSwitchAll());
@@ -91,7 +100,9 @@ class CpuThreadInterpreted : CpuThreadBase {
 		    	
 		    	//.,writefln();
 		    	.writefln("CALLSTACK:");
-		    	foreach (callPC; registers.RealCallStack) {
+		    	scope uint[] callStack = registers.RealCallStack.dup;
+		    	callStack ~= registers.PC;
+		    	foreach (callPC; callStack) {
 		    		//.writef("   ");
 		    		.writef("   %08X", callPC);
 		    		bool printed = false;
@@ -111,7 +122,8 @@ class CpuThreadInterpreted : CpuThreadBase {
 		    	}
 		    	.writefln("REGISTERS:");
 		    	foreach (k, value; registers.R) {
-		    		.writef("   r%2d: %08X", k, value);
+		    		//.writef("   r%2d: %08X", k, value);
+		    		.writef("   %s: %08X", Registers.aliasesInv[k], value);
 		    		if ((k % 4) == 3) .writefln("");
 		    	}
 		    	.writefln("%s", exception);

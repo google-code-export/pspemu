@@ -29,13 +29,13 @@ class Emulator {
 	public this() {
 		emulatorState    = new EmulatorState();
 		hleEmulatorState = new HleEmulatorState(emulatorState);
-		mainCpuThread    = new CpuThreadInterpreted(new ThreadState(emulatorState));
+		mainCpuThread    = new CpuThreadInterpreted(new ThreadState("mainCpuThread", emulatorState));
 	}
 	
 	public void reset() {
 		emulatorState.reset();
 		hleEmulatorState.reset();
-		mainCpuThread    = new CpuThreadInterpreted(new ThreadState(emulatorState));
+		mainCpuThread    = new CpuThreadInterpreted(new ThreadState("mainCpuThread", emulatorState));
 	}
 	
 	public void startDisplay() {
