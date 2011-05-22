@@ -10,7 +10,7 @@ interface GpuImpl {
 	void startDisplayList();
 	void endDisplayList();
 	void clear();
-	void draw(VertexState[] vertexList, PrimitiveType type, PrimitiveFlags flags);
+	void draw(ushort[] indexList, VertexState[] vertexList, PrimitiveType type, PrimitiveFlags flags);
 	void flush();
 	void frameLoad (void* colorBuffer, void* depthBuffer);
 	void frameStore(void* colorBuffer, void* depthBuffer);

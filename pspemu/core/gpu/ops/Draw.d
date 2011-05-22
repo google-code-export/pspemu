@@ -157,6 +157,7 @@ template Gpu_Draw() {
 	}
 
 	VertexState[] vertexListBuffer;
+	ushort[] indexListBuffer;
 	//VertexStateArrays vertexListBufferArrays;
 	
 	// draw PRIMitive
@@ -235,9 +236,16 @@ template Gpu_Draw() {
 			if ((cast(uint)ptr) % pad) ptr += (pad - ((cast(uint)ptr) % pad));
 		}
 
+		/*
 		void moveIndexGen(T)() {
 			auto TIndexPointer = cast(T *)indexPointer;
 			vertexPointer = vertexPointerBase + (*TIndexPointer * vertexSizeWithMorph);
+			indexPointer += T.sizeof;
+		}
+		*/
+		
+		void extractIndexGen(T)(ref ushort index) {
+			index = cast(ushort)*cast(T *)indexPointer;
 			indexPointer += T.sizeof;
 		}
 
@@ -272,14 +280,14 @@ template Gpu_Draw() {
 
 		auto extractTable      = [null, &extractArray!(byte), &extractArray!(short), &extractArray!(float)];
 		auto extractColorTable = [null, &extractColor8bits, &extractColor8bits, &extractColor8bits, &extractColor16bits, &extractColor16bits, &extractColor16bits, &extractColor8888];
-		auto moveIndexTable    = [null, &moveIndexGen!(ubyte), &moveIndexGen!(ushort), &moveIndexGen!(uint)];
+		auto extractIndexTable = [null, &extractIndexGen!(ubyte), &extractIndexGen!(ushort), &extractIndexGen!(uint)];
 
 		auto extractWeights  = extractTable[vertexType.weight  ];
 		auto extractTexture  = extractTable[vertexType.texture ];
 		auto extractPosition = extractTable[vertexType.position];
 		auto extractNormal   = extractTable[vertexType.normal  ];
 		auto extractColor    = extractColorTable[vertexType.color];
-		auto moveIndex       = (indexPointer !is null) ? moveIndexTable[vertexType.index] : null;
+		auto extractIndex    = (indexPointer !is null) ? extractIndexTable[vertexType.index] : null;
 
 		void extractVertex(ref VertexState vertex) {
 			if (extractWeights) {
@@ -306,20 +314,44 @@ template Gpu_Draw() {
 		}
 
 		//vertexListBufferArrays.reserve(vertexCount);
-		if (vertexListBuffer.length < vertexCount) vertexListBuffer.length = vertexCount;
+		
+		uint indexCount = vertexCount;
+		uint maxVertexCount = 0;
 
-		for (int n = 0; n < vertexCount; n++) {
-			VertexState vertexStateMorphed;
-			VertexState currentVertexState;
+		// Extract indexes.
+		{
+			if (indexListBuffer.length < indexCount) indexListBuffer.length = indexCount;
 			
-			if (moveIndex) moveIndex();
-			
-			for (int m = 0; m < morphingVertexCount; m++) {
-				extractVertex(currentVertexState);
-				vertexStateMorphed.floatValues[] += currentVertexState.floatValues[] * morphWeights[m];
+			if (extractIndex) {
+				for (int n = 0; n < indexCount; n++) {
+					//auto TIndexPointer = cast(T *)indexPointer;
+					//vertexPointer = vertexPointerBase + (*TIndexPointer * vertexSizeWithMorph);
+					extractIndex(indexListBuffer[n]);
+					if (maxVertexCount < indexListBuffer[n]) maxVertexCount = indexListBuffer[n];
+				}
+			} else {
+				for (int n = 0; n < vertexCount; n++) indexListBuffer[n] = cast(ushort)n;
+				maxVertexCount = vertexCount;
 			}
+		}
 
-			vertexListBuffer[n] = vertexStateMorphed;
+		// Extract vertex list.
+		{
+			if (vertexListBuffer.length < maxVertexCount) vertexListBuffer.length = maxVertexCount;
+			
+			//writefln("%d", maxVertexCount);
+	
+			for (int n = 0; n < maxVertexCount; n++) {
+				VertexState vertexStateMorphed;
+				VertexState currentVertexState = void;
+				
+				for (int m = 0; m < morphingVertexCount; m++) {
+					extractVertex(currentVertexState);
+					vertexStateMorphed.floatValues[] += currentVertexState.floatValues[] * morphWeights[m];
+				}
+	
+				vertexListBuffer[n] = vertexStateMorphed;
+			}
 		}
 
 		// Need to have the framebuffer updated.
@@ -329,7 +361,8 @@ template Gpu_Draw() {
 		stopWatch.start();
 		try {
 			gpu.impl.draw(
-				vertexListBuffer[0..vertexCount],
+				indexListBuffer[0..indexCount],
+				vertexListBuffer[0..maxVertexCount],
 				primitiveType,
 				PrimitiveFlags(
 					extractWeights  !is null,
