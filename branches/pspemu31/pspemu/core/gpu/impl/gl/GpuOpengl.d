@@ -153,7 +153,7 @@ class GpuOpengl : GpuImplAbstract {
 	void clear() {
 	}
 
-	void draw(VertexState[] vertexList, PrimitiveType type, PrimitiveFlags flags) {
+	void draw(ushort[] indexList, VertexState[] vertexList, PrimitiveType type, PrimitiveFlags flags) {
 		//if (gpu.state.clearingMode) return; // Do not draw in clearmode.
 
 		/*
@@ -219,7 +219,7 @@ class GpuOpengl : GpuImplAbstract {
 				break;
 				// Normal primitives that have equivalent in Open
 				default: {
-					static if (false) {
+					static if (true) {
 						glEnableDisableClientState(GL_COLOR_ARRAY,  flags.hasColor);
 						glEnableDisableClientState(GL_NORMAL_ARRAY, flags.hasNormal);
 						glEnableDisableClientState(GL_VERTEX_ARRAY, flags.hasPosition);
@@ -229,6 +229,7 @@ class GpuOpengl : GpuImplAbstract {
 
 						static uint arrayBuffer;
 						
+						/*
 						ubyte* base = null;
 						
 						if (glBufferData !is null) {
@@ -245,16 +246,20 @@ class GpuOpengl : GpuImplAbstract {
 							glNormalPointer  (   GL_FLOAT, VertexState.sizeof, base + vertexList[0].nx.offsetof);
 							glVertexPointer  (3, GL_FLOAT, VertexState.sizeof, base + vertexList[0].px.offsetof);
 						} else {
-							glInterleavedArrays(GL_T2F_C4F_N3F_V3F, VertexState.sizeof, vertexList.ptr);
 						}
+						*/
 						
-						glDrawArrays(PrimitiveTypeTranslate[type], 0, vertexList.length);
+						//glDrawArrays(PrimitiveTypeTranslate[type], 0, vertexList.length);
+
+						glInterleavedArrays(GL_T2F_C4F_N3F_V3F, VertexState.sizeof, vertexList.ptr);
+						glDrawElements(PrimitiveTypeTranslate[type], indexList.length, GL_UNSIGNED_SHORT, indexList.ptr);
 					}
 					// Faster?
 					else {
 						glBegin(PrimitiveTypeTranslate[type]);
 						{
-							foreach (ref vertex; vertexList) putVertex(vertex);
+							//foreach (ref vertex; vertexList) putVertex(vertex);
+							foreach (index; indexList) putVertex(vertexList[index]);
 						}
 						glEnd();
 					}

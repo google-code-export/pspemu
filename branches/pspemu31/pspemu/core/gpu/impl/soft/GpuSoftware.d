@@ -4,6 +4,7 @@ import pspemu.core.gpu.Types;
 import pspemu.core.gpu.GpuState;
 import pspemu.core.gpu.GpuImpl;
 
+/*
 class GpuSoftware : GpuImplAbstract {
 	void init() {
 		assert(0);
@@ -58,3 +59,4 @@ class GpuSoftware : GpuImplAbstract {
 		assert(0);
 	}
 }
+*/
