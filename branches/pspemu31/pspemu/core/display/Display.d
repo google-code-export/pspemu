@@ -56,6 +56,7 @@ class Display {
 	 */
 	PspDisplayPixelFormats pixelformat;
 	PspDisplaySetBufSync sync;
+	uint CURRENT_HCOUNT;
 	uint VBLANK_COUNT;
 	
 	const real processed_pixels_per_second = 9_000_000; // hz
@@ -113,8 +114,11 @@ class Display {
 		
 		// @TODO: use stopWatch to allow frameskipping
 		while (this.runningState.running) {
+			CURRENT_HCOUNT = 0;
+			
 			this.drawRow0Condition.notifyAll();
 			Thread.sleep(dur!"usecs"(cast(ulong)(1_000_000 * (vsync_row / hsync_hz))));
+			CURRENT_HCOUNT = cast(uint)vsync_row;
 
 			this.vblankEvent();
 			this.vblankStartCondition.notifyAll();

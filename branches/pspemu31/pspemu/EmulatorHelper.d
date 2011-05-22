@@ -63,6 +63,7 @@ class EmulatorHelper {
 	
 	public void reset() {
 		emulator.reset();
+		init();
 	}
 	
 	public void stop() {
@@ -74,6 +75,9 @@ class EmulatorHelper {
 		
 		Logger.log(Logger.Level.INFO, "EmulatorHelper", "Loading module ('%s')...", pspModulePath);
 
+		//emulator.hleEmulatorState.memoryManager.allocHeap(PspPartition.User, "temp", 0x10000);
+		emulator.hleEmulatorState.memoryManager.allocHeap(PspPartition.User, "temp", 0x4000);
+
 		emulator.mainCpuThread.threadState.threadModule = emulator.hleEmulatorState.moduleLoader.load(pspModulePath);
 		
 		emulator.hleEmulatorState.rootFileSystem.setVirtualDir(std.path.dirname(pspModulePath));
@@ -82,7 +86,7 @@ class EmulatorHelper {
 			registers.pcSet = emulator.hleEmulatorState.moduleLoader.PC; 
 		
 			registers.GP = emulator.hleEmulatorState.moduleLoader.GP;
-			registers.SP = emulator.hleEmulatorState.memoryManager.allocStack(PspPartition.User, "Stack for main thread", 0x8000) - 0x10;
+			registers.SP = emulator.hleEmulatorState.memoryManager.allocStack(PspPartition.User, "Stack for main thread", 0x4000);
 			registers.K0 = registers.SP;
 			registers.RA = CODE_PTR_EXIT_THREAD;
 			registers.A0 = 1;
@@ -112,7 +116,7 @@ class EmulatorHelper {
 			start();
 		}
 		string expected = std.string.strip(cast(string)std.file.read(pspTestExpectedPath));
-		string returned = std.string.strip(emulator.hleEmulatorState.moduleManager.get!(KDebugForKernel)().outputBuffer);
+		string returned = std.string.strip(emulator.hleEmulatorState.kPrint.outputBuffer);
 		stdout.writefln("%s", (expected == returned) ? "OK" : "FAIL");
 		if (expected != returned) {
 			stdout.writefln("    returned:'%s'", std.array.replace(returned, "\n", "|"));

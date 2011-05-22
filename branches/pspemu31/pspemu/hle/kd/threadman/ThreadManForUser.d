@@ -23,6 +23,7 @@ import pspemu.hle.Callbacks;
 import std.datetime;
 
 import pspemu.hle.kd.rtc.Types;
+import pspemu.hle.kd.sysmem.SysMemUserForUser;
 
 //debug = DEBUG_THREADS;
 //debug = DEBUG_SYSCALL;
@@ -59,7 +60,6 @@ class ThreadManForUser : ModuleNative {
 		mixin(registerd!(0x33BE4024, sceKernelReferMsgPipeStatus));
 		
 		mixin(registerd!(0x369ED59D, sceKernelGetSystemTimeLow));
-
 		mixin(registerd!(0x82BC5777, sceKernelGetSystemTimeWide));
 
 		mixin(registerd!(0x8125221D, sceKernelCreateMbx));
@@ -302,8 +302,7 @@ class ThreadManForUser : ModuleNative {
 	 * @return The system time
 	 */
 	SceInt64 sceKernelGetSystemTimeWide() {
-		unimplemented();
-		return 0;
+		return cast(ulong)systime_to_tick(Clock.currTime(UTC()));
 	}
 
 	/**
@@ -312,7 +311,7 @@ class ThreadManForUser : ModuleNative {
 	 * @return The low 32bits of the system time
 	 */
 	uint sceKernelGetSystemTimeLow() {
-		return cast(uint)systime_to_tick(Clock.currTime(UTC()));
+		return cast(uint)sceKernelGetSystemTimeWide();
 	}
 	
 	template TemplateMsgPipe() {

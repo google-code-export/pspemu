@@ -3,6 +3,7 @@ module pspemu.core.gpu.DisplayList;
 //import pspemu.utils.Utils;
 import std.conv;
 import pspemu.utils.CircularList;
+import pspemu.utils.Stack;
 
 import pspemu.utils.sync.WaitEvent;
 
@@ -11,6 +12,7 @@ import pspemu.core.gpu.Types;
 
 static struct DisplayList {
 	Command* base, pointer, stall;
+	Stack!(Command*, 1024) callStack;
 	WaitEvent displayListEndedEvent;
 	WaitEvent displayListStalledEvent;
 	WaitEvent displayListNewDataEvent;
@@ -35,6 +37,15 @@ static struct DisplayList {
 
 	void jump(void* pointer) {
 		this.pointer = cast(Command*)pointer;
+	}
+	
+	void call(void *pointer) {
+		callStack.push(this.pointer);
+		this.pointer = cast(Command*)pointer;
+	}
+	
+	void ret() {
+		this.pointer = callStack.pop();
 	}
 
 	void end() {

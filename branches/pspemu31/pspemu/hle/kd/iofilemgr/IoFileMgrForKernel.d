@@ -297,6 +297,12 @@ class IoFileMgrForKernel : ModuleNative {
 			//throw(new Exception("Not supporting relative paths"));
 			absolutePath = hleEmulatorState.rootFileSystem.fscurdir ~ "/" ~ relativePath;
 		}
+		/*
+		if (absolutePath.indexOf("disc0:/PSP_GAME/USRDIR") == 0) {
+			absolutePath = "ms0:/PSP/GAMES/virtual" ~ absolutePath["disc0:/PSP_GAME/USRDIR".length..$];
+			logInfo("redirected!");
+		}
+		*/
 		logInfo("getAbsolutePathFromRelative('%s') : '%s'", relativePath, absolutePath);
 		return absolutePath;
 	}
@@ -519,6 +525,7 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return < 0 on error
 	 */
 	int sceIoRemove(string file) {
+		logWarning("sceIoRemove('%s')", file);
 		unimplemented_notice();
 		return 0;
 	}
@@ -533,8 +540,7 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return A non-negative integer is a valid fd, anything else an error
 	 */
 	SceUID sceIoOpenAsync(string file, int flags, SceMode mode) {
-		unimplemented();
-		return -1;
+		return hleEmulatorState.uniqueIdFactory.add(_open(file, flags, mode));
 	}
 
 	/**

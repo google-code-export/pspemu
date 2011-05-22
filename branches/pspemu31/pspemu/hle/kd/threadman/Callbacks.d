@@ -46,8 +46,8 @@ template ThreadManForUser_Callbacks() {
 	 * @return 0 on success, < 0 on error
 	 */
 	int sceKernelDeleteCallback(SceUID cb) {
-		unimplemented();
-		return -1;
+		hleEmulatorState.uniqueIdFactory.remove!PspCallback(cb);
+		return 0;
 	}
 
 	/**
@@ -56,7 +56,8 @@ template ThreadManForUser_Callbacks() {
 	 * @return Something or another
 	 */
 	int sceKernelCheckCallback() {
-		unimplemented();
-		return -1;
+		//unimplemented();
+		logTrace("Not implemented sceKernelCheckCallback");
+		return 0;
 	}
 }

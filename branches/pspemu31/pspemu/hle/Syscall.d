@@ -24,6 +24,10 @@ import pspemu.hle.ModuleManager;
 import pspemu.hle.ModuleLoader;
 import pspemu.hle.Syscall;
 
+import pspemu.core.cpu.CpuThreadBase;
+
+//import pspemu.hle.kd.sysmem.KDebugForKernel;
+
 import pspemu.hle.HleEmulatorState;
 
 class Syscall : ISyscall {
@@ -44,6 +48,8 @@ class Syscall : ISyscall {
 	}
 	
 	public void syscall(CpuThreadBase cpuThread, int syscallNum) {
+		Logger.log(Logger.Level.TRACE, "Syscall", "%s : Called syscall %04X", thisThreadCpuThreadBase, syscallNum);
+		
 		static string szToString(char* s) { return cast(string)s[0..std.c.string.strlen(s)]; }
 
 		void callModuleFunction(Module.Function* moduleFunction, string libraryName = "<unsetted:libraryName>", string functionName = "<unsetted:functionName>") {
@@ -126,14 +132,11 @@ class Syscall : ISyscall {
 			case 0x2147: callLibrary("sceDisplay",       "sceDisplayWaitVblankStart"); break;
 			case 0x213a: callLibrary("sceDisplay",       "sceDisplaySetMode"); break; 
 			case 0x213f: callLibrary("sceDisplay",       "sceDisplaySetFrameBuf"); break;
-			case 0x2150:
-				//callLibrary("sceCtrl", "sceCtrlPeekBufferPositive");
-				
-				set_return_value(+1);
-			break;
-			case 0x1010: writefln("EMIT(int):%d", cast(int)get_argument_int(0)); break;
-			case 0x1011: writefln("EMIT(float):%f", get_argument_float(0)); break;
-			case 0x1012: writefln("EMIT(comment):'%s'", get_argument_str(0)); break;
+			case 0x20eb: callLibrary("LoadExecForUser",  "sceKernelExitGame"); break;
+			case 0x2150: callLibrary("sceCtrl",          "sceCtrlPeekBufferPositive"); break;
+			case 0x1010: hleEmulatorState.kPrint.Kprintf("EMIT(int):%d\n", cast(int)get_argument_int(0)); break;
+			case 0x1011: hleEmulatorState.kPrint.Kprintf("EMIT(float):%f\n", get_argument_float(0)); break;
+			case 0x1012: hleEmulatorState.kPrint.Kprintf("EMIT(comment):'%s'\n", get_argument_str(0)); break;
 			/*
 			void emitString(char *v) {
 				asm("syscall 0x1012");

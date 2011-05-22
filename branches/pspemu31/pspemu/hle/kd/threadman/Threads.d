@@ -1,5 +1,7 @@
 module pspemu.hle.kd.threadman.Threads;
 
+import pspemu.hle.kd.sysmem.SysMemUserForUser;
+
 import pspemu.hle.kd.threadman.Types;
 import pspemu.core.ThreadState;
 import pspemu.hle.ModuleNative;
@@ -33,8 +35,8 @@ template ThreadManForUser_Threads() {
 		mixin(registerd!(0x809CE29B, sceKernelExitDeleteThread));
 		mixin(registerd!(0x278C0DF5, sceKernelWaitThreadEnd));
 		mixin(registerd!(0x9FA03CD3, sceKernelDeleteThread));
-		/+
 		mixin(registerd!(0x383F7BCC, sceKernelTerminateDeleteThread));
+		/+
 		mixin(registerd!(0xD59EAD2F, sceKernelWakeupThread));
 		mixin(registerd!(0x9944F31F, sceKernelSuspendThread));
 		mixin(registerd!(0x840E8133, sceKernelWaitThreadEndCB));
@@ -64,19 +66,23 @@ template ThreadManForUser_Threads() {
 	 * @return UID of the created thread, or an error code.
 	 */
 	SceUID sceKernelCreateThread(string name, SceKernelThreadEntry entry, int initPriority, int stackSize, SceUInt attr, SceKernelThreadOptParam *option) {
-		ThreadState newThreadState = new ThreadState(currentEmulatorState, new Registers());
+		ThreadState newThreadState = new ThreadState(dupStr(name), currentEmulatorState, new Registers());
 		
 		newThreadState.threadModule = currentThreadState.threadModule;
 		
 		newThreadState.registers.copyFrom(currentRegisters);
 		newThreadState.registers.pcSet = entry;
 		
+		//allocStack
+		
+		//auto segment = hleEmulatorState.moduleManager.get!SysMemUserForUser().allocStack(stackSize, std.string.format("stack for thread '%s'", name), true);
+		//newThreadState.registers.SP = segment.block.high; 
 		newThreadState.registers.SP = hleEmulatorState.memoryManager.allocStack(PspPartition.User, std.string.format("stack for thread '%s'", name), stackSize);
 		
 		newThreadState.registers.RA = 0x08000000;
 		newThreadState.thid = hleEmulatorState.uniqueIdFactory.add(newThreadState);
 		
-		logInfo("sceKernelCreateThread(thid:'%d', name:'%s', SP:0x%08X)", newThreadState.thid, name, newThreadState.registers.SP);
+		logInfo("sceKernelCreateThread(thid:'%d', entry:%s, name:'%s', SP:0x%08X)", newThreadState.thid, entry, name, newThreadState.registers.SP);
 		
 		newThreadState.sceKernelThreadInfo.attr = attr;
 		newThreadState.sceKernelThreadInfo.name[0..name.length] = name;
@@ -218,7 +224,7 @@ template ThreadManForUser_Threads() {
 	 * </code>
 	 */
 	int sceKernelDelayThread(SceUInt delay) {
-		logInfo("sceKernelDelayThread(%d)", delay);
+		logTrace("sceKernelDelayThread(%d)", delay);
 		return _sceKernelDelayThread(delay, /*callbacks = */false);
 	}
 	
@@ -345,6 +351,17 @@ template ThreadManForUser_Threads() {
 		return 0;
 	}
 
+	/**
+	 * Terminate and delete a thread.
+	 *
+	 * @param thid - UID of the thread to terminate and delete.
+	 *
+	 * @return Success if >= 0, an error if < 0.
+	 */
+	int sceKernelTerminateDeleteThread(SceUID thid) {
+		return sceKernelDeleteThread(thid);
+	}
+
 
 	/+
 
@@ -363,18 +380,6 @@ template ThreadManForUser_Threads() {
 	int sceKernelResumeThread(SceUID thid) {
 		unimplemented();
 		return -1;
-	}
-
-
-	/**
-	 * Terminate and delete a thread.
-	 *
-	 * @param thid - UID of the thread to terminate and delete.
-	 *
-	 * @return Success if >= 0, an error if < 0.
-	 */
-	int sceKernelTerminateDeleteThread(SceUID thid) {
-		return sceKernelDeleteThread(thid);
 	}
 
 	/**

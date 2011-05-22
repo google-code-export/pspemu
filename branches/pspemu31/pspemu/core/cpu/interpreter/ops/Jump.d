@@ -44,6 +44,8 @@ template TemplateCpu_JUMP() {
 			if (registers.CallStack.length > 0) registers.CallStack.length = registers.CallStack.length - 1;
 		}
 		*/
+		
+		//writefln("JR %08X", registers[instruction.RS]);
 		mixin(JUMPR);
 	}
 

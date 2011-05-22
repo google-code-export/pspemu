@@ -30,6 +30,7 @@ static string classInfoBaseName(ClassInfo ci) {
 }
 
 abstract class Module {
+	bool dummyModule = false;
 	public SceModule *sceModule;
 	public ElfDwarf dwarf;
 

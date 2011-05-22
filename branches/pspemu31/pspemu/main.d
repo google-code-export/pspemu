@@ -61,13 +61,15 @@ int main(string[] args) {
 	*/
 	bool doTestsEx;
 	bool showHelp;
-	bool nolog;
+	bool nolog, log, trace;
 	
 	getopt(
 		args,
 		"help|h|?", &showHelp,
 		"tests", &doTestsEx,
-		"nolog", &nolog  
+		"nolog", &nolog,
+		"trace", &trace,
+		"log", &log
 	);
 	
 	void displayHelp() {
@@ -78,6 +80,8 @@ int main(string[] args) {
 		writefln("Arguments:");
 		writefln("  --help   - Show this help");
 		writefln("  --tests  - Run tests on 'tests_ex' folder");
+		writefln("  --trace  - Enables cpu tracing at start");
+		writefln("  --log    - Enables logging");
 		writefln("  --nolog  - Disables logging");
 		writefln("");
 		writefln("Examples:");
@@ -95,8 +99,11 @@ int main(string[] args) {
 	if (doTestsEx) {
 		EmulatorHelper emulatorHelper = new EmulatorHelper(new Emulator());
 		emulatorHelper.initComponents();
-		//Logger.setLevel(Logger.Level.TRACE);
-		Logger.setLevel(Logger.Level.CRITICAL);
+		if (log) {
+			Logger.setLevel(Logger.Level.TRACE);
+		} else {
+			Logger.setLevel(Logger.Level.CRITICAL);			
+		}
 		foreach (std.file.DirEntry dirEntry; dirEntries(r"tests_ex", SpanMode.depth, true)) {
 			if (std.string.indexOf(dirEntry.name, ".svn") != -1) continue;
 			if (std.path.getExt(dirEntry.name) != "expected") continue;
@@ -112,16 +119,21 @@ int main(string[] args) {
 		if (nolog) {
 			Logger.setLevel(Logger.Level.NONE);
 		} else {
-			Logger.setLevel(Logger.Level.INFO);
+			if (log) {
+				Logger.setLevel(Logger.Level.TRACE);
+			} else {
+				Logger.setLevel(Logger.Level.INFO);
+			}
 		}
 		EmulatorHelper emulatorHelper = new EmulatorHelper(new Emulator());
 		if (nolog) {
-			emulatorHelper.emulator.hleEmulatorState.moduleManager.get!(KDebugForKernel).outputKprintf = true;
+			emulatorHelper.emulator.hleEmulatorState.kPrint.outputKprint = true;
 		}
 		emulatorHelper.initComponents();
 		GuiSdl gui = new GuiSdl(emulatorHelper.emulator.hleEmulatorState);
 		gui.start();
 		emulatorHelper.loadModule(args[1]);
+		emulatorHelper.emulator.mainCpuThread.trace = trace;
 		emulatorHelper.start();
 		return 0;
 	}

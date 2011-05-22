@@ -14,8 +14,16 @@ class Logger {
 		string component;
 		string text;
 		void print() {
-			.writefln("%-8s: %-10d: '%s'::'%s'", to!string(level), time, component, text);
+			synchronized (synchronizationObject) {
+				stdout.writefln("%-8s: %-10d: '%s'::'%s'", to!string(level), time, component, text);
+				stdout.flush();
+			}
 		}
+	}
+	
+	__gshared Object synchronizationObject;
+	static this() {
+		synchronizationObject = new Object();
 	}
 
 	//__gshared Message[] messages;
@@ -26,25 +34,30 @@ class Logger {
 	}
 
 	static void log(T...)(Level level, string component, T args) {
+		if (level < currentLogLevel) return;
 		if (level == Level.NONE) return;
 
-		//std.string.format
-	
-		if (level >= currentLogLevel) {
-			auto message = Message(std.c.time.time(null), level, component, std.string.format(args));
-			//messages ~= message;
-			if (level <= Level.INFO) {
-				if (component == "sceAudio_driver") return;
-				if (component == "sceAudio") return;
-				//if (component == "IoFileMgrForUser") return;
-				if (component == "ThreadManForUser") return;
-				if (component == "sceHprm") return;
-				if (component == "sceCtrl") return;
-				if (component == "CallbacksHandler") return;
-				//if (component == "Module") return;
-			}
-			message.print();
+		if (level <= Level.INFO) {
+			//if (component == "sceAudio_driver") return;
+			//if (component == "sceAudio") return;
+			//if (component == "IoFileMgrForUser") return;
+			//if (component == "ThreadManForUser") return;
+			//if (component == "sceHprm") return;
+			//if (component == "sceCtrl") return;
+			if (component == "CallbacksHandler") return;
+			if (component == "sceSuspendForUser") return;
+			//if (component == "Module") return;
 		}
+
+		auto message = Message(std.c.time.time(null), level, component, std.string.format(args));
+		message.print();
+	}
+	
+	template DebugLogPerComponent(string componentName) {
+		void logLevel(T...)(Logger.Level level, T args) {
+			Logger.log(level, componentName, args);
+		}
+		mixin Logger.LogPerComponent;	
 	}
 	
 	template LogPerComponent() {
