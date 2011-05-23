@@ -1,6 +1,11 @@
 module pspemu.hle.kd.utility.sceUtility; // kd/utility.prx (sceUtility_Driver):
 
+import std.string;
+import std.conv;
+import std.file;
+
 import pspemu.hle.ModuleNative;
+import pspemu.hle.HleEmulatorState;
 
 import pspemu.hle.kd.utility.Sysparam;
 
@@ -45,6 +50,16 @@ class sceUtility : ModuleNative {
 
 		initNids_sysparams();
 	}
+	
+	enum SaveStep {
+		UNK1         = 0,
+		UNK2         = 1,
+		PROCESSING   = 2,
+		SUCCESS      = 3,
+		SHUTDOWN     = 4,
+	}
+	
+	SaveStep currentSaveStep;
 
 	/**
 	 * Remove a currently active keyboard. After calling this function you must
@@ -192,29 +207,49 @@ class sceUtility : ModuleNative {
 	 *
 	 * @return 0 on success
 	 */
-	int sceUtilitySavedataInitStart(/*SceUtilitySavedataParam*/void* params) {
-		unimplemented();
-		return -1;
-	}
-
-	/**
-	 * Shutdown the savedata utility. after calling this continue calling
-	 * ::sceUtilitySavedataGetStatus to check when it has shutdown
-	 *
-	 * @return 0 on success
-	 */
-	int sceUtilitySavedataShutdownStart() {
-		unimplemented();
-		return -1;
-	}
-
-	/**
-	 * Refresh status of the savedata function
-	 *
-	 * @param unknown - unknown, pass 1
-	 */
-	void sceUtilitySavedataUpdate(int unknown) {
-		unimplemented();
+	int sceUtilitySavedataInitStart(SceUtilitySavedataParam* params) {
+		unimplemented_notice();
+		
+		//toStringz(params.saveNameList);
+		
+		logTrace("sceUtilitySavedataInitStart()");
+		
+		std.file.write("lastsceUtilitySavedataInitStart.bin", params[0..1]);
+		
+		//string saveFilePath = "SAVE_" ~ to!string(params.fileName.ptr);
+		string saveFilePath = "SAVE_" ~ to!string(params.gameName.ptr);
+		//dataBuf
+		void *dataBuf  = hleEmulatorState.emulatorState.memory.getPointer(cast(uint)params.dataBuf);
+		ubyte[] data = (cast(ubyte *)dataBuf)[0..params.dataBufSize];
+		
+		logTrace("sceUtilitySavedataInitStart[%08X:%d,%d]", cast(uint)dataBuf, params.dataSize, params.dataBufSize);
+		
+		switch (params.mode) {
+			case PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_AUTOSAVE, PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_SAVE, PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_LISTSAVE:
+			{
+				std.file.write(saveFilePath, data[0..params.dataSize]);
+			}
+			break;
+			case PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_AUTOLOAD, PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_LOAD, PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_LISTLOAD:
+			{
+				auto readed = cast(ubyte[])std.file.read(saveFilePath);
+				
+				int minSize = min(readed.length, params.dataBufSize);
+				data[0..minSize] = readed[0..minSize];
+			} 
+			break;
+			default:
+				logError("sceUtilitySavedataInitStart: %d", params.mode);
+				logError("sceUtilitySavedataInitStart: %d:%s", params.mode, to!string(params.mode));
+				unimplemented();
+			break;
+		}
+		
+		params.base.result = 0;
+		
+		//currentSaveStep = SaveStep.PROMPT;
+		currentSaveStep = SaveStep.SUCCESS;
+		return 0;
 	}
 	
 	/**
@@ -226,11 +261,30 @@ class sceUtility : ModuleNative {
 	 * 3 on save/load success, then you can call sceUtilitySavedataShutdownStart.
 	 * 4 on complete shutdown.
 	 */
-	int sceUtilitySavedataGetStatus() {
-		unimplemented();
-		return -1;
+	SaveStep sceUtilitySavedataGetStatus() {
+		return currentSaveStep;
 	}
 
+	/**
+	 * Shutdown the savedata utility. after calling this continue calling
+	 * ::sceUtilitySavedataGetStatus to check when it has shutdown
+	 *
+	 * @return 0 on success
+	 */
+	int sceUtilitySavedataShutdownStart() {
+		currentSaveStep = SaveStep.SHUTDOWN;
+		return 0;
+	}
+
+	/**
+	 * Refresh status of the savedata function
+	 *
+	 * @param unknown - unknown, pass 1
+	 */
+	void sceUtilitySavedataUpdate(int unknown) {
+		unimplemented();
+	}
+	
 	/**
 	 * Check existance of a Net Configuration
 	 *

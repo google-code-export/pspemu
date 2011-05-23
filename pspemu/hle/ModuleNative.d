@@ -155,7 +155,7 @@ abstract class ModuleNative : Module {
 	}
 	
 	void unimplemented_notice(string file = __FILE__, int line = __LINE__)() {
-		writefln("Unimplemented '%s' at '%s:%d'", onException(nids[currentExecutingNid].name, "<unknown>"), file, line);
+		logWarning("Unimplemented '%s' at '%s:%d'", onException(nids[currentExecutingNid].name, "<unknown>"), file, line);
 	}
 }
 

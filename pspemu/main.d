@@ -5,6 +5,7 @@ import pspemu.utils.Path;
 
 import core.thread;
 import std.stdio;
+import std.conv;
 import std.c.stdlib;
 import std.stream;
 import std.file;
@@ -27,6 +28,9 @@ import pspemu.gui.GuiSdl;
 import pspemu.utils.Logger;
 
 import pspemu.hle.kd.sysmem.KDebugForKernel;
+
+import pspemu.hle.vfs.MountableVirtualFileSystem;
+import pspemu.hle.vfs.LocalFileSystem;
 
 void doUnittest() {
 	(new MemoryPartitionTests()).test();
@@ -58,13 +62,28 @@ int main(string[] args) {
 	init(args);
 	
 	/*
+	auto root = new MountableVirtualFileSystem(new VirtualFileSystem());
+	root.mount("ms0:", new LocalFileSystem(r"C:\temp\SDL-1.2.14"));
+
+	auto f = root.open("ms0:/../SDL.spec", octal!777, FileOpenMode.In);
+	ubyte[] data;
+	data.length = 100;
+	root.read(f, data);
+	writefln("%s", data);
+	root.close(f);
+	return 0;
 	*/
+	
 	bool doTestsEx;
 	bool showHelp;
 	bool nolog, log, trace;
 	
-	void disableLogComponent(string opt, string nologmod) {
-		Logger.disableLogComponent(nologmod);
+	void disableLogComponent(string opt, string component) {
+		Logger.disableLogComponent(component);
+	}
+	
+	void enableLogComponent(string opt, string component) {
+		Logger.enableLogComponent(component);
 	}
 	
 	getopt(
@@ -74,7 +93,8 @@ int main(string[] args) {
 		"nolog", &nolog,
 		"trace", &trace,
 		"log", &log,
-		"nologmod", &disableLogComponent
+		"nologmod", &disableLogComponent,
+		"enlogmod", &enableLogComponent
 	);
 	
 	void displayHelp() {
@@ -89,6 +109,7 @@ int main(string[] args) {
 		writefln("  --log          - Enables logging");
 		writefln("  --nolog        - Disables logging");
 		writefln("  --nologmod=MOD - Disables logging of a module");
+		writefln("  --enlogmod=MOD - Enables logging of a module");
 		writefln("");
 		writefln("Examples:");
 		writefln("  pspemu.exe --help");
@@ -123,7 +144,7 @@ int main(string[] args) {
 	
 	if (args.length > 1) {
 		if (nolog) {
-			Logger.setLevel(Logger.Level.NONE);
+			Logger.setLevel(Logger.Level.WARNING);
 		} else {
 			if (log) {
 				Logger.setLevel(Logger.Level.TRACE);

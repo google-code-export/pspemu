@@ -17,6 +17,20 @@ enum {
 	PSP_NET_MODULE_SSL       = 7,
 }
 
+/** Save data utility modes */
+enum PspUtilitySavedataMode : uint
+{
+	PSP_UTILITY_SAVEDATA_AUTOLOAD = 0,
+	PSP_UTILITY_SAVEDATA_AUTOSAVE,
+	PSP_UTILITY_SAVEDATA_LOAD,
+	PSP_UTILITY_SAVEDATA_SAVE,
+	PSP_UTILITY_SAVEDATA_LISTLOAD,
+	PSP_UTILITY_SAVEDATA_LISTSAVE,
+	PSP_UTILITY_SAVEDATA_LISTDELETE,
+	PSP_UTILITY_SAVEDATADELETE,
+
+}
+
 enum pspUtilityMsgDialogMode {
 	PSP_UTILITY_MSGDIALOG_MODE_ERROR = 0, /* Error message */
 	PSP_UTILITY_MSGDIALOG_MODE_TEXT /* String message */
@@ -36,6 +50,41 @@ enum pspUtilityMsgDialogPressed {
 	PSP_UTILITY_MSGDIALOG_RESULT_BACK
 }
 
+enum PspUtilitySavedataFocus {
+	PSP_UTILITY_SAVEDATA_FOCUS_UNKNOWN = 0,
+	PSP_UTILITY_SAVEDATA_FOCUS_FIRSTLIST,	/* First in list */
+	PSP_UTILITY_SAVEDATA_FOCUS_LASTLIST,	/* Last in list */
+	PSP_UTILITY_SAVEDATA_FOCUS_LATEST,	/* Most recent date */
+	PSP_UTILITY_SAVEDATA_FOCUS_OLDEST,	/* Oldest date */
+	PSP_UTILITY_SAVEDATA_FOCUS_UNKNOWN2,
+	PSP_UTILITY_SAVEDATA_FOCUS_UNKNOWN3,
+	PSP_UTILITY_SAVEDATA_FOCUS_FIRSTEMPTY, /* First empty slot */
+	PSP_UTILITY_SAVEDATA_FOCUS_LASTEMPTY,	/*Last empty slot */
+}
+
+struct PspUtilitySavedataSFOParam
+{
+	char title[0x80];
+	char savedataTitle[0x80];
+	char detail[0x400];
+	ubyte parentalLevel;
+	ubyte unknown[3];
+}
+
+struct PspUtilitySavedataFileData {
+	void *buf;
+	SceSize bufSize;
+	SceSize size;	/* ??? - why are there two sizes? */
+	int unknown;
+}
+
+struct PspUtilitySavedataListSaveNewData
+{
+	PspUtilitySavedataFileData icon0;
+	char *title;
+}
+
+
 /**
  * Structure to hold the parameters for a message dialog
 **/
@@ -51,19 +100,18 @@ struct pspUtilityMsgDialogParams {
 }
 
 struct pspUtilityDialogCommon {
-	uint size;	/** Size of the structure */
-	int language;		/** Language */
-	int buttonSwap;		/** Set to 1 for X/O button swap */
-	int graphicsThread;	/** Graphics thread priority */
-	int accessThread;	/** Access/fileio thread priority (SceJobThread) */
-	int fontThread;		/** Font thread priority (ScePafThread) */
-	int soundThread;	/** Sound thread priority */
-	int result;			/** Result */
-	int reserved[4];	/** Set to 0 */
+	uint size;	        /** Size of the structure */
+	int  language;		/** Language */
+	int  buttonSwap;	/** Set to 1 for X/O button swap */
+	int  graphicsThread;/** Graphics thread priority */
+	int  accessThread;	/** Access/fileio thread priority (SceJobThread) */
+	int  fontThread;	/** Font thread priority (ScePafThread) */
+	int  soundThread;	/** Sound thread priority */
+	int  result;		/** Result */
+	int  reserved[4];	/** Set to 0 */
 }
 
-/+
-struct SceUtilitySavedataParam {
+align(1) struct SceUtilitySavedataParam {
 	pspUtilityDialogCommon base;
 
 	PspUtilitySavedataMode mode;
@@ -79,11 +127,14 @@ struct SceUtilitySavedataParam {
 	char saveName[20];
 
 	/** saveNameList: used by multiple modes */
-	char (*saveNameList)[20];
+	char *saveNameList; // char[20]
 
 	/** fileName: name of the data file of the game for example DATA.BIN */
 	char fileName[13];
 	char reserved1[3];
+	
+	static assert (gameName.offsetof == 0x3C);
+	static assert (fileName.offsetof == 0x64);
 
 	/** pointer to a buffer that will contain data file unencrypted data */
 	void *dataBuf;
@@ -118,7 +169,6 @@ struct SceUtilitySavedataParam {
 //#endif
 
 }
-+/
 
 enum pspUtilityNetconfActions {
 	PSP_NETCONF_ACTION_CONNECTAP,
