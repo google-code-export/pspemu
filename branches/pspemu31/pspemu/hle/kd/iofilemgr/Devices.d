@@ -34,7 +34,7 @@ class IoDevice : VFS_Proxy {
 	bool inserted() { return false; }
 	bool inserted(bool value) { return false; }
 
-	int sceIoDevctl(uint cmd, ubyte[] inData, ubyte[] outData) {
+	int sceIoDevctl(CpuThreadBase cpuThreadBase, uint cmd, ubyte[] inData, ubyte[] outData) {
 		return -1;
 	}
 }
@@ -63,18 +63,25 @@ class MemoryStickDevice : IoDevice {
 	override bool inserted(bool value) {
 		if (_inserted != value) {
 			_inserted = value;
-
-			Logger.log(Logger.Level.INFO, "Devices", "MemoryStickDevice.setInserted: %d", _inserted);
-
-			hleEmulatorState.callbacksHandler.trigger(
-				CallbacksHandler.Type.MemoryStickInsertEject,
-				[0, _inserted ? 1 : 2, 0]
-			);
+			triggerInsertedOnCallbackThread();
 		}
 		return _inserted;
 	}
+	
+	void triggerInsertedOnCallbackThread() {
+		Logger.log(Logger.Level.INFO, "Devices", "MemoryStickDevice.setInserted: %d", inserted);
 
-	override int sceIoDevctl(uint cmd, ubyte[] inData, ubyte[] outData) {
+		hleEmulatorState.callbacksHandler.trigger(
+			CallbacksHandler.Type.MemoryStickInsertEject,
+			[0, inserted ? 1 : 2, 0]
+		);
+	}
+	
+	uint triggerInsertedOnCurrentThread(CpuThreadBase cpuThreadBase, uint callbackPtr) {
+		return hleEmulatorState.executeGuestCode(cpuThreadBase.threadState, callbackPtr, [0, inserted ? 1 : 2, 0]);
+	}
+
+	override int sceIoDevctl(CpuThreadBase cpuThreadBase, uint cmd, ubyte[] inData, ubyte[] outData) {
 		PspCallback pspCallback;
 
 		switch (cmd) {
@@ -85,8 +92,13 @@ class MemoryStickDevice : IoDevice {
 			case 0x02415821: // MScmRegisterMSInsertEjectCallback
 				Logger.log(Logger.Level.INFO, "Devices", "MScmRegisterMSInsertEjectCallback");
 
-				pspCallback = hleEmulatorState.uniqueIdFactory.get!PspCallback(*(cast(uint*)inData.ptr));
-				hleEmulatorState.callbacksHandler.register(CallbacksHandler.Type.MemoryStickInsertEject, pspCallback); 
+				uint callbackPtr = *(cast(uint*)inData.ptr);
+				pspCallback = hleEmulatorState.uniqueIdFactory.get!PspCallback(callbackPtr);
+				hleEmulatorState.callbacksHandler.register(CallbacksHandler.Type.MemoryStickInsertEject, pspCallback);
+				
+				// Trigger callback immediately
+				// @TODO: CHECK
+				//triggerInsertedOnCurrentThread(cpuThreadBase, callbackPtr);
 			break;
 			case 0x02415822: // MScmUnregisterMSInsertEjectCallback
 				Logger.log(Logger.Level.INFO, "Devices", "MScmUnregisterMSInsertEjectCallback");

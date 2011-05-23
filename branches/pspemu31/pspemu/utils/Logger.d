@@ -29,6 +29,7 @@ class Logger {
 	//__gshared Message[] messages;
 	__gshared Level currentLogLevel = Level.NONE;
 	__gshared string[] disabledLogComponents;
+	__gshared string[] enabledLogComponents;
 	
 	static public void setLevel(Level level) {
 		currentLogLevel = level;
@@ -37,16 +38,27 @@ class Logger {
 	static public void disableLogComponent(string componentToDisable) {
 		disabledLogComponents ~= componentToDisable;
 	}
+
+	static public void enableLogComponent(string componentToEnable) {
+		enabledLogComponents ~= componentToEnable;
+		writefln("Enabled: %s", componentToEnable);
+	}
 	
 	static void log(T...)(Level level, string component, T args) {
-		if (level < currentLogLevel) return;
 		if (level == Level.NONE) return;
+		foreach (enabledLogComponent; enabledLogComponents) {
+			if (component == enabledLogComponent) goto display;
+			//writefln("%s, %s", component, enabledLogComponent);
+		}
+		if (level < currentLogLevel) return;
 
 		if (level <= Level.INFO) {
 			foreach (disabledLogComponent; disabledLogComponents) {
 				if (component == disabledLogComponent) return;
 			}
 		}
+		
+		display:;
 
 		auto message = Message(std.c.time.time(null), level, component, std.string.format(args));
 		message.print();

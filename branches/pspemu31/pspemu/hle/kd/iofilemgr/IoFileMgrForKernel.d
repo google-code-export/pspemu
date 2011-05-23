@@ -129,7 +129,7 @@ class IoFileMgrForKernel : ModuleNative {
 	int sceIoDevctl(string dev, int cmd, void* indata, int inlen, void* outdata, int outlen) {
 		logInfo("sceIoDevctl('%s', %d)", dev, cmd);
 		try {
-			return hleEmulatorState.rootFileSystem.devices[dev].sceIoDevctl(cmd, (cast(ubyte*)indata)[0..inlen], (cast(ubyte*)outdata)[0..outlen]);
+			return hleEmulatorState.rootFileSystem.devices[dev].sceIoDevctl(currentCpuThread, cmd, (cast(ubyte*)indata)[0..inlen], (cast(ubyte*)outdata)[0..outlen]);
 		} catch (Exception e) {
 			writefln("sceIoDevctl: %s", e);
 			return -1;

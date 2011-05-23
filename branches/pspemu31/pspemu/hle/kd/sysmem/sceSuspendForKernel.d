@@ -11,17 +11,19 @@ class sceSuspendForKernel : ModuleNative {
 
 	// @TODO: Unknown.
 	void sceKernelPowerLock() {
-		logWarning("Not Implemented sceKernelPowerLock");
+		unimplemented_notice();
 	}
 
 	// @TODO: Unknown.
 	void sceKernelPowerUnlock() {
-		logWarning("Not Implemented sceKernelPowerUnlock");
+		unimplemented_notice();
 	}
 
-	// @TODO: Unknown.
-	void sceKernelPowerTick() {
-		logWarning("Not Implemented sceKernelPowerTick");
+	/**
+	 * Will prevent the backlight to turn off.
+	 */
+	void sceKernelPowerTick(uint value) {
+		//logWarning("Not Implemented sceKernelPowerTick");
 	}
 }
 

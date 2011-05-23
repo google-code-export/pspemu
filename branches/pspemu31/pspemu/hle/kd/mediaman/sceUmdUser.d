@@ -20,6 +20,7 @@ class sceUmdUser : ModuleNative {
 	  * @note Callback is of type UmdCallback
 	  *
 	  * @param cbid - A callback ID created from sceKernelCreateCallback
+	  *
 	  * @return < 0 on error
 	  * @par Example:
 	  * @code
@@ -40,7 +41,6 @@ class sceUmdUser : ModuleNative {
 	  * Wait for the UMD drive to reach a certain state
 	  *
 	  * @param stat - One or more of ::pspUmdState
-	  *
 	  * @param timeout - Timeout value in microseconds
 	  *
 	  * @return < 0 on error
@@ -64,7 +64,6 @@ class sceUmdUser : ModuleNative {
 	  * Activates the UMD drive
 	  * 
 	  * @param unit - The unit to initialise (probably). Should be set to 1.
-	  *
 	  * @param drive - A prefix string for the fs device to mount the UMD on (e.g. "disc0:")
 	  *
 	  * @return < 0 on error
@@ -94,7 +93,7 @@ class sceUmdUser : ModuleNative {
 	  * @return < 0 on error, one or more of ::PspUmdState on success
 	  */
 	PspUmdState sceUmdGetDriveStat() {
-		logWarning("Partially implemented: sceUmdGetDriveStat");
+		logInfo("Partially implemented: sceUmdGetDriveStat");
 		return PspUmdState.PSP_UMD_PRESENT | PspUmdState.PSP_UMD_INITED | PspUmdState.PSP_UMD_READY;
 	}
 	
