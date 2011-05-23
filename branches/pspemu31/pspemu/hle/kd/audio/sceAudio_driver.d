@@ -16,12 +16,15 @@ class sceAudio_driver : ModuleNative {
 	struct Channel {
 		bool reserved;
 		int  samplecount;
+		int freq;
 		PspAudioFormats format;
+		int leftvol, rightvol; 
 		int numchannels() { return (format == PspAudioFormats.PSP_AUDIO_FORMAT_MONO) ? 1 : 2; }
 		int dataCount() { return samplecount * numchannels; }
 	}
 	
 	Channel channels[8]; // PSP_AUDIO_CHANNEL_MAX
+	int numberOfChannels;
 	Audio audio;
 
 	void initNids() {
@@ -45,6 +48,7 @@ class sceAudio_driver : ModuleNative {
 		mixin(registerd!(0x7DE61688, sceAudioInputInit));
 		
 		mixin(registerd!(0x38553111, sceAudioSRCChReserve));
+
 	}
 
 	void initModule() {
@@ -207,20 +211,6 @@ class sceAudio_driver : ModuleNative {
 	}
 	
 	/**
-	 * Change the volume of a channel
-	 *
-	 * @param channel  - The channel number.
-	 * @param leftvol  - The left volume.
-	 * @param rightvol - The right volume.
-	 *
-	 * @return 0 on success, an error if less than 0.
-	 */
-	int sceAudioChangeChannelVolume(int channel, int leftvol, int rightvol) {
-		unimplemented();
-		return -1;
-	}
-
-	/**
 	 * Output audio of the specified channel (blocking)
 	 *
 	 * @param channel - The channel number.
@@ -315,7 +305,31 @@ class sceAudio_driver : ModuleNative {
 	  * @return 0 on success, an error if less than 0.
 	  */
 	int sceAudioSRCChReserve(int samplecount, int freq, int channels) {
-		logInfo("Not implemented: sceAudioSRCChReserve(%d, %d, %d)", samplecount, freq, channels);
+		logInfo("Partially implemented: sceAudioSRCChReserve(%d, %d, %d)", samplecount, freq, channels);
+		this.numberOfChannels = channels;
+		//for (int channel = 0; channel < channels; channel++) {
+		foreach (channel; 0..channels) {
+			this.channels[channel].samplecount = samplecount;
+			this.channels[channel].freq = freq;
+		}
+		return 0;
+	}
+
+
+	
+	/**
+	  * Change the volume of a channel
+	  *
+	  * @param channel  - The channel number.
+	  * @param leftvol  - The left volume.
+	  * @param rightvol - The right volume.
+	  *
+	  * @return 0 on success, an error if less than 0.
+	  */
+	int sceAudioChangeChannelVolume(int channel, int leftvol, int rightvol) {
+		logWarning("Partially implemented sceAudioChangeChannelVolume(%d, %d, %s)", channel, leftvol, rightvol);
+		this.channels[channel].leftvol = leftvol;
+		this.channels[channel].rightvol = rightvol;
 		return 0;
 	}
 }

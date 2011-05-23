@@ -86,7 +86,8 @@ template IoFileMgrForKernel_FilesAsync() {
 	 * @return < 0 on error.
 	 */
 	int sceIoReadAsync(SceUID fd, void *data, SceSize size) {
-		logWarning("Not implemented sceIoReadAsync(%d, %s, %d)", fd, data, size);
+		logWarning("Partially implemented sceIoReadAsync(%d, %s, %d)", fd, data, size);
+		sceIoRead(fd, data, size);
 		return 0;
 	}
 
