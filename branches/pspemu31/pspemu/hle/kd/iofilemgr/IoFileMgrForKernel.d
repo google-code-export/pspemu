@@ -10,6 +10,8 @@ import std.file;
 import std.string;
 import std.conv;
 
+import pspemu.utils.AsyncStream;
+
 //import pspemu.core.cpu.Interrupts;
 
 import pspemu.hle.ModuleNative;
@@ -150,10 +152,10 @@ class IoFileMgrForKernel : ModuleNative {
 		logInfo("sceIoClose('%d')", fd);
 		if (fd < 0) return -1;
 		try {
-			auto stream = hleEmulatorState.uniqueIdFactory.get!Stream(fd);
-			hleEmulatorState.uniqueIdFactory.remove!Stream(fd);
-			stream.flush();
-			stream.close();
+			auto asyncStream = hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd);
+			hleEmulatorState.uniqueIdFactory.remove!AsyncStream(fd);
+			asyncStream.stream.flush();
+			asyncStream.stream.close();
 			return 0;
 		} catch (Throwable o) {
 			.writefln("sceIoClose(%d) : %s", fd, o);
@@ -198,7 +200,7 @@ class IoFileMgrForKernel : ModuleNative {
 		return vfs;
 	}
 	
-	Stream _open(string file, int flags, SceMode mode) {
+	AsyncStream _open(string file, int flags, SceMode mode) {
 		FileMode fmode;
 		if (flags & PSP_O_RDONLY) fmode |= FileMode.In;
 		if (flags & PSP_O_WRONLY) fmode |= FileMode.Out;
@@ -210,7 +212,7 @@ class IoFileMgrForKernel : ModuleNative {
 		file = getAbsolutePathFromRelative(file);
 		vfs = locateParentAndUpdateFile(file);
 		try {
-			return vfs.open(file, fmode, mode);
+			return new AsyncStream(vfs.open(file, fmode, mode));
 		} catch (Throwable o) {
 			logWarning("Can't open file '%s' at '%s'", file, vfs);
 			throw(o);
@@ -242,7 +244,9 @@ class IoFileMgrForKernel : ModuleNative {
 	SceUID sceIoOpen(string file, int flags, SceMode mode) {
 		try {
 			logInfo("sceIoOpen('%s', %d, %d)", file, flags, mode);
-			return hleEmulatorState.uniqueIdFactory.add(_open(file, flags, mode));
+			SceUID ret = hleEmulatorState.uniqueIdFactory.add(_open(file, flags, mode));
+			logInfo("sceIoOpen():%d", ret);
+			return ret;
 		} catch (Throwable o) {
 			logWarning("sceIoOpen failed to open '%s' for '%d' : '%s'", file, flags, o);
 			return -1;
@@ -267,9 +271,9 @@ class IoFileMgrForKernel : ModuleNative {
 		logInfo("sceIoRead(%d, %d)", fd, size);
 		if (fd < 0) return -1;
 		if (data is null) return -1;
-		auto stream = hleEmulatorState.uniqueIdFactory.get!Stream(fd);
+		auto asyncStream = hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd);
 		try {
-			return stream.read((cast(ubyte *)data)[0..size]);
+			return asyncStream.stream.read((cast(ubyte *)data)[0..size]);
 		} catch (Throwable o) {
 			throw(o);
 			return -1;
@@ -294,15 +298,15 @@ class IoFileMgrForKernel : ModuleNative {
 		logInfo("sceIoWrite(%d, %d)", fd, size);
 		if (fd < 0) return -1;
 		if (data is null) return -1;
-		auto stream = hleEmulatorState.uniqueIdFactory.get!Stream(fd);
+		auto asyncStream = hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd);
 
 		// Less than 256 MB.
-		if (stream.position >= 256 * 1024 * 1024) {
-			throw(new Exception(std.string.format("Write position over 256MB! There was a prolem with sceIoWrite: position(%d)", stream.position)));
+		if (asyncStream.stream.position >= 256 * 1024 * 1024) {
+			throw(new Exception(std.string.format("Write position over 256MB! There was a prolem with sceIoWrite: position(%d)", asyncStream.stream.position)));
 		}
 
 		try {
-			return stream.write((cast(ubyte *)data)[0..size]);
+			return asyncStream.stream.write((cast(ubyte *)data)[0..size]);
 		} catch (Throwable o) {
 			Logger.log(Logger.Level.WARNING, "IoFileMgrForKernel", "sceIoWrite.ERROR :: %s", o);
 			return 0;
@@ -327,9 +331,9 @@ class IoFileMgrForKernel : ModuleNative {
 	SceOff sceIoLseek(SceUID fd, SceOff offset, int whence) {
 		logInfo("sceIoLseek(%d, %d, %d)", fd, offset, whence);
 		if (fd < 0) return -1;
-		auto stream = hleEmulatorState.uniqueIdFactory.get!Stream(fd);
-		stream.seek(offset, cast(SeekPos)whence);
-		return stream.position;
+		auto asyncStream = hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd);
+		asyncStream.stream.seek(offset, cast(SeekPos)whence);
+		return asyncStream.stream.position;
 	}
 
 	/**
@@ -369,6 +373,16 @@ class IoFileMgrForKernel : ModuleNative {
 			auto fentry = vfs[file];
 			
 			fillStats(stat, fentry.stats);
+			logInfo("sceIoGetstat(mode=%d, attr=%d, size=%d)", stat.st_mode, stat.st_attr, stat.st_size);
+			/*
+			SceMode         st_mode;
+			IOFileModes     st_attr;
+			SceOff          st_size;  /// Size of the file in bytes.
+			ScePspDateTime  st_ctime; /// Creation time.
+			ScePspDateTime  st_atime; /// Access time.
+			ScePspDateTime  st_mtime; /// Modification time.
+			uint            st_private[6]; /// Device-specific data.
+			*/
 			return 0;
 		} catch (Throwable e) {
 			Logger.log(Logger.Level.DEBUG, "IoFileMgrForKernel", "ERROR: STAT(%s)!! FAILED: %s", fileIni, e);
@@ -434,9 +448,9 @@ class IoFileMgrForKernel : ModuleNative {
 		logInfo("sceIoReopen('%s', %d, %d, %d)", file, flags, mode, cast(int)fd);
 		
 		try {
-			Stream newStream = _open(file, flags, mode);
+			AsyncStream newStream = _open(file, flags, mode);
 			
-			hleEmulatorState.uniqueIdFactory.get!Stream(fd).close();
+			hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd).stream.close();
 			hleEmulatorState.uniqueIdFactory.set(fd, newStream);
 			
 			return fd;

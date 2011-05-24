@@ -154,8 +154,10 @@ class sceUtility : ModuleNative {
 	 * @return 0 on success
 	 */
 	int sceUtilityMsgDialogInitStart(pspUtilityMsgDialogParams* params) {
-		unimplemented();
-		return -1;
+		unimplemented_notice();
+		params.base.result = 0;
+		currentSaveStep = SaveStep.SUCCESS;
+		return 0;
 	}
 
 	/**
@@ -164,7 +166,8 @@ class sceUtility : ModuleNative {
 	 * you get a status of 4.
 	 */
 	void sceUtilityMsgDialogShutdownStart() {
-		unimplemented();
+		unimplemented_notice();
+		currentSaveStep = SaveStep.SHUTDOWN;
 	}
 
 	/**
@@ -173,7 +176,7 @@ class sceUtility : ModuleNative {
 	 * @param n - unknown, pass 1
 	 */
 	void sceUtilityMsgDialogUpdate(int n) {
-		unimplemented();
+		unimplemented_notice();
 	}
 
 	/**
@@ -183,9 +186,9 @@ class sceUtility : ModuleNative {
 	 *         3 if the user cancelled the dialog, and you need to call sceUtilityMsgDialogShutdownStart.
 	 *         4 if the dialog has been successfully shut down.
 	 */
-	int sceUtilityMsgDialogGetStatus() {
-		unimplemented();
-		return -1;
+	SaveStep sceUtilityMsgDialogGetStatus() {
+		unimplemented_notice();
+		return currentSaveStep;
 	}
 
 	// @TODO: Unknown
@@ -232,10 +235,13 @@ class sceUtility : ModuleNative {
 			break;
 			case PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_AUTOLOAD, PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_LOAD, PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_LISTLOAD:
 			{
-				auto readed = cast(ubyte[])std.file.read(saveFilePath);
-				
-				int minSize = min(readed.length, params.dataBufSize);
-				data[0..minSize] = readed[0..minSize];
+				try {
+					auto readed = cast(ubyte[])std.file.read(saveFilePath);
+					int minSize = min(readed.length, params.dataBufSize);
+					data[0..minSize] = readed[0..minSize];
+				} catch (Throwable o) {
+					logWarning("%s", o);
+				}
 			} 
 			break;
 			default:

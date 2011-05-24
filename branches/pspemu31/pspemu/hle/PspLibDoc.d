@@ -1,6 +1,11 @@
 module pspemu.hle.PspLibDoc;
 
-/+
+import std.stdio;
+import std.xml;
+
+import pspemu.utils.ExceptionUtils;
+import pspemu.utils.Expression;
+
 static const string psplibdoc_xml = import("psplibdoc.xml");
 
 template LazySingleton() {
@@ -159,4 +164,3 @@ class DPspLibdoc {
 		//foreach (cprx; prxs) writefln("%s", cprx);
 	}
 }
-+/

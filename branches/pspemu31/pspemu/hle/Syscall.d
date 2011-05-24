@@ -104,8 +104,10 @@ class Syscall : ISyscall {
 					callModuleFunction(moduleFunction);
 				} catch (Throwable o) {
 					if (cast(HaltException)o) throw(o);
+					.writefln("***********************************************");
 					.writef("%s: ", moduleFunction.toString);
 					.writefln("%s", o);
+					.writefln("***********************************************");
 					throw(new Exception("There was an error in a hleModule"));
 				}
 			} break;

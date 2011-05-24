@@ -26,10 +26,12 @@ class MemorySegment {
 	
 	string toString() {
 		string ret = "";
+		/*
 		if (parent) {
 			ret ~= parent.toString;
 			ret ~= " :: ";
 		}
+		*/
 		ret ~= std.string.format("MemorySegment('%s', %08X-%08X)", name, block.low, block.high);
 		return ret;
 	}
@@ -80,6 +82,11 @@ class MemorySegment {
 		debug (DEBUG_MEMORY_ALLOCS) writefln("ALLOC: %s", child.toString);
 		return child;
 	}
+	
+	MemorySegment addNewMemorySegment(MemorySegment newMemorySegment) {
+		this += newMemorySegment;
+		return newMemorySegment;
+	}
 
 	/**
 	 * Allocs a stack.
@@ -93,11 +100,13 @@ class MemorySegment {
 	MemorySegment allocByHigh(uint size, string name = "<unknown>", uint alignment = 1) {
 		foreach (block; availableBlocks.reverse) {
 			uint decrement = previousAlignedDecrement(block.high, alignment);
-			if (block.size >= size + decrement) return (this += new MemorySegment(block.high - size - decrement, block.high - decrement, name));
+			if (block.size >= size + decrement) {
+				return addNewMemorySegment(new MemorySegment(block.high - size - decrement, block.high - decrement, name));
+			}
 		}
 		throw(new Exception(std.string.format("Can't allocByHigh size=%d on %s", size, this)));
 	}
-
+	
 	/**
 	 * Allocs a heap.
 	 *
@@ -107,7 +116,9 @@ class MemorySegment {
 		foreach (block; availableBlocks) {
 			if (block.low < maxDesiredAddress) continue;
 			uint increment = nextAlignedIncrement(block.low, alignment);
-			if (block.size >= size + increment) return (this += new MemorySegment(block.low + increment, block.low + increment + size, name));
+			if (block.size >= size + increment) {
+				return addNewMemorySegment(new MemorySegment(block.low + increment, block.low + increment + size, name));
+			}
 		}
 
 		// Ok. We didn't find an available segment. But we will try without the min check.
@@ -132,7 +143,7 @@ class MemorySegment {
 			}
 		}
 		// Ok. Doesn't overlap with any address.
-		return (this += new MemorySegment(idealBlock.low, idealBlock.high, name));
+		return addNewMemorySegment(new MemorySegment(idealBlock.low, idealBlock.high, name));
 	}
 
 	uint getFreeMemory() {

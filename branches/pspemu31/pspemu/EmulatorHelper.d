@@ -48,10 +48,7 @@ class EmulatorHelper {
 		emulator.emulatorState.memory.twrite!uint(CODE_PTR_END_CALLBACK, 0x0000000C | (0x1002 << 6));
 		
 		with (emulator.emulatorState) {
-			memory.position = CODE_PTR_ARGUMENTS;
-			memory.write(cast(uint)(memory.position + 4));
-			memory.writeString("ms0:/PSP/GAME/virtual/EBOOT.PBP\0");
-			//memory.writeString("umd0:/PSP_GAME/SYSDIR/BOOT.BIN\0");
+			memory.position = CODE_PTR_ARGUMENTS; memory.write(cast(uint)(memory.position + 4));
 		}
 		
 		// @TODO: @FIX: @HACK because not all threads are stopping.
@@ -59,6 +56,13 @@ class EmulatorHelper {
 			Thread.sleep(dur!("msecs")(100));
 			std.c.stdlib.exit(0);
 		};
+	}
+	
+	public void setProgramFirstArg(string programPath) {
+		with (emulator.emulatorState) {
+			memory.write(cast(uint)(memory.position + 4));
+			memory.writeString(programPath ~ "\0");
+		}
 	}
 	
 	public void reset() {
@@ -76,11 +80,18 @@ class EmulatorHelper {
 		Logger.log(Logger.Level.INFO, "EmulatorHelper", "Loading module ('%s')...", pspModulePath);
 
 		//emulator.hleEmulatorState.memoryManager.allocHeap(PspPartition.User, "temp", 0x10000);
-		emulator.hleEmulatorState.memoryManager.allocHeap(PspPartition.User, "temp", 0x4000);
+		//emulator.hleEmulatorState.memoryManager.allocHeap(PspPartition.User, "temp", 0x4000);
 
+		emulator.mainCpuThread.threadState.thid = emulator.hleEmulatorState.uniqueIdFactory.set(0, emulator.mainCpuThread.threadState);
+		writefln("%s", emulator.mainCpuThread.threadState.thid);
 		emulator.mainCpuThread.threadState.threadModule = emulator.hleEmulatorState.moduleLoader.load(pspModulePath);
 		
 		emulator.hleEmulatorState.rootFileSystem.setVirtualDir(std.path.dirname(pspModulePath));
+		if (emulator.hleEmulatorState.rootFileSystem.isUmdGame) {
+			setProgramFirstArg("umd0:/PSP_GAME/SYSDIR/BOOT.BIN");
+		} else {
+			setProgramFirstArg("ms0:/PSP/GAME/virtual/EBOOT.PBP");
+		}
 		
 		with (emulator.mainCpuThread) {
 			registers.pcSet = emulator.hleEmulatorState.moduleLoader.PC; 
