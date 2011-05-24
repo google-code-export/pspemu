@@ -20,21 +20,29 @@ class ModuleMgrForUser : ModuleNative {
 		mixin(registerd!(0x50F0C1EC, sceKernelStartModule));
 		mixin(registerd!(0xD1FF982A, sceKernelStopModule));
 		mixin(registerd!(0x2E0911AA, sceKernelUnloadModule));
-		mixin(registerd!(0xD8B73127, sceKernelGetModuleIdByAddressFunction));
-		mixin(registerd!(0xF0A26395, sceKernelGetModuleIdFunction));
-		mixin(registerd!(0x8F2DF740, ModuleMgrForUser_8F2DF740));
+		mixin(registerd!(0xD8B73127, sceKernelGetModuleIdByAddress));
+		mixin(registerd!(0xF0A26395, sceKernelGetModuleId));
+		mixin(registerd!(0x8F2DF740, sceKernelStopUnloadSelfModuleWithStatus));
 	}
 	
-	void sceKernelGetModuleIdByAddressFunction() {
-		unimplemented();
+	uint sceKernelGetModuleIdByAddress() {
+		unimplemented_notice();
+		return 0;
 	}
 
-	void sceKernelGetModuleIdFunction() {
-		unimplemented();
+	uint sceKernelGetModuleId() {
+		//unimplemented();
+		unimplemented_notice();
+		
+		ModulePsp modulePsp = new ModulePsp();
+		modulePsp.dummyModule = true;
+		return hleEmulatorState.uniqueIdFactory.add(modulePsp);
 	}
 
-	void ModuleMgrForUser_8F2DF740() {
-		unimplemented();
+	uint sceKernelStopUnloadSelfModuleWithStatus() {
+		throw(new HaltException("sceKernelStopUnloadSelfModuleWithStatus"));
+		//unimplemented();
+		return 0;
 	}
 
 	/**
@@ -61,7 +69,7 @@ class ModuleMgrForUser : ModuleNative {
 	 * @return The UID of the loaded module on success, otherwise one of ::PspKernelErrorCodes.
 	 */
 	SceUID sceKernelLoadModuleByID(SceUID fid, int flags, SceKernelLMOption *option) {
-		unimplemented();
+		unimplemented_notice();
 		return 0;
 	}
 
@@ -147,8 +155,8 @@ class ModuleMgrForUser : ModuleNative {
 	 * @return ??? on success, otherwise one of ::PspKernelErrorCodes.
 	 */
 	int sceKernelStopModule(SceUID modid, SceSize argsize, void *argp, int *status, SceKernelSMOption *option) {
-		unimplemented();
-		return -1;
+		unimplemented_notice();
+		return 0;
 	}
 
 	/**
@@ -159,8 +167,8 @@ class ModuleMgrForUser : ModuleNative {
 	 * @return ??? on success, otherwise one of ::PspKernelErrorCodes.
 	 */
 	int sceKernelUnloadModule(SceUID modid) {
-		unimplemented();
-		return -1;
+		unimplemented_notice();
+		return 0;
 	}
 }
 

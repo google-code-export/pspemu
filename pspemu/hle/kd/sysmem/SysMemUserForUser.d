@@ -127,6 +127,14 @@ class SysMemUserForUser : ModuleNative {
 		return maxFreeMemSize;
 		//return 5 * 1024 * 1024;
 	}
+	
+	MemorySegment _allocateMemorySegmentLow(SceUID partitionid, string name, uint size) {
+		return pspMemorySegment[partitionid].allocByHigh(size, dupStr(name));
+	}
+
+	MemorySegment _allocateMemorySegmentHigh(SceUID partitionid, string name, uint size) {
+		return pspMemorySegment[partitionid].allocByHigh(size, dupStr(name));
+	}
 
 	/**
 	 * Allocate a memory block from a memory partition.

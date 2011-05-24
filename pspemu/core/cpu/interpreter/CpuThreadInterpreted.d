@@ -70,6 +70,8 @@ class CpuThreadInterpreted : CpuThreadBase {
 			mixin TemplateCpu_FPU;
 			mixin TemplateCpu_VFPU;
 			
+			threadState.setInCurrentThread();
+			
 	    	try {
 				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: START (%s)", Thread.getThis().name);
 				

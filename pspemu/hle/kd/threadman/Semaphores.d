@@ -200,8 +200,23 @@ template ThreadManForUser_Semaphores() {
 	 * @return < 0 on error.
 	 */
 	int sceKernelPollSema(SceUID semaid, int signal) {
-		unimplemented();
-		return -1;
+		// http://code.google.com/p/jpcsp/source/browse/trunk/src/jpcsp/HLE/kernel/types/SceKernelErrors.java
+	    const ERROR_KERNEL_ILLEGAL_COUNT = 0x800201bd;
+		const ERROR_KERNEL_NOT_FOUND_SEMAPHORE = 0x80020199;
+    	const ERROR_KERNEL_SEMA_ZERO = 0x800201ad;
+
+        if (signal <= 0) return ERROR_KERNEL_ILLEGAL_COUNT;
+        
+		PspSemaphore pspSemaphore = hleEmulatorState.uniqueIdFactory.get!PspSemaphore(semaid);
+		
+        if (pspSemaphore is null) {
+            return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
+        } else if (pspSemaphore.info.currentCount - signal < 0) {
+            return ERROR_KERNEL_SEMA_ZERO;
+        } else {
+            pspSemaphore.info.currentCount -= signal;
+            return 0;
+        }
 	}
 
 	/**

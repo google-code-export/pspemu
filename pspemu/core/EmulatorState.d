@@ -18,6 +18,8 @@ import pspemu.core.ThreadState;
 import core.sync.condition;
 import core.sync.mutex;
 
+import pspemu.utils.sync.WaitEvent;
+
 class EmulatorState {
 	public Memory        memory;
 	public Display       display;
@@ -25,15 +27,15 @@ class EmulatorState {
 	public Gpu           gpu;
 	public ISyscall      syscall;
 	public RunningState  runningState;
-	Condition            threadStartedCondition;
-	Condition            threadEndedCondition;
+	WaitEvent            threadStartedCondition;
+	WaitEvent            threadEndedCondition;
 	uint                 threadsRunning = 0;
 	bool[CpuThreadBase]  cpuThreads;
 	
 	this() {
 		this.runningState           = new RunningState();
-		this.threadStartedCondition = new Condition(new Mutex());
-		this.threadEndedCondition   = new Condition(new Mutex());
+		this.threadStartedCondition = new WaitEvent("EmulatorState.threadStartedCondition");
+		this.threadEndedCondition   = new WaitEvent("EmulatorState.threadEndedCondition");
 		this.memory                 = new Memory();
 		this.display                = new Display(this.runningState, this.memory);
 		this.controller             = new Controller();
@@ -51,13 +53,13 @@ class EmulatorState {
 	}
 	
 	public void cpuThreadRunningBlock(void delegate() callback) {
-		threadStartedCondition.notifyAll();
+		threadStartedCondition.signal();
 		threadsRunning++;
 		{
 			callback();
 		}
 		threadsRunning--;
-		threadEndedCondition.notifyAll();
+		threadEndedCondition.signal();
 	}
 	
     public void waitForAllCpuThreadsToTerminate() {

@@ -18,6 +18,7 @@ class RootFileSystem {
 	VFS fsroot, gameroot;
 	IoDevice[string] devices;
 	string fscurdir;
+	bool isUmdGame;
 	
 	this(HleEmulatorState hleEmulatorState) {
 		this.hleEmulatorState = hleEmulatorState;
@@ -69,6 +70,12 @@ class RootFileSystem {
 		if (!m.empty) {
 			auto path2 = replace(path, r, "PSP_GAME");
 			fsroot["disc0:"].addChild(new FileSystem(path2), "PSP_GAME");
+			fsroot["umd0:"].addChild(new FileSystem(path2), "PSP_GAME");
+			this.isUmdGame = true;
+			fscurdir = "umd0:/PSP_GAME/SYSDIR";
+		} else {
+			this.isUmdGame = false;
+			fscurdir = "ms0:/PSP/GAME/virtual";
 		}
 
 		fsroot["ms0:/PSP/GAME"].addChild(new FileSystem(path), "virtual");

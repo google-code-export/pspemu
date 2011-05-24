@@ -150,7 +150,7 @@ class sceCtrl_driver : ModuleNative {
 	}
 
 	void sceCtrlSetIdleCancelThresholdFunction() {
-		unimplemented();
+		unimplemented_notice();
 	}
 }
 

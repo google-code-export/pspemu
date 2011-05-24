@@ -1,6 +1,7 @@
 module pspemu.hle.kd.threadman.ThreadManForUser; // kd/threadman.prx (sceThreadManager)
 
 import pspemu.hle.ModuleNative;
+import pspemu.hle.HleEmulatorState;
 
 import core.thread;
 
@@ -27,6 +28,18 @@ import pspemu.hle.kd.sysmem.SysMemUserForUser;
 
 //debug = DEBUG_THREADS;
 //debug = DEBUG_SYSCALL;
+
+class VariablePool {
+	MemorySegment memorySegment;
+	
+	public this(MemorySegment memorySegment) {
+		this.memorySegment = memorySegment;
+	}
+	
+	string toString() {
+		return std.string.format("%s", memorySegment);
+	}
+}
 
 /**
  * Library imports for the kernel threading library.
@@ -122,8 +135,19 @@ class ThreadManForUser : ModuleNative {
 	 * @return The UID of the created pool, < 0 on error.
 	 */
 	SceUID sceKernelCreateVpl(string name, int part, int attr, uint size, SceKernelVplOptParam* opt) {
-		unimplemented();
-		return -1;
+	    const PSP_VPL_ATTR_MASK = 0x41FF;            // Anything outside this mask is an illegal attr.
+	    const PSP_VPL_ATTR_ADDR_HIGH = 0x4000;       // Create the vpl in high memory.
+	    const PSP_VPL_ATTR_EXT = 0x8000;             // Extend the vpl memory area (exact purpose is unknown).
+		//new MemorySegment
+		logWarning("sceKernelCreateVpl('%s', %d, %d, %d)", name, part, attr, size);
+		VariablePool variablePool;
+		if (attr & PSP_VPL_ATTR_ADDR_HIGH) {
+			variablePool = new VariablePool(hleEmulatorState.moduleManager.get!SysMemUserForUser()._allocateMemorySegmentHigh(part, dupStr(name), size));
+		} else {
+			variablePool = new VariablePool(hleEmulatorState.moduleManager.get!SysMemUserForUser()._allocateMemorySegmentLow(part, dupStr(name), size));
+		}
+		logWarning("%s", variablePool);
+		return hleEmulatorState.uniqueIdFactory.add(variablePool);
 	}
 
 	/**
@@ -135,9 +159,12 @@ class ThreadManForUser : ModuleNative {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
-	int sceKernelTryAllocateVpl(SceUID uid, uint size, void** data) {
-		unimplemented();
-		return -1;
+	int sceKernelTryAllocateVpl(SceUID uid, uint size, uint** data) {
+		logWarning("sceKernelTryAllocateVpl(%d, %d, %08X)", uid, size, cast(uint)data);
+		VariablePool variablePool = hleEmulatorState.uniqueIdFactory.get!VariablePool(uid);
+		*data = cast(uint *)variablePool.memorySegment.allocByLow(size).block.low;
+		//unimplemented();
+		return 0;
 	}
 
 	/**

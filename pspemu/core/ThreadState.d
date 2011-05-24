@@ -13,6 +13,8 @@ import pspemu.hle.kd.threadman.Types;
 import pspemu.hle.Module;
 
 class ThreadState {
+	protected __gshared ThreadState[Thread] threadStatePerThread;
+	
 	public bool waiting;
 	public EmulatorState emulatorState;
 	public Registers registers;
@@ -21,6 +23,16 @@ class ThreadState {
 	public SceUID thid;
 	public SceKernelThreadInfo sceKernelThreadInfo;
 	public Module threadModule;
+	
+	static ThreadState getFromThread(Thread thread = null) {
+		if (thread is null) thread = Thread.getThis();
+		return threadStatePerThread[thread];
+	}
+	
+	void setInCurrentThread(Thread thread = null) {
+		if (thread is null) thread = Thread.getThis();
+		threadStatePerThread[thread] = this;
+	}
 	
 	ThreadState clone() {
 		ThreadState threadState = new ThreadState(name, emulatorState, new Registers());

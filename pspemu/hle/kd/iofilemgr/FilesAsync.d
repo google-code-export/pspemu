@@ -1,5 +1,9 @@
 module pspemu.hle.kd.iofilemgr.FilesAsync;
 
+import std.stream;
+
+import pspemu.utils.AsyncStream;
+
 import pspemu.hle.kd.iofilemgr.Types;
 
 import pspemu.utils.Logger;
@@ -15,9 +19,9 @@ template IoFileMgrForKernel_FilesAsync() {
 		mixin(registerd!(0xA0B5A7C2, sceIoReadAsync));
 		mixin(registerd!(0xB293727F, sceIoChangeAsyncPriority));
 		mixin(registerd!(0xE23EEC33, sceIoWaitAsync));
+		mixin(registerd!(0x35DBD746, sceIoWaitAsyncCB));
 		mixin(registerd!(0x3251EA56, sceIoPollAsync));
 		mixin(registerd!(0x0FACAB19, sceIoWriteAsync));
-		mixin(registerd!(0x35DBD746, sceIoWaitAsyncCB));
 	}
 	
 	/**
@@ -30,10 +34,17 @@ template IoFileMgrForKernel_FilesAsync() {
 	 * @return A non-negative integer is a valid fd, anything else an error
 	 */
 	SceUID sceIoOpenAsync(string file, int flags, SceMode mode) {
+		logWarning("sceIoOpenAsync('%s':%d, %d, %d)", file, file !is null, flags, mode);
+		if (file == "") {
+			return hleEmulatorState.uniqueIdFactory.add(new AsyncStream(new MemoryStream()));
+		}
 		try {
-			return hleEmulatorState.uniqueIdFactory.add(_open(file, flags, mode));
+			SceUID ret = hleEmulatorState.uniqueIdFactory.add(_open(file, flags, mode));
+			logInfo("sceIoOpenAsync():%d", ret);
+			return ret;
 		} catch (Throwable o) {
-			return 0;
+			logError("Error: %s", o);
+			return -1;
 		}
 	}
 
@@ -60,17 +71,18 @@ template IoFileMgrForKernel_FilesAsync() {
 	 */
 	int sceIoCloseAsync(SceUID fd) {
 		try {
-			auto stream = hleEmulatorState.uniqueIdFactory.get!Stream(fd);
-			hleEmulatorState.uniqueIdFactory.remove!Stream(fd);
-			stream.flush();
-			stream.close();
+			logError("sceIoCloseAsync(%d)", fd);
+			auto asyncStream = hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd);
+			hleEmulatorState.uniqueIdFactory.remove!AsyncStream(fd);
+			asyncStream.stream.flush();
+			asyncStream.stream.close();
 			return 0;
 		} catch (Throwable o) {
 			logError("sceIoCloseAsync: %s", o);
 			return -1;
 		}
 	}
-
+	
 	/**
 	 * Read input (asynchronous)
 	 *
@@ -85,9 +97,21 @@ template IoFileMgrForKernel_FilesAsync() {
 	 * 
 	 * @return < 0 on error.
 	 */
-	int sceIoReadAsync(SceUID fd, void *data, SceSize size) {
-		logWarning("Partially implemented sceIoReadAsync(%d, %s, %d)", fd, data, size);
-		sceIoRead(fd, data, size);
+	int sceIoReadAsync(SceUID fd, ubyte *data, SceSize size) {
+		logInfo("sceIoReadAsync(%d, %s, %d)", fd, data, size);
+		if (fd < 0) return -1;
+		if (data is null) return -1;
+		//writefln("[1]");
+		auto asyncStream = hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd);
+		//writefln("[2]");
+		try {
+			//writefln("[3]");
+			asyncStream.lastOperation = asyncStream.stream.read(data[0..size]);
+			//writefln("[4]");
+		} catch (Throwable o) {
+			logError("sceIoReadAsync %s", o);
+			return -1;
+		}
 		return 0;
 	}
 
@@ -103,6 +127,12 @@ template IoFileMgrForKernel_FilesAsync() {
 		unimplemented();
 		return -1;
 	}
+	
+	int _sceIoWaitAsyncCB(SceUID fd, SceInt64* res, bool callbacks) {
+		AsyncStream asyncStream = hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd);
+		*res = asyncStream.lastOperation;
+		return 0;
+	}
 
 	/**
 	 * Wait for asyncronous completion.
@@ -113,13 +143,11 @@ template IoFileMgrForKernel_FilesAsync() {
 	 * @return < 0 on error.
 	 */
 	int sceIoWaitAsync(SceUID fd, SceInt64* res) {
-		unimplemented();
-		return -1;
+		return _sceIoWaitAsyncCB(fd, res, false);
 	}
 	
 	int sceIoWaitAsyncCB(SceUID fd, SceInt64* res) {
-		unimplemented();
-		return -1;
+		return _sceIoWaitAsyncCB(fd, res, true);
 	}
 
 	/**
@@ -132,9 +160,15 @@ template IoFileMgrForKernel_FilesAsync() {
 	 */
 	int sceIoPollAsync(SceUID fd, SceInt64 *res) {
 		logWarning("Not implemented sceIoPollAsync(%d, %s)", fd, res);
-		*res = 0;
-		//unimplemented();
-		return 0;
+		try {
+			AsyncStream asyncStream = hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd);
+			*res = asyncStream.lastOperation;
+			//unimplemented();
+			return 0;
+		} catch (Throwable o) {
+			logWarning("sceIoPollAsync: %s", o);
+			return 0;
+		}
 	}
 
 	/**

@@ -2,6 +2,7 @@ module pspemu.hle.kd.stdio.StdioForUser; // kd/stdio.prx (sceStdio)
 
 import std.stdio;
 import std.stream;
+import pspemu.utils.AsyncStream;
 
 import pspemu.hle.ModuleNative;
 
@@ -38,9 +39,9 @@ class StdioForUser : ModuleNative {
 	}
 	
 	void initModule() {
-		hleEmulatorState.uniqueIdFactory.set!Stream(cast(uint)1 , new FileWrapperStream(stdin ));
-		hleEmulatorState.uniqueIdFactory.set!Stream(cast(uint)2, new FileWrapperStream(stdout));
-		hleEmulatorState.uniqueIdFactory.set!Stream(cast(uint)3, new FileWrapperStream(stderr));
+		hleEmulatorState.uniqueIdFactory.set!AsyncStream(cast(uint)1, new AsyncStream(new FileWrapperStream(stdin )));
+		hleEmulatorState.uniqueIdFactory.set!AsyncStream(cast(uint)2, new AsyncStream(new FileWrapperStream(stdout)));
+		hleEmulatorState.uniqueIdFactory.set!AsyncStream(cast(uint)3, new AsyncStream(new FileWrapperStream(stderr)));
 	}
 
 	/**

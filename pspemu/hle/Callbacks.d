@@ -128,7 +128,9 @@ class CallbacksHandler {
 	 * @param  type  Type of event to trigger.
 	 */
 	void trigger(Type type, uint[] arguments) {
-		Logger.log(Logger.Level.INFO, "CallbacksHandler", std.string.format("trigger(%d:%s)(%s)", type, to!string(type), arguments));
+		if (type != Type.VerticalBlank) {
+			Logger.log(Logger.Level.INFO, "CallbacksHandler", std.string.format("trigger(%d:%s)(%s)", type, to!string(type), arguments));
+		}
 		
 		synchronized (this) {
 			if (type in registered) {

@@ -3,6 +3,8 @@ module pspemu.hle.ModuleLoader;
 //version = ALLOW_UNIMPLEMENTED_NIDS;
 //version = LOAD_DWARF_INFORMATION;
 
+import pspemu.hle.PspLibDoc;
+
 import std.stdio;
 import std.stream;
 import std.file;
@@ -126,6 +128,7 @@ class ModuleLoader {
 	ModuleExport[] moduleExports;
 	ModulePsp modulePsp;
 	HleEmulatorState hleEmulatorState;
+	uint[][string] unimplementedNids;
 	
 	public this(HleEmulatorState hleEmulatorState) {
 		this.hleEmulatorState = hleEmulatorState;
@@ -191,6 +194,8 @@ class ModuleLoader {
 		
 		loadDwarfInformation();
 		
+		dumpUnimplemented();
+		
 		//memoryManager
 		//SceModule
 		//this.memoryManager.
@@ -208,12 +213,34 @@ class ModuleLoader {
 	
 	Syscall.Function[] funcs;
 	
+	public void dumpUnimplemented() {
+		if (unimplementedNids.length > 0) {
+			int count = 0;
+			writefln("unimplementedNids {");
+			foreach (moduleName, nids; unimplementedNids) {
+				writefln("  %s // %s:", moduleName, DPspLibdoc.singleton.getPrxInfo(moduleName));
+				foreach (nid; nids) {
+					if (auto symbol = DPspLibdoc.singleton.locate(nid, moduleName)) {
+						writefln("    mixin(registerd!(0x%08X, %s));", nid, symbol.name);
+					} else {
+						writefln("    0x%08X:<Not found!>", nid);
+					}
+				}
+				count += nids.length;
+			}
+			writefln("}");
+			//writefln("%s", DPspLibdoc.singleton.prxs);
+			version (ALLOW_UNIMPLEMENTED_NIDS) {
+			} else {
+				//throw(new Exception(std.string.format("Several unimplemented NIds. (%d)", count)));
+			}
+		}
+	}
+	
 	public void processImports() {
 		// Load Imports.
 		logTrace("Imports (0x%08X-0x%08X):", moduleInfo.importsStart, moduleInfo.importsEnd);
 
-		uint[][string] unimplementedNids;
-	
 		try {
 			while (!importsStream.eof) {
 				auto moduleImport     = read!(ModuleImport)(importsStream);
@@ -397,113 +424,3 @@ class ModuleLoader {
 	}
 	*/
 }
-
-//public import pspemu.All;
-/+
-class Loader {
-	ExecutionState executionState;
-	ModuleManager moduleManager;
-	AllegrexAssembler assembler, assemblerExe;
-	Memory memory() { return executionState.memory; }
-
-	void allocatePartitionBlock() {
-		// Not a Memory supplied.
-		if (cast(Memory)this.memory is null) return;
-
-		uint allocateAddress;
-		uint allocateSize    = this.elf.requiredBlockSize;
-		if (this.elf.relocationAddress) {
-			allocateAddress = this.elf.relocationAddress;
-		} else {
-			allocateAddress = getRelocatedAddress(this.elf.suggestedBlockAddress);
-		}
-
-		auto sysMemUserForUser = moduleManager.get!(SysMemUserForUser);
-		
-		auto blockid = sysMemUserForUser.sceKernelAllocPartitionMemory(2, "Main Program", PspSysMemBlockTypes.PSP_SMEM_Addr, allocateSize, allocateAddress);
-		uint blockaddress = sysMemUserForUser.sceKernelGetBlockHeadAddr(blockid);
-
-		Logger.log(Logger.Level.DEBUG, "Loader", "relocationAddress:%08X", this.elf.relocationAddress);
-		Logger.log(Logger.Level.DEBUG, "Loader", "suggestedBlockAddress(no reloc):%08X", this.elf.suggestedBlockAddress);
-		Logger.log(Logger.Level.DEBUG, "Loader", "allocateAddress:%08X", allocateAddress);
-		Logger.log(Logger.Level.DEBUG, "Loader", "allocateSize:%08X", allocateSize);
-		Logger.log(Logger.Level.DEBUG, "Loader", "allocatedIn:%08X", blockaddress);
-		
-		if (this.elf.relocationAddress != 0) {
-			this.elf.relocationAddress = blockaddress;
-		}
-	}
-
-	void load() {
-		this.elf.preWriteToMemory(memory);
-		{
-			allocatePartitionBlock();
-		}
-		try {
-			this.elf.writeToMemory(memory);
-		} catch (Object o) {
-			Logger.log(Logger.Level.CRITICAL, "Loader", "Failed this.elf.writeToMemory : %s", o);
-			throw(o);
-		}
-		readInplace(moduleInfo, elf.SectionStream(".rodata.sceModuleInfo"));
-
-		auto importsStream = getMemorySliceRelocated(moduleInfo.importsStart, moduleInfo.importsEnd);
-		auto exportsStream = getMemorySliceRelocated(moduleInfo.exportsStart, moduleInfo.exportsEnd);
-		
-	
-		
-		if (unimplementedNids.length > 0) {
-			int count = 0;
-			writefln("unimplementedNids {");
-			foreach (moduleName, nids; unimplementedNids) {
-				writefln("  %s // %s:", moduleName, DPspLibdoc.singleton.getPrxInfo(moduleName));
-				foreach (nid; nids) {
-					if (auto symbol = DPspLibdoc.singleton.locate(nid, moduleName)) {
-						writefln("    mixin(registerd!(0x%08X, %s));", nid, symbol.name);
-					} else {
-						writefln("    0x%08X:<Not found!>", nid);
-					}
-				}
-				count += nids.length;
-			}
-			writefln("}");
-			//writefln("%s", DPspLibdoc.singleton.prxs);
-			version (ALLOW_UNIMPLEMENTED_NIDS) {
-			} else {
-				throw(new Exception(std.string.format("Several unimplemented NIds. (%d)", count)));
-			}
-		}
-
-	}
-
-	void setRegisters() {
-		auto threadManForUser = moduleManager.get!(ThreadManForUser);
-
-		assembler.assembleBlock(import("KernelUtils.asm"));
-
-		auto thid = threadManForUser.sceKernelCreateThread("Main Thread", PC, 32, 0x8000, 0, null);
-		auto pspThread = threadManForUser.getThreadFromId(thid);
-		with (pspThread) {
-			registers.pcSet = PC;
-			registers.GP = GP;
-
-			registers.SP -= 4;
-			registers.K0 = registers.SP;
-			registers.RA = 0x08000000;
-		}
-
-		// Write arguments.
-		memory.position = 0x08100000;
-		memory.write(cast(uint)(memory.position + 4));
-		memory.writeString("ms0:/PSP/GAME/virtual/EBOOT.PBP\0");
-
-		threadManForUser.sceKernelStartThread(thid, 1, memory.getPointerOrNull(0x08100004));
-		pspThread.switchToThisThread();
-
-		//cpu.traceStep = true; cpu.checkBreakpoints = true;
-		Logger.log(Logger.Level.DEBUG, "Loader", "PC: %08X", executionState.registers.PC);
-		Logger.log(Logger.Level.DEBUG, "Loader", "GP: %08X", executionState.registers.GP);
-		Logger.log(Logger.Level.DEBUG, "Loader", "SP: %08X", executionState.registers.SP);
-	}
-}
-+/

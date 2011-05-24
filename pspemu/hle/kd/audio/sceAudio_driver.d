@@ -48,7 +48,6 @@ class sceAudio_driver : ModuleNative {
 		mixin(registerd!(0x7DE61688, sceAudioInputInit));
 		
 		mixin(registerd!(0x38553111, sceAudioSRCChReserve));
-
 	}
 
 	void initModule() {
@@ -205,9 +204,9 @@ class sceAudio_driver : ModuleNative {
 	 *
 	 * @return 0 on success, an error if less than 0.
 	 */
-	int sceAudioChangeChannelConfig(int channel, int format) {
-		unimplemented();
-		return -1;
+	int sceAudioChangeChannelConfig(int channel, PspAudioFormats format) {
+		channels[channel].format = format;
+		return 0;
 	}
 	
 	/**

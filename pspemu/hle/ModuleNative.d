@@ -43,6 +43,14 @@ abstract class ModuleNative : Module {
 	string dupStr(string str) {
 		return cast(string)((cast(char[])str).dup);
 	}
+	
+	void logLevel(T...)(Logger.Level level, T args) {
+		try {
+			Logger.log(level, this.baseName, "nPC(%08X) :: Thread(%d:%s) :: %s", currentThreadState().registers.RA, currentThreadState().thid, currentThreadState().name, std.string.format(args));
+		} catch (Throwable o) {
+			Logger.log(Logger.Level.ERROR, "FORMAT_ERROR", "There was an error formating a logInfo for ('%s'.'%s')", this.baseName, getNidName(currentExecutingNid));
+		}
+	}
 
 	template Parameters() {
 		void* vparam_ptr(T)(int n) {
@@ -149,13 +157,17 @@ abstract class ModuleNative : Module {
 	
 	string baseName() { return classInfoBaseName(typeid(this)); }
 	string toString() { return std.string.format("Module(%s)", baseName); }
+	
+	string getNidName(uint nid) {
+		return onException(nids[nid].name, "<unknown>");
+	}
 
 	void unimplemented(string file = __FILE__, int line = __LINE__)() {
-		throw(new Exception(std.string.format("Unimplemented '%s' at '%s:%d'", onException(nids[currentExecutingNid].name, "<unknown>"), file, line)));
+		throw(new Exception(std.string.format("Unimplemented '%s' at '%s:%d'", getNidName(currentExecutingNid), file, line)));
 	}
 	
 	void unimplemented_notice(string file = __FILE__, int line = __LINE__)() {
-		logWarning("Unimplemented '%s' at '%s:%d'", onException(nids[currentExecutingNid].name, "<unknown>"), file, line);
+		logWarning("Unimplemented '%s' at '%s:%d'", getNidName(currentExecutingNid), file, line);
 	}
 }
 
@@ -222,7 +234,7 @@ string getModuleMethodDelegate(alias func, uint nid = 0)() {
 	}
 	r ~= "delegate void(CpuThreadBase cpuThread) { ";
 	{
-		//r ~= "currentExecutingNid = " ~ to!string(nid) ~ ";";
+		r ~= "currentExecutingNid = " ~ to!string(nid) ~ ";";
 		r ~= "Logger.log(Logger.Level.TRACE, \"Module\", \"" ~ functionName ~ "\");";
 		r ~= "setReturnValue = true;";
 		r ~= "current_vparam = 0;";

@@ -11,12 +11,12 @@ class sceSuspendForKernel : ModuleNative {
 
 	// @TODO: Unknown.
 	void sceKernelPowerLock() {
-		unimplemented_notice();
+		//unimplemented_notice();
 	}
 
 	// @TODO: Unknown.
 	void sceKernelPowerUnlock() {
-		unimplemented_notice();
+		//unimplemented_notice();
 	}
 
 	/**

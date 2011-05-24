@@ -16,6 +16,9 @@ class sceAtrac3plus : ModuleNative {
 		mixin(registerd!(0x9AE849A7, sceAtracGetRemainFrame));
 		mixin(registerd!(0x6A8C3CD5, sceAtracDecodeData));
 		mixin(registerd!(0x61EB33F5, sceAtracReleaseAtracID));
+		mixin(registerd!(0x780F88D1, sceAtracGetAtracID));
+		mixin(registerd!(0x36FAABFB, sceAtracGetNextSample));
+		mixin(registerd!(0xE88F759B, sceAtracGetInternalErrorInfo));
 	}
 	
 	/**
@@ -79,7 +82,7 @@ class sceAtrac3plus : ModuleNative {
 	 * @return < 0 on error, otherwise 0
 	 */
 	int sceAtracDecodeData(int atracID, u16 *outSamples, int *outN, int *outEnd, int *outRemainFrame) {
-		logWarning("Not implemented sceAtracDecodeData(%d)", atracID);
+		logInfo("Not implemented sceAtracDecodeData(%d)", atracID);
 
 		Atrac3Object atrac3Object = hleEmulatorState.uniqueIdFactory.get!Atrac3Object(atracID);
 		*outSamples = 0;
@@ -99,6 +102,31 @@ class sceAtrac3plus : ModuleNative {
 	*/
 	int sceAtracReleaseAtracID(int atracID) {
 		hleEmulatorState.uniqueIdFactory.remove!Atrac3Object(atracID);
+		return 0;
+	}
+	
+	void sceAtracGetAtracID() {
+		unimplemented_notice();
+	}
+	
+	/**
+	 * Gets the number of samples of the next frame to be decoded.
+	 *
+	 * @param atracID - the atrac ID
+	 * @param outN - pointer to receives the number of samples of the next frame.
+	 *
+	 * @return < 0 on error, otherwise 0
+	 *
+	 */
+	int sceAtracGetNextSample(int atracID, int *outN) {
+		*outN = 0;
+		//unimplemented_notice();
+		logTrace("Not implemented sceAtracGetNextSample");
+		return 0;
+	}
+
+	int sceAtracGetInternalErrorInfo(int atracID, int *piResult) {
+		*piResult = 0;
 		return 0;
 	}
 }
