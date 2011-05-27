@@ -19,7 +19,7 @@ import pspemu.utils.MathUtils;
 import pspemu.utils.String;
 
 import pspemu.utils.sync.WaitEvent;
-import pspemu.utils.sync.WaitMultipleEvents;
+import pspemu.utils.sync.WaitMultipleObjects;
 //import pspemu.utils.Logger;
 
 import pspemu.core.EmulatorState;
@@ -76,6 +76,8 @@ class Gpu {
 	Event signalEvent;
 	Event finishEvent;
 	PspGeCallbackData pspGeCallbackData;
+	bool recordFrameStart = false;
+	bool recordFrameAction = false;
 
 	this(EmulatorState emulatorState, GpuImpl impl) {
 		this.endedExecutingListsEvent = new WaitEvent();
@@ -279,19 +281,25 @@ class Gpu {
 				newWaitAndCheck([displayLists.readAvailableEvent, endedExecutingListsEvent]);
 			}
 			
+			impl.recordFrameAction = false;
+			
 			performBufferOp(BufferOperation.STORE);
+			if (recordFrameStart) {
+				recordFrameStart = false;
+				impl.recordFrameAction = true;
+			}
 		}
 	}
 
 	bool inDrawingThread() { return Thread.getThis == thread; }
 	
 	void newWaitAndCheck(WaitEvent[] waitEvents, string file = __FILE__, int line = __LINE__) {
-		scope WaitMultipleEvents waitMultipleEvents = new WaitMultipleEvents();
-		waitMultipleEvents.add(emulatorState.runningState.stopEvent);
-		if (inDrawingThread) waitMultipleEvents.add(externalActions.newAvailableTasksEvent);
-		foreach (waitEvent; waitEvents) waitMultipleEvents.add(waitEvent);
+		scope WaitMultipleObjects waitMultipleObjects = new WaitMultipleObjects();
+		waitMultipleObjects.add(emulatorState.runningState.stopEvent);
+		if (inDrawingThread) waitMultipleObjects.add(externalActions.newAvailableTasksEvent);
+		foreach (waitEvent; waitEvents) waitMultipleObjects.add(waitEvent);
 		//writefln("[1 %s:%d]", file, line);
-		waitMultipleEvents.waitAny(1);
+		waitMultipleObjects.waitAny(1);
 		//writefln("[2]");
 	}
 
@@ -359,6 +367,10 @@ class Gpu {
 			if (bufferType & BufferType.COLOR) storeBuffer(&state.drawBuffer);
 			if (bufferType & BufferType.DEPTH) storeBuffer(&state.depthBuffer);
 		}
+	}
+	
+	void recordFrame() {
+		recordFrameStart = true;
 	}
 
 	mixin ExternalInterface;

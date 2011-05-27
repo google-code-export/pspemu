@@ -142,7 +142,7 @@ class UtilsForUser : ModuleNative {
 	clock_t sceKernelLibcClock() {
 		// @TODO: It's the thread CLOCK not the global CLOCK!
 		Logger.log(Logger.Level.WARNING, "UtilsForUser", "Not fully implemented sceKernelLibcClock");
-		return cast(uint)currentCpuThread().executedInstructionsCount;
+		return cast(uint)currentCpuThread().registers.EXECUTED_INSTRUCTION_COUNT_THIS_THREAD;
 	}
 
 	/**

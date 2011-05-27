@@ -19,7 +19,7 @@ import pspemu.hle.HleEmulatorState;
 
 import pspemu.hle.ModuleNative;
 import pspemu.hle.ModuleLoader;
-
+import pspemu.hle.ModulePsp;
 
 class Emulator {
 	public EmulatorState emulatorState;

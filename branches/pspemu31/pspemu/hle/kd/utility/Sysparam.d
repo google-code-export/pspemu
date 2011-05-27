@@ -18,7 +18,10 @@ template sceUtility_sysparams() {
 	 */
 	PSP_SYSTEMPARAM_RETVAL sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID id, int* value) {
 		switch (id) {
-			default: return PSP_SYSTEMPARAM_RETVAL.FAIL;
+			default:
+				logError("Unknown sceUtilityGetSystemParamInt(%d)", id);
+				return PSP_SYSTEMPARAM_RETVAL.FAIL;
+			break;
 			case PSP_SYSTEMPARAM_ID.INT_ADHOC_CHANNEL: {
 				*value = PSP_SYSTEMPARAM_ADHOC_CHANNEL.AUTOMATIC;
 			} break;
@@ -58,7 +61,9 @@ template sceUtility_sysparams() {
 	 */
 	PSP_SYSTEMPARAM_RETVAL sceUtilityGetSystemParamString(PSP_SYSTEMPARAM_ID id, char* str, int len) {
 		switch (id) {
-			default: return PSP_SYSTEMPARAM_RETVAL.FAIL;
+			default:
+				logError("Unknown sceUtilityGetSystemParamString(%d)", id);
+				return PSP_SYSTEMPARAM_RETVAL.FAIL;
 			case PSP_SYSTEMPARAM_ID.STRING_NICKNAME: {
 				string nick = std.process.getenv("USERNAME") ~ "\0";
 				if (nick.length > len) return PSP_SYSTEMPARAM_RETVAL.FAIL;

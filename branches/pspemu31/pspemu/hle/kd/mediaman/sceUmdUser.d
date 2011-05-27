@@ -1,5 +1,6 @@
 module pspemu.hle.kd.mediaman.sceUmdUser;
 
+import std.file;
 import pspemu.hle.ModuleNative;
 
 import pspemu.hle.kd.mediaman.Types;
@@ -45,7 +46,8 @@ class sceUmdUser : ModuleNative {
 	  * @endcode
 	  */
 	int sceUmdRegisterUMDCallBack(int cbid) {
-		logWarning("Not implemented: sceUmdRegisterUMDCallBack");
+		//logWarning("Not implemented: sceUmdRegisterUMDCallBack");
+		unimplemented_notice();
 		return 0;
 	}
 	
@@ -57,7 +59,7 @@ class sceUmdUser : ModuleNative {
 	  * @return < 0 on error
 	  */
 	int sceUmdUnRegisterUMDCallBack(int cbid) {
-		unimplemented_notice();
+		unimplemented();
 		return 0;
 	}
 	
@@ -77,10 +79,10 @@ class sceUmdUser : ModuleNative {
 	/** 
 	  * Check whether there is a disc in the UMD drive
 	  *
-	  * @return 0 if no disc present, anything else indicates a disc is inserted.
+	  * @return 0 if no disc present, 1 if the disc is present.
 	  */
 	int sceUmdCheckMedium() {
-		logWarning("Partially implemented: sceUmdCheckMedium");
+		//logWarning("Partially implemented: sceUmdCheckMedium");
 		return 1;
 	}
 	
@@ -107,7 +109,7 @@ class sceUmdUser : ModuleNative {
 	  * @endcode
 	  */
 	int sceUmdActivate(int unit, string drive) {
-		logWarning("Partially implemented: sceUmdActivate (%d, '%s')", unit, drive);
+		logWarning("Partially implemented: sceUmdActivate(%d, '%s')", unit, drive);
 		return 0;
 	}
 	
@@ -130,19 +132,33 @@ class sceUmdUser : ModuleNative {
 	  * @return < 0 on error, one or more of ::PspUmdState on success
 	  */
 	PspUmdState sceUmdGetDriveStat() {
-		logInfo("Partially implemented: sceUmdGetDriveStat");
-		return PspUmdState.PSP_UMD_PRESENT | PspUmdState.PSP_UMD_INITED | PspUmdState.PSP_UMD_READY;
+		logTrace("Partially implemented: sceUmdGetDriveStat");
+		return PspUmdState.PSP_UMD_PRESENT | PspUmdState.PSP_UMD_READY | PspUmdState.PSP_UMD_READABLE;
 	}
 	
-	/**
-	 * Unknown.
-	 */
-	void sceUmdWaitDriveStat() {
-		logWarning("Not implemented: sceUmdWaitDriveStat");
+	/** 
+	  * Wait for the UMD drive to reach a certain state
+	  *
+	  * @param stat - One or more of ::pspUmdState
+	  *
+	  * @return < 0 on error
+	  */
+	int sceUmdWaitDriveStat(int stat) {
+		logWarning("Not implemented: sceUmdWaitDriveStat(%d)", stat);
+		return 0;
 	}
 	
-	void sceUmdWaitDriveStatCB() {
-		logWarning("Not implemented: sceUmdWaitDriveStatCB");
+	/** 
+	  * Wait for the UMD drive to reach a certain state (plus callback)
+	  *
+	  * @param stat - One or more of ::pspUmdState
+	  * @param timeout - Timeout value in microseconds
+	  *
+	  * @return < 0 on error
+	  */
+	int sceUmdWaitDriveStatCB(int stat, uint timeout) {
+		logWarning("Not implemented: sceUmdWaitDriveStatCB(%d, %d)", stat, timeout);
+		return 0;
 	}
 }
 

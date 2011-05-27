@@ -1,5 +1,7 @@
 module pspemu.core.gpu.GpuState;
 
+import pspemu.core.gpu.Types;
+
 import pspemu.core.Memory;
 import pspemu.core.gpu.Types;
 import pspemu.utils.MathUtils;
@@ -9,6 +11,23 @@ import pspemu.utils.StructUtils;
 import pspemu.hle.kd.ge.Types;
 
 import std.bitmanip;
+
+/*
+enum TextureMapMode {
+	GU_TEXTURE_COORDS  = 0,
+	GU_TEXTURE_MATRIX  = 1,
+	GU_ENVIRONMENT_MAP = 2,
+}
+
+enum TextureProjectionMapMode {
+	GU_POSITION          = 0,
+	GU_UV                = 1,
+	GU_NORMALIZED_NORMAL = 2,
+	GU_NORMAL            = 3,
+}
+*/
+
+/* Texture Projection Map Mode */
 
 enum TransformMode {
 	Normal = 0,
@@ -21,7 +40,8 @@ struct ClutState {
 	uint shift;
 	uint mask;
 	uint start;
-	ubyte[] data;
+	//ubyte[] data;
+	ubyte* data;
 
 	int colorEntrySize() { return PixelFormatSize(format, 1); }
 	int blocksSize(int num_blocks) {
@@ -161,7 +181,10 @@ struct TextureState {
 	TextureFilter  filterMin, filterMag;  /// TextureFilter when drawing the texture scaled
 	WrapMode       wrapU, wrapV;          /// Wrap mode when specifying texture coordinates beyond texture size
 	UV             scale;                 /// 
-	UV             offset;                /// 
+	UV             offset;                ///
+	TextureMapMode mapMode;
+	TextureProjectionMapMode projMapMode; 
+	uint[2]        texShade;
 
 	// Effects
 	TextureEffect  effect;                /// 

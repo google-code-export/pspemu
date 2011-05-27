@@ -1,12 +1,14 @@
 module pspemu.hle.kd.threadman.Threads;
 
+import std.datetime;
+
 import pspemu.hle.kd.sysmem.SysMemUserForUser;
 
 import pspemu.hle.kd.threadman.Types;
 import pspemu.core.ThreadState;
 import pspemu.hle.ModuleNative;
 
-import pspemu.utils.sync.WaitMultipleEvents;
+import pspemu.utils.sync.WaitMultipleObjects;
 
 import pspemu.utils.Logger;
 
@@ -148,29 +150,29 @@ template ThreadManForUser_Threads() {
 		return 0;
 	}
 	
-	WaitMultipleEvents _getWaitMultipleEvents(bool handleCallbacks) {
-		WaitMultipleEvents waitMultipleEvents = new WaitMultipleEvents();
+	WaitMultipleObjects _getWaitMultipleObjects(bool handleCallbacks) {
+		WaitMultipleObjects waitMultipleObjects = new WaitMultipleObjects();
 
 		// We will listen to the stopping event that will launch a HaltException when triggered.		
-		waitMultipleEvents.add(currentEmulatorState.runningState.stopEvent);
+		waitMultipleObjects.add(currentEmulatorState.runningState.stopEvent);
 		
 		// If while sleeping we hav to handle callbacks, we will listen to that to.
 		if (handleCallbacks) {
-			waitMultipleEvents.add(hleEmulatorState.callbacksHandler.waitEvent);
+			waitMultipleObjects.add(hleEmulatorState.callbacksHandler.waitEvent);
 			// @TODO
 		}
 		
-		waitMultipleEvents.object = currentThreadState;
+		waitMultipleObjects.object = currentThreadState;
 		
-		return waitMultipleEvents;
+		return waitMultipleObjects;
 	}
 
 	int _sceKernelSleepThreadCB(bool handleCallbacks) {
-		scope waitMultipleEvents = _getWaitMultipleEvents(handleCallbacks);
+		scope waitMultipleObjects = _getWaitMultipleObjects(handleCallbacks);
 		
-		currentCpuThread.threadState.waitingBlock({
+		currentCpuThread.threadState.waitingBlock("_sceKernelSleepThreadCB", {
 			while (true) {
-				waitMultipleEvents.waitAny();
+				waitMultipleObjects.waitAny();
 			}
 		});
 		
@@ -178,10 +180,20 @@ template ThreadManForUser_Threads() {
 	}
 	
 	int _sceKernelDelayThread(SceUInt delayInMicroseconds, bool handleCallbacks) {
-		scope waitMultipleEvents = _getWaitMultipleEvents(handleCallbacks);
+		scope waitMultipleObjects = _getWaitMultipleObjects(handleCallbacks);
+		
+		currentCpuThread.threadState.waitingBlock(std.string.format("_sceKernelDelayThread(%d)", delayInMicroseconds), {
+			scope StopWatch stopWatch;
+			
+			stopWatch.start();
+			while (true) {
+				long microsecondsToWaitMax = delayInMicroseconds - stopWatch.peek.usecs;
+				if (microsecondsToWaitMax <= 0) break;
 
-		currentCpuThread.threadState.waitingBlock({
-			waitMultipleEvents.waitAny(delayInMicroseconds / 1000);
+				waitMultipleObjects.waitAny(cast(uint)(microsecondsToWaitMax / 1000));
+			}
+			
+			stopWatch.stop();
 		});
 
 		return 0;
@@ -237,7 +249,7 @@ template ThreadManForUser_Threads() {
 	 * </code>
 	 */
 	int sceKernelDelayThreadCB(SceUInt delay) {
-		logInfo("sceKernelDelayThreadCB(%d)", delay);
+		logTrace("sceKernelDelayThreadCB(%d)", delay);
 		return _sceKernelDelayThread(delay, /*callbacks = */true);
 	}
 	
@@ -250,7 +262,8 @@ template ThreadManForUser_Threads() {
 	 * @return < 0 on error.
 	 */
 	int sceKernelChangeCurrentThreadAttr(int unknown, SceUInt attr) {
-		writefln("UNIMPLEMENTED: sceKernelChangeCurrentThreadAttr(%d, %d)", unknown, attr);
+		//writefln("UNIMPLEMENTED: sceKernelChangeCurrentThreadAttr(%d, %d)", unknown, attr);
+		unimplemented_notice();
 		//threadManager.currentThread.info.attr = attr;
 		return 0;
 	}
@@ -342,12 +355,12 @@ template ThreadManForUser_Threads() {
 		if (thid < 0) return -1;
 		ThreadState threadState = hleEmulatorState.uniqueIdFactory.get!(ThreadState)(thid);
 		
-		WaitMultipleEvents waitMultipleEvents = _getWaitMultipleEvents(callback);
+		WaitMultipleObjects waitMultipleObjects = _getWaitMultipleObjects(callback);
 		
-		waitMultipleEvents.add(currentEmulatorState.threadEndedCondition);
+		waitMultipleObjects.add(currentEmulatorState.threadEndedCondition);
 		
 		while (!(threadState.sceKernelThreadInfo.status & PspThreadStatus.PSP_THREAD_STOPPED | PspThreadStatus.PSP_THREAD_KILLED)) {
-			waitMultipleEvents.waitAny();
+			waitMultipleObjects.waitAny();
 		}
 		
 		return 0;

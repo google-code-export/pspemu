@@ -22,6 +22,7 @@ import pspemu.hle.HleEmulatorState;
 
 import pspemu.hle.ModuleNative;
 import pspemu.hle.ModuleLoader;
+import pspemu.hle.ModulePsp;
 
 import pspemu.gui.GuiBase;
 
@@ -29,6 +30,10 @@ import pspemu.hle.kd.iofilemgr.IoFileMgrForUser;
 import pspemu.hle.kd.sysmem.KDebugForKernel; 
 
 import pspemu.hle.MemoryManager;
+import pspemu.formats.DetectFormat;
+
+import pspemu.hle.vfs.VirtualFileSystem;
+import pspemu.hle.vfs.MountableVirtualFileSystem;
 
 class EmulatorHelper {
 	const uint CODE_PTR_EXIT_THREAD = 0x08000000;
@@ -48,7 +53,8 @@ class EmulatorHelper {
 		emulator.emulatorState.memory.twrite!uint(CODE_PTR_END_CALLBACK, 0x0000000C | (0x1002 << 6));
 		
 		with (emulator.emulatorState) {
-			memory.position = CODE_PTR_ARGUMENTS; memory.write(cast(uint)(memory.position + 4));
+			memory.position = CODE_PTR_ARGUMENTS;
+			memory.write(cast(uint)(memory.position + 4));
 		}
 		
 		// @TODO: @FIX: @HACK because not all threads are stopping.
@@ -59,7 +65,9 @@ class EmulatorHelper {
 	}
 	
 	public void setProgramFirstArg(string programPath) {
+		Logger.log(Logger.Level.INFO, "EmulatorHelper", "setProgramFirstArg('%s')", programPath);
 		with (emulator.emulatorState) {
+			memory.position = CODE_PTR_ARGUMENTS;
 			memory.write(cast(uint)(memory.position + 4));
 			memory.writeString(programPath ~ "\0");
 		}
@@ -75,23 +83,49 @@ class EmulatorHelper {
 	}
 	
 	public void loadModule(string pspModulePath) {
-		//reset();
-		
 		Logger.log(Logger.Level.INFO, "EmulatorHelper", "Loading module ('%s')...", pspModulePath);
 
-		//emulator.hleEmulatorState.memoryManager.allocHeap(PspPartition.User, "temp", 0x10000);
 		//emulator.hleEmulatorState.memoryManager.allocHeap(PspPartition.User, "temp", 0x4000);
 
 		emulator.mainCpuThread.threadState.thid = emulator.hleEmulatorState.uniqueIdFactory.set(0, emulator.mainCpuThread.threadState);
 		writefln("%s", emulator.mainCpuThread.threadState.thid);
-		emulator.mainCpuThread.threadState.threadModule = emulator.hleEmulatorState.moduleLoader.load(pspModulePath);
 		
-		emulator.hleEmulatorState.rootFileSystem.setVirtualDir(std.path.dirname(pspModulePath));
-		if (emulator.hleEmulatorState.rootFileSystem.isUmdGame) {
-			setProgramFirstArg("umd0:/PSP_GAME/SYSDIR/BOOT.BIN");
-		} else {
-			setProgramFirstArg("ms0:/PSP/GAME/virtual/EBOOT.PBP");
+		string fsProgramPath;
+		
+		auto rootFileSystem = emulator.hleEmulatorState.rootFileSystem;
+		
+		string detectedFormat;
+		switch (detectedFormat = DetectFormat.detect(pspModulePath)) {
+			case "directory": {
+				string testPath;
+				if (std.file.exists(testPath = pspModulePath ~ "/EBOOT.PBP")) {
+					pspModulePath = testPath;
+				} else if (std.file.exists(pspModulePath ~ "/PSP_GAME/SYSDIR/BOOT.BIN")) {
+					pspModulePath = testPath;
+				} else {
+					throw(new Exception(std.string.format("Can't find any suitable PSP executable on '%s'", pspModulePath)));
+				}
+			}
+			case "pbp": case "elf":
+				fsProgramPath = "ms0:/PSP/GAME/virtual/" ~ std.path.basename(pspModulePath);
+				rootFileSystem.setVirtualDir(std.path.dirname(pspModulePath));
+				rootFileSystem.setVirtualBoot(pspModulePath);
+			break;
+			case "iso": case "ciso": {
+				fsProgramPath = "umd0:/PSP_GAME/SYSDIR/BOOT.BIN";
+				rootFileSystem.setIsoPath(pspModulePath);
+			} break;
+			default:
+				throw(new Exception(std.string.format("Can't handle type '%s'", detectedFormat)));
+			break;
 		}
+
+		setProgramFirstArg(fsProgramPath);
+		ModulePsp modulePsp = emulator.hleEmulatorState.moduleLoader.load(
+			rootFileSystem.fsroot.open(fsProgramPath, FileOpenMode.In, FileAccessMode.All)
+		);
+		emulator.hleEmulatorState.mainModule = modulePsp;
+		emulator.mainCpuThread.threadState.threadModule = modulePsp; 
 		
 		with (emulator.mainCpuThread) {
 			registers.pcSet = emulator.hleEmulatorState.moduleLoader.PC; 

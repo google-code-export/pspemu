@@ -17,7 +17,7 @@ template IoFileMgrForKernel_Directories() {
 		mixin(registerd!(0x1117C65F, sceIoRmdir));
 	}
 	
-	DirectoryIterator[SceUID] openedDirectories;
+	//DirectoryIterator[SceUID] openedDirectories;
 	
 	/**
 	 * Change the current directory.
@@ -27,9 +27,10 @@ template IoFileMgrForKernel_Directories() {
 	 * @return < 0 on error.
 	 */
 	int sceIoChdir(string path) {
+		path = getAbsolutePathFromRelative(path);
 		logInfo("sceIoChdir('%s')", path);
 		try {
-			fsroot.access(path);
+			fsroot().getstat(path);
 			hleEmulatorState.rootFileSystem.fscurdir = path;
 			return 0;
 		} catch (Throwable o) {
@@ -53,13 +54,12 @@ template IoFileMgrForKernel_Directories() {
 	 * @return If >= 0 then a valid file descriptor, otherwise a Sony error code.
 	 */
 	SceUID sceIoDopen(string dirname) {
+		dirname = getAbsolutePathFromRelative(dirname);
 		logInfo("sceIoDopen('%s')", dirname);
 		try {
-			SceUID uid = openedDirectories.length + 1;
-			openedDirectories[uid] = new DirectoryIterator(dirname);
-			return uid;
+			return hleEmulatorState.uniqueIdFactory.add!DirHandle(fsroot.dopen(dirname));
 		} catch (Throwable o) {
-			.writefln("sceIoDopen: %s", o);
+			logError("sceIoDopen: %s", o);
 			return -1;
 		}
 	}
@@ -76,20 +76,20 @@ template IoFileMgrForKernel_Directories() {
 	  * - < 0 - Error
 	  */
 	int sceIoDread(SceUID fd, SceIoDirent *dir) {
-		logInfo("sceIoDread('%d')", fd);
-		if (fd !in openedDirectories) return -1;
-		auto cdir = openedDirectories[fd];
-		uint lastLeft = cdir.left;
-		if (lastLeft) {
-			auto entry = cdir.extract;
-
-			fillStats(&dir.d_stat, entry.stats);
-			putStringz(dir.d_name, entry.name);
-			dir.d_private = null;
-			dir.dummy = 0;
-			//writefln(""); writefln("sceIoDread:'%s':'%s'", entry.name, dir.d_name[0]);
+		logInfo("sceIoDread(%d)", fd);
+		try {
+			DirHandle dirHandle = hleEmulatorState.uniqueIdFactory.get!DirHandle(fd);
+			FileEntry fileEntry = fsroot.dread(dirHandle);
+			if (fileEntry is null) {
+				return 0;
+			} else {
+				*dir = fileEntryToSceIoDirent(fileEntry);
+				return 1;
+			}
+		} catch (Throwable o) {
+			logError("sceIoDread: %s", o);
+			return -1;
 		}
-		return lastLeft;
 	}
 
 	/**
@@ -100,10 +100,16 @@ template IoFileMgrForKernel_Directories() {
 	 * @return < 0 on error
 	 */
 	int sceIoDclose(SceUID fd) {
-		logInfo("sceIoDclose('%d')", fd);
-		if (fd !in openedDirectories) return -1;
-		openedDirectories.remove(fd);
-		return 0;
+		logInfo("sceIoDclose(%d)", fd);
+		try {
+			DirHandle dirHandle = hleEmulatorState.uniqueIdFactory.get!DirHandle(fd);
+			fsroot.dclose(dirHandle);
+			hleEmulatorState.uniqueIdFactory.remove!DirHandle(fd);
+			return 0;
+		} catch (Throwable o) {
+			logError("sceIoDclose: %s", o);
+			return -1;
+		}
 	}
 
 	/**
@@ -115,13 +121,13 @@ template IoFileMgrForKernel_Directories() {
 	 * @return Returns the value 0 if its succesful otherwise -1
 	 */
 	int sceIoMkdir(string path, SceMode mode) {
-		logInfo("sceIoMkdir('%s, %d)", path, mode);
-		auto vfs = locateParentAndUpdateFile(path);
+		path = getAbsolutePathFromRelative(path);
+		logInfo("sceIoMkdir('%s', %d)", path, mode);
 		try {
-			vfs.mkdir(path);
+			fsroot.mkdir(path, sceModeToFileAccessMode(mode));
 			return 0;
-		} catch (Exception e) {
-			//throw(e);
+		} catch (Throwable o) {
+			logError("sceIoMkdir: %s", o);
 			return -1;
 		}
 	}
@@ -134,8 +140,14 @@ template IoFileMgrForKernel_Directories() {
 	 * @return Returns the value 0 if its succesful otherwise -1
 	 */
 	int sceIoRmdir(string path) {
-		logInfo("sceIoRmdir('%s)", path);
-		unimplemented();
-		return -1;
+		path = getAbsolutePathFromRelative(path);
+		logInfo("sceIoRmdir(%d)", path);
+		try {
+			fsroot.rmdir(path);
+			return 0;
+		} catch (Throwable o) {
+			logError("sceIoMkdir: %s", o);
+			return -1;
+		}
 	}
 }

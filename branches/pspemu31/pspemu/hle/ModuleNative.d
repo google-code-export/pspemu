@@ -18,6 +18,7 @@ public import pspemu.core.cpu.CpuThreadBase;
 public import pspemu.core.cpu.Registers;
 public import pspemu.core.ThreadState;
 public import pspemu.core.EmulatorState;
+public import pspemu.hle.HleEmulatorState;
 
 /**
  * Thread Local Storage (TLS) variable. Each thread using it will have it's own value.
@@ -26,9 +27,11 @@ static Module.Nid currentExecutingNid;
 
 abstract class ModuleNative : Module {
 	// Will avoid obtaining the value from function.
+	/*
 	void returnValue(uint value) {
 		currentRegisters.V0 = value;
 	}
+	*/
 	
 	this() {
 		//Logger.log(Logger.Level.DEBUG, "Module", "Loading '%s'...", typeid(this));

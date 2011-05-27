@@ -22,75 +22,75 @@ class ProxyVirtualFileSystem : VirtualFileSystem {
 		return fileStat;
 	}
 	
-	FileHandle open(string file, int flags, FileOpenMode mode) {
+	override FileHandle open(string file, FileOpenMode flags, FileAccessMode mode) {
 		VirtualFileSystem newFileSystem = rewriteFileSystemAndPath(parentVirtualFileSystem, file);
 		return newFileSystem.open(file, flags, mode);
 	}
 
-	void close(FileHandle handle) {
+	override void close(FileHandle handle) {
 		handle.virtualFileSystem.close(handle);
 	}
 
-	int read(FileHandle handle, ubyte[] data) {
+	override int read(FileHandle handle, ubyte[] data) {
 		return handle.virtualFileSystem.read(handle, data);
 	}
 
-	void write(FileHandle handle, ubyte[] data) {
+	override int write(FileHandle handle, ubyte[] data) {
 		return handle.virtualFileSystem.write(handle, data);
 	}
 
-	long seek(FileHandle handle, long offset, Whence whence) {
+	override long seek(FileHandle handle, long offset, Whence whence) {
 		return handle.virtualFileSystem.seek(handle, offset, whence);
 	}
 
-	void unlink(string file) {
+	override void unlink(string file) {
 		VirtualFileSystem newFileSystem = rewriteFileSystemAndPath(parentVirtualFileSystem, file);
 		newFileSystem.unlink(file);
 	}
 
-	void mkdir(string file) {
+	override void mkdir(string file, FileAccessMode mode) {
 		VirtualFileSystem newFileSystem = rewriteFileSystemAndPath(parentVirtualFileSystem, file);
-		newFileSystem.mkdir(file);
+		newFileSystem.mkdir(file, mode);
 	}
 
-	void rmdir(string file) {
+	override void rmdir(string file) {
 		VirtualFileSystem newFileSystem = rewriteFileSystemAndPath(parentVirtualFileSystem, file);
 		newFileSystem.rmdir(file);
 	}
 
-	DirHandle dopen(string file) {
+	override DirHandle dopen(string file) {
 		VirtualFileSystem newFileSystem = rewriteFileSystemAndPath(parentVirtualFileSystem, file);
 		return newFileSystem.dopen(file);
 	}
 
-	void dclose(DirHandle handle) {
+	override void dclose(DirHandle handle) {
 		handle.virtualFileSystem.dclose(handle);
 	}
 	
-	FileEntry dread(DirHandle handle) {
+	override FileEntry dread(DirHandle handle) {
 		return handle.virtualFileSystem.dread(handle);
 	}
 	
-	FileStat getstat(string file) {
+	override FileStat getstat(string file) {
 		VirtualFileSystem newFileSystem = rewriteFileSystemAndPath(parentVirtualFileSystem, file);
 		return newFileSystem.getstat(file);
 	}
 
-	void setstat(string file, FileStat stat) {
+	override void setstat(string file, FileStat stat) {
 		VirtualFileSystem newFileSystem = rewriteFileSystemAndPath(parentVirtualFileSystem, file);
 		return newFileSystem.setstat(file, rewriteFileStatToWrite(stat));
 	}
 	
-	void rename(string oldname, string newname) {
+	override void rename(string oldname, string newname) {
 		VirtualFileSystem newFileSystem = rewriteFileSystemAndPath(parentVirtualFileSystem, oldname);
 		return newFileSystem.rename(oldname, newname);
 	}
 
-	void ioctl(uint cmd, ubyte[] indata, ubyte[] outdata) {
-		parentVirtualFileSystem.ioctl(cmd, indata, outdata);
+	override int ioctl(uint cmd, ubyte[] indata, ubyte[] outdata) {
+		return parentVirtualFileSystem.ioctl(cmd, indata, outdata);
 	}
 
-	void devctl(string devname, uint cmd, ubyte[] indata, ubyte[] outdata) {
-		parentVirtualFileSystem.devctl(devname, cmd, indata, outdata);
+	override int devctl(string devname, uint cmd, ubyte[] indata, ubyte[] outdata) {
+		return parentVirtualFileSystem.devctl(devname, cmd, indata, outdata);
 	}
 }

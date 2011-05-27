@@ -60,7 +60,7 @@ struct SceIoStat {
 	uint            st_private[6]; /// Device-specific data.
 }
 
-enum : uint {
+enum SceIoFlags : uint {
 	PSP_O_RDONLY   = 0x0001,
 	PSP_O_WRONLY   = 0x0002,
 	PSP_O_RDWR     = (PSP_O_RDONLY | PSP_O_WRONLY),

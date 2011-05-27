@@ -1,7 +1,9 @@
-module pspemu.core.gpu.impl.GpuOpenglUtils;
+module pspemu.core.gpu.impl.gl.GpuOpenglUtils;
 
 import std.c.windows.windows;
 import std.windows.syserror;
+
+import pspemu.core.gpu.Types;
 
 import derelict.opengl.gl;
 import derelict.opengl.glext;
@@ -18,6 +20,7 @@ static const uint[] BlendFuncDstTranslate     = [GL_DST_COLOR, GL_ONE_MINUS_DST_
 static const uint[] LogicalOperationTranslate = [GL_CLEAR, GL_AND, GL_AND_REVERSE, GL_COPY, GL_AND_INVERTED, GL_NOOP, GL_XOR, GL_OR, GL_NOR, GL_EQUIV, GL_INVERT, GL_OR_REVERSE, GL_COPY_INVERTED, GL_OR_INVERTED, GL_NAND, GL_SET];
 
 struct GlPixelFormat {
+	PixelFormats pspFormat;
 	float size;
 	uint  internal;
 	uint  external;
@@ -26,17 +29,17 @@ struct GlPixelFormat {
 }
 
 static const auto GlPixelFormats = [
-	GlPixelFormat(  2, 3, GL_RGB,  GL_UNSIGNED_SHORT_5_6_5_REV),
-	GlPixelFormat(  2, 4, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV),
-	GlPixelFormat(  2, 4, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4_REV),
-	GlPixelFormat(  4, 4, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV),
-	GlPixelFormat(0.5, 1, GL_COLOR_INDEX, GL_COLOR_INDEX4_EXT),
-	GlPixelFormat(  1, 1, GL_COLOR_INDEX, GL_COLOR_INDEX8_EXT),
-	GlPixelFormat(  2, 4, GL_COLOR_INDEX, GL_COLOR_INDEX16_EXT),
-	GlPixelFormat(  4, 4, GL_RGBA, GL_UNSIGNED_INT /*COLOR_INDEX, GL_COLOR_INDEX32_EXT*/), // Not defined.
-	GlPixelFormat(  4, 4, GL_RGBA, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT),
-	GlPixelFormat(  4, 4, GL_RGBA, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT),
-	GlPixelFormat(  4, 4, GL_RGBA, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT),
+	GlPixelFormat(PixelFormats.GU_PSM_5650,   2, 3, GL_RGB,  GL_UNSIGNED_SHORT_5_6_5_REV),
+	GlPixelFormat(PixelFormats.GU_PSM_5551,   2, 4, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV),
+	GlPixelFormat(PixelFormats.GU_PSM_4444,   2, 4, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4_REV),
+	GlPixelFormat(PixelFormats.GU_PSM_8888,   4, 4, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV),
+	GlPixelFormat(PixelFormats.GU_PSM_T4  , 0.5, 1, GL_COLOR_INDEX, GL_COLOR_INDEX4_EXT),
+	GlPixelFormat(PixelFormats.GU_PSM_T8  ,   1, 1, GL_COLOR_INDEX, GL_COLOR_INDEX8_EXT),
+	GlPixelFormat(PixelFormats.GU_PSM_T16 ,   2, 4, GL_COLOR_INDEX, GL_COLOR_INDEX16_EXT),
+	GlPixelFormat(PixelFormats.GU_PSM_T32 ,   4, 4, GL_RGBA, GL_UNSIGNED_INT /*COLOR_INDEX, GL_COLOR_INDEX32_EXT*/), // Not defined.
+	GlPixelFormat(PixelFormats.GU_PSM_DXT1,   4, 4, GL_RGBA, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT),
+	GlPixelFormat(PixelFormats.GU_PSM_DXT3,   4, 4, GL_RGBA, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT),
+	GlPixelFormat(PixelFormats.GU_PSM_DXT5,   4, 4, GL_RGBA, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT),
 ];
 
 // http://www.devmaster.net/forums/showthread.php?t=14511

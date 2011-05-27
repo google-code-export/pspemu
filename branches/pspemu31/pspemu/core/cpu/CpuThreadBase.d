@@ -31,7 +31,7 @@ abstract class CpuThreadBase : InstructionHandler {
 	bool trace = false;
 	//static CpuThreadBase[Thread] cpuThreadBasePerThread;
 	
-	ulong executedInstructionsCount;
+	//ulong executedInstructionsCount;
 	__gshared long lastThreadId = 0;
 	
 	public this(ThreadState threadState) {
@@ -80,7 +80,7 @@ abstract class CpuThreadBase : InstructionHandler {
 			
 			if (this.threadState.waiting) break;
 			
-			if (this.executedInstructionsCount >= count) break;
+			if (this.threadState.registers.EXECUTED_INSTRUCTION_COUNT_THIS_THREAD >= count) break;
 		}
 	}
 	

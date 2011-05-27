@@ -716,8 +716,7 @@ private
             *ptr = loadGLSymbol(funcName);
             debug
             {
-                if(*ptr is null)
-                    throw new SymbolLoadException("Failed to load OpenGL extension " ~ funcName);
+                //if(*ptr is null) throw new SymbolLoadException("Failed to load OpenGL extension " ~ funcName);
             }
             return (*ptr !is null);
         }

@@ -7,7 +7,7 @@ import std.stream;
 
 import pspemu.utils.MathUtils;
 import pspemu.utils.sync.WaitEvent;
-import pspemu.utils.sync.WaitMultipleEvents;
+import pspemu.utils.sync.WaitMultipleObjects;
 
 //import pspemu.utils.Utils;
 

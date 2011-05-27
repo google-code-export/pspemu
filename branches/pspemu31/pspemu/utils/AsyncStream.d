@@ -3,6 +3,7 @@ module pspemu.utils.AsyncStream;
 import std.stdio;
 import std.stream;
 
+/*
 class AsyncStream {
 	Stream stream;
 	ulong lastOperation;
@@ -11,3 +12,4 @@ class AsyncStream {
 		this.stream = stream;
 	}
 }
+*/

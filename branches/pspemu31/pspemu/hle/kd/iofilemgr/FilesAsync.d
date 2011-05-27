@@ -33,7 +33,13 @@ template IoFileMgrForKernel_FilesAsync() {
 	 *
 	 * @return A non-negative integer is a valid fd, anything else an error
 	 */
-	SceUID sceIoOpenAsync(string file, int flags, SceMode mode) {
+	SceUID sceIoOpenAsync(string file, SceIoFlags flags, SceMode mode) {
+		SceUID fd = sceIoOpen(file, flags, mode);
+		auto fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+		//fileHandle.lastOperationResult = cast(long)fd;
+		fileHandle.lastOperationResult = 0;
+		return cast(SceUID)fd;
+		/*
 		logWarning("sceIoOpenAsync('%s':%d, %d, %d)", file, file !is null, flags, mode);
 		if (file == "") {
 			return hleEmulatorState.uniqueIdFactory.add(new AsyncStream(new MemoryStream()));
@@ -46,6 +52,7 @@ template IoFileMgrForKernel_FilesAsync() {
 			logError("Error: %s", o);
 			return -1;
 		}
+		*/
 	}
 
 	/**
@@ -59,8 +66,10 @@ template IoFileMgrForKernel_FilesAsync() {
 	 * @return < 0 on error. Actual value should be passed returned by the ::sceIoWaitAsync call.
 	 */
 	int sceIoLseekAsync(SceUID fd, SceOff offset, int whence) {
-		unimplemented();
-		return -1;
+		SceOff offsetAfterSeek = sceIoLseek(fd, offset, whence);
+		auto fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+		fileHandle.lastOperationResult = cast(long)offsetAfterSeek;
+		return 0;
 	}
 
 	/**
@@ -72,10 +81,11 @@ template IoFileMgrForKernel_FilesAsync() {
 	int sceIoCloseAsync(SceUID fd) {
 		try {
 			logError("sceIoCloseAsync(%d)", fd);
-			auto asyncStream = hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd);
-			hleEmulatorState.uniqueIdFactory.remove!AsyncStream(fd);
-			asyncStream.stream.flush();
-			asyncStream.stream.close();
+			auto fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+			//fsroot().flush(fileHandle);
+			fsroot().close(fileHandle);
+			//hleEmulatorState.uniqueIdFactory.remove!FileHandle(fd);
+			fileHandle.lastOperationResult = 0;
 			return 0;
 		} catch (Throwable o) {
 			logError("sceIoCloseAsync: %s", o);
@@ -99,19 +109,9 @@ template IoFileMgrForKernel_FilesAsync() {
 	 */
 	int sceIoReadAsync(SceUID fd, ubyte *data, SceSize size) {
 		logInfo("sceIoReadAsync(%d, %s, %d)", fd, data, size);
-		if (fd < 0) return -1;
-		if (data is null) return -1;
-		//writefln("[1]");
-		auto asyncStream = hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd);
-		//writefln("[2]");
-		try {
-			//writefln("[3]");
-			asyncStream.lastOperation = asyncStream.stream.read(data[0..size]);
-			//writefln("[4]");
-		} catch (Throwable o) {
-			logError("sceIoReadAsync %s", o);
-			return -1;
-		}
+		FileHandle fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+		fileHandle.lastOperationResult = sceIoRead(fd, data, size);
+		logInfo("      :%d", fileHandle.lastOperationResult);
 		return 0;
 	}
 
@@ -129,8 +129,8 @@ template IoFileMgrForKernel_FilesAsync() {
 	}
 	
 	int _sceIoWaitAsyncCB(SceUID fd, SceInt64* res, bool callbacks) {
-		AsyncStream asyncStream = hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd);
-		*res = asyncStream.lastOperation;
+		FileHandle fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+		*res = fileHandle.lastOperationResult;
 		return 0;
 	}
 
@@ -161,9 +161,9 @@ template IoFileMgrForKernel_FilesAsync() {
 	int sceIoPollAsync(SceUID fd, SceInt64 *res) {
 		logWarning("Not implemented sceIoPollAsync(%d, %s)", fd, res);
 		try {
-			AsyncStream asyncStream = hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd);
-			*res = asyncStream.lastOperation;
-			//unimplemented();
+			FileHandle fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+			logWarning("     result: %d", fileHandle.lastOperationResult);
+			*res = fileHandle.lastOperationResult;
 			return 0;
 		} catch (Throwable o) {
 			logWarning("sceIoPollAsync: %s", o);

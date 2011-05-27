@@ -105,8 +105,15 @@ class Display {
 		this.thread.start();
 	}
 	
-	public void waitVblank() {
-		if (enableWaitVblank) vblankStartCondition.wait();
+	int lastWaitedVblank = -1;
+	
+	public void waitVblank(bool processCallbacks = false) {
+		if (enableWaitVblank) {
+			if (lastWaitedVblank >= VBLANK_COUNT) {
+				vblankStartCondition.wait();
+			}
+			lastWaitedVblank = VBLANK_COUNT;
+		}
 	}
 
 	protected void run() {

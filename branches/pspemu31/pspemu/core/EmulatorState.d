@@ -6,7 +6,7 @@ import pspemu.core.Memory;
 import pspemu.core.cpu.ISyscall;
 import pspemu.core.cpu.CpuThreadBase;
 import pspemu.core.gpu.Gpu;
-import pspemu.core.gpu.impl.GpuOpengl;
+import pspemu.core.gpu.impl.gl.GpuOpengl;
 import pspemu.core.display.Display;
 import pspemu.core.controller.Controller;
 import pspemu.core.RunningState;

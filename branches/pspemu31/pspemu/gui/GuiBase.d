@@ -4,10 +4,14 @@ import std.stdio;
 import core.thread;
 import pspemu.utils.WaitReady;
 
+public import pspemu.core.Memory;
 public import pspemu.core.controller.Controller;
 public import pspemu.core.display.Display;
 public import pspemu.core.EmulatorState;
 public import pspemu.hle.HleEmulatorState;
+public import pspemu.core.cpu.CpuThreadBase;
+public import pspemu.hle.vfs.devices.MemoryStickDevice;
+
 
 import pspemu.utils.Logger;
 
@@ -44,6 +48,43 @@ abstract class GuiBase {
 			} catch (Throwable o) {
 				Logger.log(Logger.Level.ERROR, "Gui", "Error: " ~ o.toString);
 			}
+		}
+	}
+	
+	void dumpMemory() {
+		Memory memory = hleEmulatorState.emulatorState.memory;
+		std.file.write("memory.dump", memory.mainMemory);
+	}
+	
+	void dumpThreads() {
+		try {
+			writefln("Threads(%d):", Thread.getAll.length);
+			foreach (thread; Thread.getAll) {
+				writefln("  - Thread: '%s', running:%d, priority:%d", thread.name, thread.isRunning, thread.priority);
+			}
+			writefln("CpuThreads(%d):", emulatorState.cpuThreads.length);
+			foreach (CpuThreadBase cpuThread; emulatorState.cpuThreads.keys.dup) {
+				writef("  - CpuThread:");
+				try {
+					writef("%s", cpuThread);
+				} catch {
+					
+				}
+				writefln("");
+				//int callStackPosEnd   = min(cast(int)cpuThread.threadState.registers.CallStackPos, cast(int)cpuThread.threadState.registers.CallStack.length);
+				//int callStackPosStart = max(0, callStackPosEnd - 10);
+
+				try {								
+					//foreach (k, pc; cpuThread.threadState.registers.CallStack[callStackPosStart..callStackPosEnd])
+					foreach (k, pc; cpuThread.threadState.registers.CallStack[0..cpuThread.threadState.registers.CallStackPos]) {
+						writefln("    - %d - 0x%08X", k, pc);
+					}
+				} catch (Throwable o) {
+					
+				}
+			}
+		} catch (Throwable o) {
+			
 		}
 	}
 
