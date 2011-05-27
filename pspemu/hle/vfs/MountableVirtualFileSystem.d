@@ -2,6 +2,9 @@ module pspemu.hle.vfs.MountableVirtualFileSystem;
 
 import std.stdio;
 import std.string;
+import std.array;
+
+import pspemu.utils.String;
 
 public import pspemu.hle.vfs.VirtualFileSystem;
 public import pspemu.hle.vfs.ProxyVirtualFileSystem;
@@ -22,12 +25,15 @@ class MountableVirtualFileSystem : ProxyVirtualFileSystem {
 	}
 	
 	VirtualFileSystem rewriteFileSystemAndPath(VirtualFileSystem virtualFileSystem, ref string path) {
+		//writefln("****************");
 		foreach (mountName, mountedVirtualFileSystem; mounts) {
 			//if (path.)
+			//writefln("%s, %s", path, mountName);
 			if (std.string.indexOf(path, mountName) == 0) {
-				writefln("%s", path);
+				//writefln("%s", path);
 				path = path[mountName.length..$];
-				writefln("%s", path);
+				path = ltrim_str(path, '/');
+				//writefln("%s: %s", mountedVirtualFileSystem, path);
 				return mountedVirtualFileSystem;
 			}
 		}

@@ -48,7 +48,9 @@ class Syscall : ISyscall {
 	}
 	
 	public void syscall(CpuThreadBase cpuThread, int syscallNum) {
-		Logger.log(Logger.Level.TRACE, "Syscall", "%s : Called syscall %04X", thisThreadCpuThreadBase, syscallNum);
+		if (syscallNum != 0x1000) {
+			Logger.log(Logger.Level.TRACE, "Syscall", "%s : Called syscall %04X", thisThreadCpuThreadBase, syscallNum);
+		}
 		
 		static string szToString(char* s) { return cast(string)s[0..std.c.string.strlen(s)]; }
 

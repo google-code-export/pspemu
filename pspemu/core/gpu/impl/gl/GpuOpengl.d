@@ -1,4 +1,4 @@
-module pspemu.core.gpu.impl.GpuOpengl;
+module pspemu.core.gpu.impl.gl.GpuOpengl;
 
 /*
 http://code.google.com/p/jpcsp/source/browse/trunk/src/jpcsp/graphics/VideoEngine.java
@@ -18,10 +18,13 @@ version = VERSION_ENABLED_STATE_CORTOCIRCUIT_EX;
 //debug = DEBUG_FRAME_TRANSFER;
 
 import std.conv;
+import std.stream;
+import pspemu.utils.StructUtils;
 
 import std.c.windows.windows;
 import std.windows.syserror;
 import std.stdio;
+import etc.c.zlib;
 
 //import pspemu.utils.Utils;
 //import pspemu.utils.Image;
@@ -39,10 +42,34 @@ import derelict.opengl.glext;
 import derelict.opengl.wgl;
 //import derelict.util.wintypes;
 
-import pspemu.core.gpu.impl.GpuOpenglUtils;
-import pspemu.core.gpu.impl.GpuOpenglTexture;
+import pspemu.core.gpu.impl.gl.GpuOpenglUtils;
+import pspemu.core.gpu.impl.gl.GpuOpenglTexture;
 
 import pspemu.core.exceptions.NotImplementedException;
+
+import pspemu.utils.imaging.SimplePng;
+import pspemu.utils.imaging.SimpleTga;
+
+/*
+align (1) struct TGA_HEADER {
+    byte  identsize = 0;          // size of ID field that follows 18 byte header (0 usually)
+    byte  colourmaptype = 0;      // type of colour map 0=none, 1=has palette
+    byte  imagetype = 2;          // type of image 0=none,1=indexed,2=rgb,3=grey,+8=rle packed
+
+    short colourmapstart = 0;     // first colour map entry in palette
+    short colourmaplength = 0;    // number of colours in palette
+    byte  colourmapbits = 0;      // number of bits per palette entry 15,16,24,32
+
+    short xstart = 0;             // image x origin
+    short ystart = 0;             // image y origin
+    short width;              // image width in pixels
+    short height;             // image height in pixels
+    byte  bits = 32;               // image bits per pixel 8,16,24,32
+    byte  descriptor = 0b00101111;         // image descriptor bits (vh flip bits)
+    
+    // pixel data follows header
+}
+*/
 
 class GpuOpengl : GpuImplAbstract {
 	mixin OpenglBase;
@@ -66,6 +93,7 @@ class GpuOpengl : GpuImplAbstract {
 	void init() {
 		openglInit();
 		openglPostInit();
+
 		//setVSync(0);
 		/*
 		program = new glProgram();
@@ -86,6 +114,16 @@ class GpuOpengl : GpuImplAbstract {
 		*/
 
 		//program.use(0);
+	}
+	
+	bool _recordFrameAction;
+
+	void recordFrameAction(bool value) {
+		_recordFrameAction = value;
+	}
+
+	bool recordFrameAction() {
+		return _recordFrameAction;
 	}
 	
 	void fastTrxKickToFrameBuffer() {
@@ -157,6 +195,26 @@ class GpuOpengl : GpuImplAbstract {
 	}
 
 	void draw(ushort[] indexList, VertexState[] vertexList, PrimitiveType type, PrimitiveFlags flags) {
+		if (_recordFrameAction) {
+			//prevState.texture.
+			Texture texture = getTexture(state.texture, state.clut);
+			string filename = std.string.format("TEXTURE_%08X_%s_%s.png", texture.textureHash, to!string(texture.textureFormat), to!string(texture.clutFormat));
+			ubyte[] data = texture.getTexturePixels();
+			SimplePng.write(cast(uint[])data, texture.getTextureWidth(), texture.getTextureHeight(), filename);
+			/*
+			TGA_HEADER tgaHeader;
+			tgaHeader.width = cast(short)texture.getTextureWidth();
+			tgaHeader.height = cast(short)texture.getTextureHeight();
+			{
+				scope tgaFile = new BufferedFile(filename, FileMode.OutNew);
+				tgaFile.write(TA(tgaHeader));
+				tgaFile.write(data);
+				tgaFile.flush();
+				tgaFile.close();
+			}
+			*/
+		}
+		
 		//if (gpu.state.clearingMode) return; // Do not draw in clearmode.
 
 		/*
@@ -639,7 +697,7 @@ template OpenglUtils() {
 		// http://www.sjbaker.org/steve/omniv/opengl_lighting.html
 		// http://www.sorgonet.com/linux/openglguide/parte2.html
 		void prepareLighting() {
-			if (!glEnableDisable(GL_LIGHTING, state.lightingEnabled)) {
+			if (!glEnableDisable(GL_LIGHTING, state.lightingEnabled) && (state.texture.mapMode != TextureMapMode.GU_ENVIRONMENT_MAP)) {
 				version (VERSION_ENABLED_STATE_CORTOCIRCUIT) return;
 			}
 			
@@ -758,7 +816,6 @@ template OpenglUtils() {
 		glShadeModel(state.shadeModel ? GL_SMOOTH : GL_FLAT);
 		glMaterialf(GL_FRONT, GL_SHININESS, state.specularPower);
 		glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, state.textureEnviromentColor.ptr);
-		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
 		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE);
 		glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);

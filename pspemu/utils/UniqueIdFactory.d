@@ -2,7 +2,7 @@ module pspemu.utils.UniqueIdFactory;
 
 import std.string;
 
-alias uint UID;
+alias int UID;
 
 class UniqueIdFactory {
 	UniqueIdTypeFactory[string] factoryPerType;
@@ -28,8 +28,7 @@ class UniqueIdFactory {
 
 class UniqueIdTypeFactory {
 	string type;
-	uint last = 1;
-	//uint last = 0;
+	UID last = 1;
 	Object[UID] values;
 	
 	this(string type) {
@@ -38,13 +37,17 @@ class UniqueIdTypeFactory {
 	
 	public UID set(UID uid, Object value) {
 		values[uid] = value;
+		if (last < uid + 1) last = uid + 1; 
 		return uid;
 	}
 
 	public UID newUid(Object value) {
-		UID current = last++;
-		values[current] = value;
-		return current;
+		while (true) {
+			UID current = last++;
+			if (current in values) continue;
+			values[current] = value;
+			return current;
+		}
 	}
 
 	public T get(T)(UID uid) {

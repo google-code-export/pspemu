@@ -1,4 +1,4 @@
-module pspemu.core.cpu.interpreted.ops.VFpu;
+module pspemu.core.cpu.interpreter.ops.VFpu;
 
 //debug = DEBUG_VFPU_I;
 

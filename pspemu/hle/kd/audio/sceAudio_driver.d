@@ -48,6 +48,8 @@ class sceAudio_driver : ModuleNative {
 		mixin(registerd!(0x7DE61688, sceAudioInputInit));
 		
 		mixin(registerd!(0x38553111, sceAudioSRCChReserve));
+		mixin(registerd!(0x5C37C0AE, sceAudioSRCChRelease));
+		mixin(registerd!(0xE0727056, sceAudioSRCOutputBlocking));
 	}
 
 	void initModule() {
@@ -104,7 +106,7 @@ class sceAudio_driver : ModuleNative {
 		auto cchannel = channels[channel];
 		bool playing = true;
 
-		logInfo("sceAudioOutputPannedBlocking(channel=%d, leftvol=%d, rightvol=%d, buf_length=%d)", channel, leftvol, rightvol, cchannel.dataCount);
+		logTrace("sceAudioOutputPannedBlocking(channel=%d, leftvol=%d, rightvol=%d, buf_length=%d)", channel, leftvol, rightvol, cchannel.dataCount);
 
 		float toFloat(short sample) { return cast(float)sample / cast(float)(0x8000 - 1); }
 		
@@ -120,7 +122,7 @@ class sceAudio_driver : ModuleNative {
 		};
 
 		if (blocking) {
-			currentThreadState().waitingBlock(writeDelegate);
+			currentThreadState().waitingBlock("_sceAudioOutputPannedBlocking", writeDelegate);
 		} else {
 			Thread audioNonBlockingThread = new Thread(writeDelegate);
 			audioNonBlockingThread.name = "audioNonBlockingThread";
@@ -313,8 +315,6 @@ class sceAudio_driver : ModuleNative {
 		}
 		return 0;
 	}
-
-
 	
 	/**
 	  * Change the volume of a channel
@@ -331,6 +331,31 @@ class sceAudio_driver : ModuleNative {
 		this.channels[channel].rightvol = rightvol;
 		return 0;
 	}
+	
+	/**
+	  * Release the audio output
+	  *
+	  * @return 0 on success, an error if less than 0.
+	  */
+	int sceAudioSRCChRelease() {
+		unimplemented();
+		return -1;
+	}
+	
+	/**
+	  * Output audio
+	  *
+	  * @param vol - The volume.
+	  * @param buf - Pointer to the PCM data to output.
+	  *
+	  * @return 0 on success, an error if less than 0.
+	  */
+	int sceAudioSRCOutputBlocking(int vol, void *buf) {
+		logTrace("Not implemented sceAudioSRCOutputBlocking(%d, 0x%08X)", vol, cast(uint)buf);
+		//unimplemented_notice();
+		return -1;
+	}
+
 }
 
 static this() {

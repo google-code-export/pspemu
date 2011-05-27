@@ -17,7 +17,7 @@ import pspemu.hle.MemoryManager;
 
 import pspemu.utils.Logger;
 
-import pspemu.utils.sync.WaitMultipleEvents;
+import pspemu.utils.sync.WaitMultipleObjects;
 
 import pspemu.hle.Callbacks;
 
@@ -90,6 +90,45 @@ class ThreadManForUser : ModuleNative {
 		mixin(registerd!(0x8218B4DD, sceKernelReferGlobalProfiler));
 		mixin(registerd!(0xAF36D708, sceKernelTryAllocateVpl));
 		mixin(registerd!(0xB736E9FF, sceKernelFreeVpl));
+		
+		mixin(registerd!(0xC07BB470, sceKernelCreateFpl));
+		mixin(registerd!(0x623AE665, sceKernelTryAllocateFpl));
+		mixin(registerd!(0x8FFDF9A2, sceKernelCancelSema));
+	}
+	
+	void sceKernelCancelSema() {
+		unimplemented();
+	}
+	
+	/**
+	 * Create a fixed pool
+	 *
+	 * @param name - Name of the pool
+	 * @param part - The memory partition ID
+	 * @param attr - Attributes
+	 * @param size - Size of pool block
+	 * @param blocks - Number of blocks to allocate
+	 * @param opt  - Options (set to NULL)
+	 *
+	 * @return The UID of the created pool, < 0 on error.
+	 */
+	//int sceKernelCreateFpl(const char *name, int part, int attr, uint size, uint blocks, SceKernelFplOptParam *opt) {
+	int sceKernelCreateFpl(const char *name, int part, int attr, uint size, uint blocks, void *opt) {
+		unimplemented();
+		return 0;
+	}
+	
+	/**
+	 * Try to allocate from the pool 
+	 *
+	 * @param uid - The UID of the pool
+	 * @param data - Receives the address of the allocated data
+	 *
+	 * @return 0 on success, < 0 on error
+	 */
+	int sceKernelTryAllocateFpl(SceUID uid, void **data) {
+		unimplemented();
+		return 0;
 	}
 
 	/**

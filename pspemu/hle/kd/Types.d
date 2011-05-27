@@ -2,6 +2,8 @@ module pspemu.hle.kd.Types;
 
 import std.datetime;
 
+alias void* ScePVoid;
+
 alias ubyte  u8;
 alias ushort u16;
 alias uint   u32;

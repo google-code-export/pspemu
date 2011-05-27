@@ -23,7 +23,7 @@ import core.sync.mutex;
 import pspemu.utils.sync.WaitObject;
 import pspemu.utils.sync.WaitEvent;
 import pspemu.utils.sync.WaitSemaphore;
-import pspemu.utils.sync.WaitMultipleEvents;
+import pspemu.utils.sync.WaitMultipleObjects;
 
 import std.c.windows.windows;
 
@@ -54,12 +54,12 @@ class PspSemaphore {
 		// @TODO: ignored timeout
 		info.numWaitThreads++; scope (exit) info.numWaitThreads--;
 		
-		WaitMultipleEvents waitMultipleEvents = new WaitMultipleEvents(threadState);
-		waitMultipleEvents.add(this.waitEvent);
-		waitMultipleEvents.add(threadState.emulatorState.runningState.stopEvent);
-		if (handleCallbacks) waitMultipleEvents.add(hleEmulatorState.callbacksHandler.waitEvent);
+		WaitMultipleObjects waitMultipleObjects = new WaitMultipleObjects(threadState);
+		waitMultipleObjects.add(this.waitEvent);
+		waitMultipleObjects.add(threadState.emulatorState.runningState.stopEvent);
+		if (handleCallbacks) waitMultipleObjects.add(hleEmulatorState.callbacksHandler.waitEvent);
 		
-		while (this.info.currentCount < signal) waitMultipleEvents.waitAny();
+		while (this.info.currentCount < signal) waitMultipleObjects.waitAny();
 		info.currentCount -= signal;
 	}
 	
@@ -148,7 +148,7 @@ template ThreadManForUser_Semaphores() {
 		auto semaphore = hleEmulatorState.uniqueIdFactory.get!PspSemaphore(semaid);
 		logInfo("sceKernelWaitSema%s(%d:'%s', %d, %d) :: %s", callback ? "CB" : "", semaid, semaphore.name, signal, (timeout is null) ? 0 : *timeout, semaphore);
 
-		currentCpuThread.threadState.waitingBlock({
+		currentCpuThread.threadState.waitingBlock("_sceKernelWaitSemaCB", {
 			semaphore.waitSignal(hleEmulatorState, currentThreadState, signal, (timeout !is null) ? *timeout : 0, callback);
 		});
 		return 0;

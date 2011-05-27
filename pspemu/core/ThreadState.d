@@ -15,6 +15,7 @@ import pspemu.hle.Module;
 class ThreadState {
 	protected __gshared ThreadState[Thread] threadStatePerThread;
 	
+	public string waitType;
 	public bool waiting;
 	public EmulatorState emulatorState;
 	public Registers registers;
@@ -47,12 +48,14 @@ class ThreadState {
 		return threadState;
 	}
 	
-	public void waitingBlock(void delegate() callback) {
-		waiting = true;
+	public void waitingBlock(string waitType, void delegate() callback) {
+		this.waitType = waitType;
+		this.waiting = true;
 		try {
 			callback();
 		} finally {
-			waiting = false;
+			this.waitType = "";
+			this.waiting = false;
 		}
 	}
 	
@@ -67,6 +70,6 @@ class ThreadState {
 	}
 	
 	string toString() {
-		return std.string.format("ThreadState(%d:'%s', PC:%08X)", thid, name, registers.PC);
+		return std.string.format("ThreadState(%d:'%s', PC:%08X, waiting:%s'%s')", thid, name, registers.PC, waiting, waitType);
 	}
 }

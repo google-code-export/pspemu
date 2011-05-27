@@ -1,10 +1,10 @@
-module pspemu.utils.sync.WaitMultipleEvents;
+module pspemu.utils.sync.WaitMultipleObjects;
 
 import pspemu.utils.sync.WaitObject;
 
 import core.thread;
 
-class WaitMultipleEvents {
+class WaitMultipleObjects {
 	WaitObject[] waitObjects;
 	public Object object;
 	

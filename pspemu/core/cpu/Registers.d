@@ -5,6 +5,7 @@ import std.stdio, std.string, std.bitmanip;
 version = VERSION_R0_CHECK;
 
 final class Registers {
+//struct Registers {
 	protected __gshared int[string] aliases;
 	protected __gshared const auto aliasesInv = [
 		"zr", "at", "v0", "v1", "a0", "a1", "a2", "a3",
@@ -42,6 +43,7 @@ final class Registers {
 		static assert (this.sizeof == 4);
 	}
 
+	uint EXECUTED_INSTRUCTION_COUNT_THIS_THREAD;
 	bool PAUSED;
 	uint PC, nPC;    // Program Counter
 	uint IC;         // Interrupt controller

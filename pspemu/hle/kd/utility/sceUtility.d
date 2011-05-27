@@ -3,6 +3,8 @@ module pspemu.hle.kd.utility.sceUtility; // kd/utility.prx (sceUtility_Driver):
 import std.string;
 import std.conv;
 import std.file;
+import std.utf;
+import std.c.windows.windows;
 
 import pspemu.hle.ModuleNative;
 import pspemu.hle.HleEmulatorState;
@@ -10,6 +12,14 @@ import pspemu.hle.HleEmulatorState;
 import pspemu.hle.kd.utility.Sysparam;
 
 import pspemu.hle.kd.utility.Types;
+
+extern (Windows) {
+	int MessageBoxW(HWND hWnd, wchar* lpText, wchar* lpCaption, UINT uType);
+}
+
+wchar* toStringz(wstring str) {
+	return cast(wchar *)(str ~ '\0').ptr;
+}
 
 class sceUtility : ModuleNative {
 	mixin sceUtility_sysparams;
@@ -51,7 +61,7 @@ class sceUtility : ModuleNative {
 		initNids_sysparams();
 	}
 	
-	enum SaveStep {
+	enum DialogStep {
 		UNK1         = 0,
 		UNK2         = 1,
 		PROCESSING   = 2,
@@ -59,7 +69,7 @@ class sceUtility : ModuleNative {
 		SHUTDOWN     = 4,
 	}
 	
-	SaveStep currentSaveStep;
+	DialogStep currentDialogStep;
 
 	/**
 	 * Remove a currently active keyboard. After calling this function you must
@@ -156,7 +166,16 @@ class sceUtility : ModuleNative {
 	int sceUtilityMsgDialogInitStart(pspUtilityMsgDialogParams* params) {
 		unimplemented_notice();
 		params.base.result = 0;
-		currentSaveStep = SaveStep.SUCCESS;
+		
+		MessageBoxW(
+			null,
+			toStringz(toUTF16(to!string(params.message.ptr))),
+			toStringz(toUTF16(std.string.format("Info (%08X)", currentThreadState.registers.PC))),
+			MB_OKCANCEL | MB_ICONEXCLAMATION | MB_DEFBUTTON1
+		);
+		//int MessageBoxA(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType);
+		
+		currentDialogStep = DialogStep.SUCCESS;
 		return 0;
 	}
 
@@ -167,7 +186,7 @@ class sceUtility : ModuleNative {
 	 */
 	void sceUtilityMsgDialogShutdownStart() {
 		unimplemented_notice();
-		currentSaveStep = SaveStep.SHUTDOWN;
+		currentDialogStep = DialogStep.SHUTDOWN;
 	}
 
 	/**
@@ -186,9 +205,9 @@ class sceUtility : ModuleNative {
 	 *         3 if the user cancelled the dialog, and you need to call sceUtilityMsgDialogShutdownStart.
 	 *         4 if the dialog has been successfully shut down.
 	 */
-	SaveStep sceUtilityMsgDialogGetStatus() {
-		unimplemented_notice();
-		return currentSaveStep;
+	DialogStep sceUtilityMsgDialogGetStatus() {
+		//unimplemented_notice();
+		return currentDialogStep;
 	}
 
 	// @TODO: Unknown
@@ -253,8 +272,8 @@ class sceUtility : ModuleNative {
 		
 		params.base.result = 0;
 		
-		//currentSaveStep = SaveStep.PROMPT;
-		currentSaveStep = SaveStep.SUCCESS;
+		//currentDialogStep = DialogStep.PROMPT;
+		currentDialogStep = DialogStep.SUCCESS;
 		return 0;
 	}
 	
@@ -267,8 +286,8 @@ class sceUtility : ModuleNative {
 	 * 3 on save/load success, then you can call sceUtilitySavedataShutdownStart.
 	 * 4 on complete shutdown.
 	 */
-	SaveStep sceUtilitySavedataGetStatus() {
-		return currentSaveStep;
+	DialogStep sceUtilitySavedataGetStatus() {
+		return currentDialogStep;
 	}
 
 	/**
@@ -278,7 +297,7 @@ class sceUtility : ModuleNative {
 	 * @return 0 on success
 	 */
 	int sceUtilitySavedataShutdownStart() {
-		currentSaveStep = SaveStep.SHUTDOWN;
+		currentDialogStep = DialogStep.SHUTDOWN;
 		return 0;
 	}
 

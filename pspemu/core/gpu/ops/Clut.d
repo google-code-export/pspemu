@@ -27,7 +27,13 @@ template Gpu_Clut() {
 		gpu.state.uploadedClut.data = gpu.state.clut.address ? gpu.memory[gpu.state.clut.address..gpu.state.clut.address + size].dup : [];
 		*/
 		int size = gpu.state.clut.blocksSize(num_entries);
-		gpu.state.clut.data = gpu.state.clut.address ? gpu.memory[gpu.state.clut.address..gpu.state.clut.address + size].dup : [];
+
+		//writefln("%d, %d", num_entries, size);
+		
+		//gpu.state.clut.data = gpu.state.clut.address ? gpu.memory[gpu.state.clut.address..gpu.state.clut.address + size].dup : [];
+		//gpu.state.clut.data = gpu.state.clut.address ? gpu.memory[gpu.state.clut.address..gpu.state.clut.address + size * 0x20].dup : [];
+		//gpu.state.clut.data = gpu.state.clut.address ? gpu.memory[gpu.state.clut.address..gpu.state.clut.address + size * 0x20] : [];
+		gpu.state.clut.data = gpu.state.clut.address ? cast(ubyte*)gpu.memory.getPointer(gpu.state.clut.address) : null;
 	}
 
 	/**
@@ -42,7 +48,7 @@ template Gpu_Clut() {
 	 * @param cpsm  - Which pixel format to use for the palette
 	 * @param shift - Shifts color index by that many bits to the right
 	 * @param mask  - Masks the color index with this bitmask after the shift (0-0xFF)
-	 * @param a3    - Unknown, set to 0
+	 * @param start - Unknown, set to 0
 	 **/
 	///void sceGuClutMode(uint cpsm, uint shift, uint mask, uint a3); // OP_CMODE
 
@@ -51,6 +57,12 @@ template Gpu_Clut() {
 		gpu.state.clut.format = command.extract!(PixelFormats, 0, 2);
 		gpu.state.clut.shift  = command.extract!(uint,  2, 5);
 		gpu.state.clut.mask   = command.extract!(uint,  8, 8);
-		gpu.state.clut.start  = command.extract!(uint, 16, 5) << 4;
+		gpu.state.clut.start  = command.extract!(uint, 16, 5);
+		
+		if (gpu.state.clut.format == PixelFormats.GU_PSM_5551) {
+			//gpu.state.clut.mask = 0x7;
+			//gpu.state.clut.start = 8;
+		}
+		//gpu.state.clut.start  = command.extract!(uint, 16, 5) << gpu.state.clut.shift;
 	}
 }

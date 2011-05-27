@@ -12,6 +12,7 @@ import pspemu.core.cpu.interpreter.Utils;
 
 class EmiterMipsToX86 : EmiterX86 {
 	Memory memory;
+	//Registers registers;
 
 	enum MipsRegisters : uint {
 		// +00 +01 +02 +03 +04 +05 +06 +07
@@ -55,7 +56,14 @@ class EmiterMipsToX86 : EmiterX86 {
 	}
 
 	Memory32 MIPS_GET_LOHI(int pos) {
+		// @TODO! IMPORTANT!
+		// Change Registers from a class to a struct
+		// in order to be able to determine offsetof at compile time.
+		// Amd make those functions as robust as possible.
+
 		return Memory32(Register32.EBX, 4 * (32 + 0 + pos));
+		//return Memory32(Register32.EBX, registers.LO.offsetof);
+		//return Memory32(Register32.EBX, Registers.LO.offsetof);
 	}
 
 	Memory32 MIPS_GET_CMP(int pos) {

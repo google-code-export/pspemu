@@ -1,4 +1,4 @@
-module pspemu.core.gpu.impl.GpuOpenglTexture;
+module pspemu.core.gpu.impl.gl.GpuOpenglTexture;
 
 //debug = DEBUG_TEXTURE_UPDATE;
 //version = VERSION_CACHE_ALWAYS_VALID;
@@ -7,6 +7,9 @@ import std.c.windows.windows;
 import std.windows.syserror;
 import std.stdio;
 import std.zlib;
+import std.intrinsic;
+
+import pspemu.utils.StructUtils;
 
 //import pspemu.utils.Utils;
 
@@ -19,14 +22,16 @@ import pspemu.core.gpu.GpuState;
 import pspemu.core.gpu.GpuImpl;
 import pspemu.utils.MathUtils;
 
-import pspemu.core.gpu.impl.GpuOpenglUtils;
+import pspemu.core.gpu.impl.gl.GpuOpenglUtils;
 
 class Texture {
 	//GLuint gltex;
 	GLuint gltex;
+	TextureState textureState;
 	bool markForRecheck;
 	bool refreshAnyway;
 	uint textureHash, clutHash;
+	PixelFormats textureFormat, clutFormat;
 	
 	this() {
 		glGenTextures(1, &gltex);
@@ -42,15 +47,41 @@ class Texture {
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, gltex);
 	}
+	
+	int getTextureWidth() {
+		int value;
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &value);
+		return value;
+	}
+
+	int getTextureHeight() {
+		int value;
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &value);
+		return value;
+	}
+	
+	ubyte[] getTexturePixels() {
+		ubyte[] data = new ubyte[4 * getTextureWidth() * getTextureHeight()]; 
+		//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, data.ptr);
+		glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, data.ptr);
+		return data;
+	}
+	
+	static int getClutIndex(ref ClutState clut, int index) {
+		return ((clut.start + index) >> clut.shift) & clut.mask;
+	}
 
 	void update(Memory memory, ref TextureState texture, ref ClutState clut) {
+		//markForRecheck = true;
+		//refreshAnyway = true;
+		
 		//refreshAnyway = true;
 		if (markForRecheck || refreshAnyway) {
 			static ubyte[] emptyBuffer;
 
 			auto textureData = texture.address ? (cast(ubyte*)memory.getPointer(texture.address))[0..texture.mipmapTotalSize(0)] : emptyBuffer;
 			//auto clutData    = clut.address    ? (cast(ubyte*)memory.getPointer(clut.address))[0..texture.paletteRequiredComponents] : emptyBuffer;
-			auto clutData    = clut.address ? clut.data : emptyBuffer;
+			auto clutData    = clut.address ? clut.data : null;
 		
 			if (markForRecheck) {
 				markForRecheck = false;
@@ -58,12 +89,24 @@ class Texture {
 				version (VERSION_CACHE_ALWAYS_VALID) {
 				} else {
 					auto currentTextureHash = std.zlib.crc32(texture.address, textureData);
+					currentTextureHash = std.zlib.crc32(currentTextureHash, TA(texture));
 					if (currentTextureHash != textureHash) {
 						textureHash = currentTextureHash;
 						refreshAnyway = true;
 					}
+					
+					// clut.colorEntrySize
 
-					auto currentClutHash = std.zlib.crc32(clut.address, clutData);
+					//auto currentClutHash = std.zlib.crc32(0, clutData[getClutIndex(clut, 0)..getClutIndex(clut, clut.mask + 1)]);
+					int from = getClutIndex(clut, 0) * clut.colorEntrySize;
+					int to = getClutIndex(clut, bsr(clut.mask) - 1) * clut.colorEntrySize;
+					auto currentClutHash = std.zlib.crc32(0, clutData[from..to]);
+					currentClutHash ^= clut.address;
+					currentClutHash ^= clut.format;
+					currentClutHash ^= clut.mask;
+					currentClutHash ^= clut.shift;
+					currentClutHash ^= clut.start;
+					//currentClutHash = std.zlib.crc32(currentClutHash, TA(clut));
 					if (currentClutHash != clutHash) {
 						clutHash = currentClutHash;
 						refreshAnyway = true;
@@ -81,9 +124,10 @@ class Texture {
 		}
 	}
 
-	void updateActually(ubyte[] textureData, ubyte[] clutData, ref TextureState texture, ref ClutState clut) {
-		auto texturePixelFormat = GlPixelFormats[texture.format];
-		auto clutPixelFormat    = GlPixelFormats[clut.format];
+	void updateActually(ubyte[] textureData, ubyte* clutData, ref TextureState texture, ref ClutState clut) {
+		auto texturePixelFormat = GlPixelFormats[this.textureFormat = texture.format];
+		auto clutPixelFormat    = GlPixelFormats[this.clutFormat = clut.format];
+		this.textureState = texture;
 		GlPixelFormat* glPixelFormat;
 		static ubyte[] textureDataUnswizzled, textureDataWithPaletteApplied;
 
@@ -115,6 +159,26 @@ class Texture {
 		} else {
 			glPixelFormat = cast(GlPixelFormat *)&texturePixelFormat;
 		}
+		
+		textureData = textureData.dup;
+		
+		if (glPixelFormat.pspFormat == PixelFormats.GU_PSM_5551) {
+			// ClutState(addr=08979A60, format=1, shift=0, mask=15, start=0)
+			//writefln("%s", clut);
+			// Swap alpha?
+
+			// Set alpha to 1
+			//foreach (ref pixel; cast(ushort[])textureData) pixel |= 0x8000;
+
+			/*
+			*/
+			/*
+			foreach (ref pixel; cast(ushort[])textureData) {
+				//pixel = SwapBytes(pixel);
+				//writefln("%04X", pixel);
+			}
+			*/
+		}
 
 		// @TODO: Check this!
 		glPixelStorei(GL_UNPACK_ALIGNMENT, cast(int)glPixelFormat.size);
@@ -135,6 +199,8 @@ class Texture {
 
 		//writefln("update(%d) :: %08X, %s, %d", gltex, textureData.ptr, texture, texture.totalSize);
 	}
+	
+	
 
 	static void unswizzle(ubyte[] inData, ubyte[] outData, ref TextureState texture) {
 		int rowWidth = texture.mipmapRealWidth(0);
@@ -161,14 +227,15 @@ class Texture {
 		}
 	}
 
-	static void applyPalette(ubyte[] textureData, ubyte[] clutData, ubyte* textureDataWithPaletteApplied, ref TextureState texture, ref ClutState clut) {
+	static void applyPalette(ubyte[] textureData, ubyte* clutData, ubyte* textureDataWithPaletteApplied, ref TextureState texture, ref ClutState clut) {
 		uint clutEntrySize = clut.colorEntrySize;
-		void writeValue2(ubyte value) {
+		/*void writeValue2(ubyte value) {
 			textureDataWithPaletteApplied[0..clutEntrySize] = value;
 			textureDataWithPaletteApplied += clutEntrySize;
-		}
+		}*/
+		
 		void writeValue(uint index) {
-			textureDataWithPaletteApplied[0..clutEntrySize] = (clutData.ptr + index * clutEntrySize)[0..clutEntrySize];
+			textureDataWithPaletteApplied[0..clutEntrySize] = (clutData + getClutIndex(clut, index) * clutEntrySize)[0..clutEntrySize];
 			textureDataWithPaletteApplied += clutEntrySize;
 		}
 		switch (texture.format) {

@@ -1,4 +1,4 @@
-module pspemu.core.cpu.interpreted.ops.Jump;
+module pspemu.core.cpu.interpreter.ops.Jump;
 
 //debug = DEBUG_CALLS;
 

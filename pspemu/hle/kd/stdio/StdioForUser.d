@@ -6,6 +6,9 @@ import pspemu.utils.AsyncStream;
 
 import pspemu.hle.ModuleNative;
 
+import pspemu.hle.vfs.VirtualFileSystem;
+import pspemu.hle.vfs.LocalFileSystem;
+
 public import pspemu.hle.kd.stdio.Types;
 
 class FileWrapperStream : Stream {
@@ -39,9 +42,9 @@ class StdioForUser : ModuleNative {
 	}
 	
 	void initModule() {
-		hleEmulatorState.uniqueIdFactory.set!AsyncStream(cast(uint)1, new AsyncStream(new FileWrapperStream(stdin )));
-		hleEmulatorState.uniqueIdFactory.set!AsyncStream(cast(uint)2, new AsyncStream(new FileWrapperStream(stdout)));
-		hleEmulatorState.uniqueIdFactory.set!AsyncStream(cast(uint)3, new AsyncStream(new FileWrapperStream(stderr)));
+		hleEmulatorState.uniqueIdFactory.set!LocalFileHandle(cast(uint)1, new LocalFileHandle(null, new FileWrapperStream(stdin )));
+		hleEmulatorState.uniqueIdFactory.set!LocalFileHandle(cast(uint)2, new LocalFileHandle(null, new FileWrapperStream(stdout)));
+		hleEmulatorState.uniqueIdFactory.set!LocalFileHandle(cast(uint)3, new LocalFileHandle(null, new FileWrapperStream(stderr)));
 	}
 
 	/**

@@ -1,4 +1,4 @@
-module pspemu.core.cpu.interpreted.ops.Alu;
+module pspemu.core.cpu.interpreter.ops.Alu;
 
 import pspemu.core.cpu.interpreter.Utils;
 

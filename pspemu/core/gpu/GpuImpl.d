@@ -18,6 +18,8 @@ interface GpuImpl {
 	void tflush();
 	void test(string reason);
 	void fastTrxKickToFrameBuffer();
+	void recordFrameAction(bool value);
+	bool recordFrameAction();
 }
 
 abstract class GpuImplAbstract : GpuImpl {

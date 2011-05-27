@@ -78,6 +78,25 @@ struct SceCtrlData {
 		}
 	}
 	
+	public void DoEmulatedAnalogFrame() {
+		if (IsPressedButton(PspCtrlButtons.PSP_CTRL_LEFT)) {
+			x = x - 0.1;
+		} else if (IsPressedButton(PspCtrlButtons.PSP_CTRL_RIGHT)) {
+			x = x + 0.1;
+		} else {
+			x = x / 10.0;
+		}
+
+		if (IsPressedButton(PspCtrlButtons.PSP_CTRL_UP)) {
+			y = y - 0.1;
+		} else if (IsPressedButton(PspCtrlButtons.PSP_CTRL_DOWN)) {
+			y = y + 0.1;
+		} else {
+			y = y / 10.0;
+		}
+		
+	}
+	
 	static string component(string v) {
 		return 
 			"@property real " ~ v ~ "() { return cast(real)(L" ~ v ~ " - 127) / 127; }"

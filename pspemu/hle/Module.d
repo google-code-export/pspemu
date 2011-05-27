@@ -182,4 +182,6 @@ abstract class Module {
 	
 	string baseName() { return classInfoBaseName(typeid(this)); }
 	string toString() { return std.string.format("Module(%s)", baseName); }
+	
+	string name() { return baseName; }
 }

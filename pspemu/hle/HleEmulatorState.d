@@ -19,6 +19,7 @@ import pspemu.utils.UniqueIdFactory;
 
 import pspemu.hle.Module;
 import pspemu.hle.ModuleNative;
+import pspemu.hle.ModulePsp;
 import pspemu.hle.ModuleManager;
 import pspemu.hle.MemoryManager;
 import pspemu.hle.ModuleLoader;
@@ -41,7 +42,12 @@ class HleEmulatorState : ISyscall {
 	public RootFileSystem   rootFileSystem;
 	public CallbacksHandler callbacksHandler;
 	public KPrint           kPrint;
+	public ModulePsp        mainModule;
 	
+	string mainModuleName() {
+		return mainModule ? mainModule.name : "Not loaded";
+	}
+
 	public this(EmulatorState emulatorState) {
 		this.emulatorState = emulatorState;
 		reset();

@@ -3,14 +3,14 @@ module pspemu.hle.kd.iofilemgr.IoFileMgrForKernel; // kd/iofilemgr.prx (sceIOFil
 //debug = DEBUG_SYSCALL;
 
 import std.stdio;
-
+import std.encoding;
 import std.datetime;
 import std.stream;
 import std.file;
 import std.string;
 import std.conv;
 
-import pspemu.utils.AsyncStream;
+//import pspemu.utils.AsyncStream;
 
 //import pspemu.core.cpu.Interrupts;
 
@@ -19,7 +19,7 @@ import pspemu.hle.ModuleNative;
 //import pspemu.utils.Utils;
 import pspemu.utils.Path;
 import pspemu.utils.Logger;
-import pspemu.utils.VirtualFileSystem;
+import pspemu.hle.vfs.VirtualFileSystem;
 
 import pspemu.hle.kd.iofilemgr.Types;
 import pspemu.hle.kd.iofilemgr.Devices;
@@ -27,14 +27,20 @@ import pspemu.hle.kd.iofilemgr.Devices;
 import pspemu.hle.kd.iofilemgr.Directories;
 import pspemu.hle.kd.iofilemgr.FilesAsync;
 
+import pspemu.hle.RootFileSystem;
+
 import pspemu.Emulator;
 
 class IoFileMgrForKernel : ModuleNative {
 	mixin IoFileMgrForKernel_Directories;
 	mixin IoFileMgrForKernel_FilesAsync;
 	
-	VFS fsroot() {
-		return hleEmulatorState.rootFileSystem.fsroot;
+	@property RootFileSystem rootFileSystem() {
+		return hleEmulatorState.rootFileSystem;
+	}
+	
+	@property VirtualFileSystem fsroot() {
+		return rootFileSystem.fsroot;
 	}
 
 	void initModule() {
@@ -89,10 +95,16 @@ class IoFileMgrForKernel : ModuleNative {
 	 */
 	int sceIoRename(string oldname, string newname) {
 		logInfo("sceIoRename('%s', '%s')", oldname, newname);
-		unimplemented();
-		return -1;
+		try {
+			fsroot().rename(oldname, newname);
+			return 0;
+		} catch (Throwable o) {
+			logError("%s", o);
+			return -1;
+		}
 	}
 
+	/*
 	class DirectoryIterator {
 		string dirname;
 		uint pos;
@@ -109,6 +121,7 @@ class IoFileMgrForKernel : ModuleNative {
 			return children[pos++];
 		}
 	}
+	*/
 
 
 	/** 
@@ -129,11 +142,11 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return 0 on success, < 0 on error
 	 */
 	int sceIoDevctl(string dev, int cmd, void* indata, int inlen, void* outdata, int outlen) {
-		logInfo("sceIoDevctl('%s', %d)", dev, cmd);
+		logWarning("sceIoDevctl('%s', 0x%08X)", dev, cmd);
 		try {
-			return hleEmulatorState.rootFileSystem.devices[dev].sceIoDevctl(currentCpuThread, cmd, (cast(ubyte*)indata)[0..inlen], (cast(ubyte*)outdata)[0..outlen]);
-		} catch (Exception e) {
-			writefln("sceIoDevctl: %s", e);
+			return rootFileSystem().getDevice(dev).devctl(dev, cmd, (cast(ubyte*)indata)[0..inlen], (cast(ubyte*)outdata)[0..outlen]);
+		} catch (Throwable o) {
+			logError("sceIoDevctl: %s", std.encoding.sanitize(o.toString));
 			return -1;
 		}
 	}
@@ -152,10 +165,9 @@ class IoFileMgrForKernel : ModuleNative {
 		logInfo("sceIoClose('%d')", fd);
 		if (fd < 0) return -1;
 		try {
-			auto asyncStream = hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd);
-			hleEmulatorState.uniqueIdFactory.remove!AsyncStream(fd);
-			asyncStream.stream.flush();
-			asyncStream.stream.close();
+			FileHandle fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+			fsroot().close(fileHandle);
+			hleEmulatorState.uniqueIdFactory.remove!FileHandle(fd);
 			return 0;
 		} catch (Throwable o) {
 			.writefln("sceIoClose(%d) : %s", fd, o);
@@ -166,22 +178,25 @@ class IoFileMgrForKernel : ModuleNative {
 	string getAbsolutePathFromRelative(string relativePath) {
 		auto indexHasDevice = relativePath.indexOf(":/");
 		string absolutePath;
+
 		if (indexHasDevice >= 0) {
 			absolutePath = relativePath;
 		} else {
-			//throw(new Exception("Not supporting relative paths"));
 			absolutePath = hleEmulatorState.rootFileSystem.fscurdir ~ "/" ~ relativePath;
+			/*
+			if (relativePath.length && relativePath[0] == '/') {
+				absolutePath = hleEmulatorState.rootFileSystem.fscurdir ~ "/" ~ relativePath;
+			} else {
+				
+			}
+			*/
 		}
-		/*
-		if (absolutePath.indexOf("disc0:/PSP_GAME/USRDIR") == 0) {
-			absolutePath = "ms0:/PSP/GAMES/virtual" ~ absolutePath["disc0:/PSP_GAME/USRDIR".length..$];
-			logInfo("redirected!");
-		}
-		*/
-		logInfo("getAbsolutePathFromRelative('%s') : '%s'", relativePath, absolutePath);
+
+		logTrace("getAbsolutePathFromRelative('%s') : '%s'", relativePath, absolutePath);
 		return absolutePath;
 	}
 
+	/*
 	VFS locateParentAndUpdateFile(ref string file) {
 		VFS vfs;
 		auto indexLastSeparator = file.lastIndexOf("/");
@@ -199,22 +214,14 @@ class IoFileMgrForKernel : ModuleNative {
 
 		return vfs;
 	}
+	*/
 	
-	AsyncStream _open(string file, int flags, SceMode mode) {
-		FileMode fmode;
-		if (flags & PSP_O_RDONLY) fmode |= FileMode.In;
-		if (flags & PSP_O_WRONLY) fmode |= FileMode.Out;
-		if (flags & PSP_O_APPEND) fmode |= FileMode.Append;
-		if (flags & PSP_O_CREAT ) fmode |= FileMode.OutNew;
-		
-		VFS vfs;
-		
+	FileHandle _open(string file, SceIoFlags flags, SceMode mode) {
 		file = getAbsolutePathFromRelative(file);
-		vfs = locateParentAndUpdateFile(file);
 		try {
-			return new AsyncStream(vfs.open(file, fmode, mode));
+			return fsroot().open(file, sceFlagsToFileOpenMode(flags), sceModeToFileAccessMode(mode));
 		} catch (Throwable o) {
-			logWarning("Can't open file '%s' at '%s'", file, vfs);
+			logWarning("Can't open file '%s'", file);
 			throw(o);
 		}
 	}
@@ -241,14 +248,16 @@ class IoFileMgrForKernel : ModuleNative {
 	 *
 	 * @return A non-negative integer is a valid fd, anything else is an error
 	 */
-	SceUID sceIoOpen(string file, int flags, SceMode mode) {
+	SceUID sceIoOpen(string file, SceIoFlags flags, SceMode mode) {
 		try {
-			logInfo("sceIoOpen('%s', %d, %d)", file, flags, mode);
-			SceUID ret = hleEmulatorState.uniqueIdFactory.add(_open(file, flags, mode));
+			logInfo("sceIoOpen('%s', %d, %d) : %08X, %08X, %08X", file, flags, mode, currentRegisters().A0, currentRegisters().A1, currentRegisters().A2);
+			logInfo("   %s", (cast(ubyte*)currentMemory().getPointer(currentRegisters().A0))[0..0x10]);
+			SceUID ret = hleEmulatorState.uniqueIdFactory.add!FileHandle(_open(file, flags, mode));
 			logInfo("sceIoOpen():%d", ret);
 			return ret;
 		} catch (Throwable o) {
-			logWarning("sceIoOpen failed to open '%s' for '%d' : '%s'", file, flags, o);
+			logWarning("sceIoOpen failed to open '%s' for '%d'", file, flags);
+			logWarning("        : '%s'", std.encoding.sanitize(o.toString));
 			return -1;
 		}
 	}
@@ -271,11 +280,10 @@ class IoFileMgrForKernel : ModuleNative {
 		logInfo("sceIoRead(%d, %d)", fd, size);
 		if (fd < 0) return -1;
 		if (data is null) return -1;
-		auto asyncStream = hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd);
 		try {
-			return asyncStream.stream.read((cast(ubyte *)data)[0..size]);
+			return fsroot().read(hleEmulatorState.uniqueIdFactory.get!FileHandle(fd), (cast(ubyte *)data)[0..size]);
 		} catch (Throwable o) {
-			throw(o);
+			logError("sceIoRead: %s", o);
 			return -1;
 		}
 	}
@@ -298,15 +306,17 @@ class IoFileMgrForKernel : ModuleNative {
 		logInfo("sceIoWrite(%d, %d)", fd, size);
 		if (fd < 0) return -1;
 		if (data is null) return -1;
-		auto asyncStream = hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd);
+		FileHandle fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
 
 		// Less than 256 MB.
+		/*
 		if (asyncStream.stream.position >= 256 * 1024 * 1024) {
 			throw(new Exception(std.string.format("Write position over 256MB! There was a prolem with sceIoWrite: position(%d)", asyncStream.stream.position)));
 		}
+		*/
 
 		try {
-			return asyncStream.stream.write((cast(ubyte *)data)[0..size]);
+			return fsroot().write(fileHandle, (cast(ubyte *)data)[0..size]);
 		} catch (Throwable o) {
 			Logger.log(Logger.Level.WARNING, "IoFileMgrForKernel", "sceIoWrite.ERROR :: %s", o);
 			return 0;
@@ -331,9 +341,8 @@ class IoFileMgrForKernel : ModuleNative {
 	SceOff sceIoLseek(SceUID fd, SceOff offset, int whence) {
 		logInfo("sceIoLseek(%d, %d, %d)", fd, offset, whence);
 		if (fd < 0) return -1;
-		auto asyncStream = hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd);
-		asyncStream.stream.seek(offset, cast(SeekPos)whence);
-		return asyncStream.stream.position;
+		FileHandle fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+		return fsroot().seek(fileHandle, offset, cast(Whence)whence);
 	}
 
 	/**
@@ -365,27 +374,13 @@ class IoFileMgrForKernel : ModuleNative {
 	  * @return < 0 on error.
 	  */
 	int sceIoGetstat(string file, SceIoStat* stat) {
+		file = getAbsolutePathFromRelative(file);
 		logInfo("sceIoGetstat('%s')", file);
-		string fileIni = file;
 		try {
-			auto vfs = locateParentAndUpdateFile(file);
-			vfs.flush();
-			auto fentry = vfs[file];
-			
-			fillStats(stat, fentry.stats);
-			logInfo("sceIoGetstat(mode=%d, attr=%d, size=%d)", stat.st_mode, stat.st_attr, stat.st_size);
-			/*
-			SceMode         st_mode;
-			IOFileModes     st_attr;
-			SceOff          st_size;  /// Size of the file in bytes.
-			ScePspDateTime  st_ctime; /// Creation time.
-			ScePspDateTime  st_atime; /// Access time.
-			ScePspDateTime  st_mtime; /// Modification time.
-			uint            st_private[6]; /// Device-specific data.
-			*/
+			*stat = fileStatToSceIoStat(fsroot().getstat(file));
 			return 0;
-		} catch (Throwable e) {
-			Logger.log(Logger.Level.DEBUG, "IoFileMgrForKernel", "ERROR: STAT(%s)!! FAILED: %s", fileIni, e);
+		} catch (Throwable o) {
+			logError("ERROR: STAT(%s)!! FAILED: %s", file, o);
 			return -1;
 		}
 	}
@@ -443,19 +438,19 @@ class IoFileMgrForKernel : ModuleNative {
 	 *
 	 * @return < 0 on error, otherwise the reopened fd.
 	 */
-	int sceIoReopen(string file, int flags, SceMode mode, SceUID fd) {
-		logWarning("Not implemented sceIoReopen");
+	int sceIoReopen(string file, SceIoFlags flags, SceMode mode, SceUID fd) {
 		logInfo("sceIoReopen('%s', %d, %d, %d)", file, flags, mode, cast(int)fd);
 		
 		try {
-			AsyncStream newStream = _open(file, flags, mode);
+			FileHandle newStream = _open(file, flags, mode);
 			
-			hleEmulatorState.uniqueIdFactory.get!AsyncStream(fd).stream.close();
-			hleEmulatorState.uniqueIdFactory.set(fd, newStream);
+			fsroot().close(hleEmulatorState.uniqueIdFactory.get!FileHandle(fd));
+			hleEmulatorState.uniqueIdFactory.set!FileHandle(fd, newStream);
 			
 			return fd;
 		} catch (Throwable o) {
 			logError("Can't reopen file");
+			logError("Can't reopen file : %s", std.encoding.sanitize(o.toString));
 			//return fd;
 			return -1;
 		}
@@ -496,6 +491,7 @@ class IoFileMgrForKernel : ModuleNative {
 	}
 }
 
+/*
 void fillStats(SceIoStat* psp_stats, VFS.Stats vfs_stats) {
 	{
 		psp_stats.st_mode = 0;
@@ -528,7 +524,51 @@ void fillStats(SceIoStat* psp_stats, VFS.Stats vfs_stats) {
 
 	psp_stats.st_private[] = 0;
 }
+*/
 
+SceIoDirent fileEntryToSceIoDirent(FileEntry fileEntry) {
+	SceIoDirent sceIoDirent;
+	sceIoDirent.d_name[0..fileEntry.name.length] = fileEntry.name;
+	sceIoDirent.d_stat = fileStatToSceIoStat(fileEntry.stat);
+	return sceIoDirent;
+}
+
+SceIoStat fileStatToSceIoStat(FileStat fileStat) {
+	SceIoStat sceIoStat;
+	
+	sceIoStat.st_mode = 0;
+	sceIoStat.st_mode |= IOAccessModes.FIO_S_IRUSR | IOAccessModes.FIO_S_IWUSR | IOAccessModes.FIO_S_IXUSR;
+	sceIoStat.st_mode |= IOAccessModes.FIO_S_IRGRP | IOAccessModes.FIO_S_IWGRP | IOAccessModes.FIO_S_IXGRP;
+	sceIoStat.st_mode |= IOAccessModes.FIO_S_IROTH | IOAccessModes.FIO_S_IWOTH | IOAccessModes.FIO_S_IXOTH;
+
+	if (fileStat.isDir) {
+		sceIoStat.st_mode = IOAccessModes.FIO_S_IFDIR;	
+		sceIoStat.st_attr = IOFileModes.FIO_SO_IFDIR;
+	} else {
+		sceIoStat.st_mode = IOAccessModes.FIO_S_IFREG;
+		sceIoStat.st_attr = IOFileModes.FIO_SO_IFREG | IOFileModes.FIO_SO_IROTH | IOFileModes.FIO_SO_IWOTH | IOFileModes.FIO_SO_IXOTH;
+	}
+	sceIoStat.st_size = fileStat.size;
+	sceIoStat.st_ctime.parse(fileStat.ctime);
+	sceIoStat.st_atime.parse(fileStat.atime);
+	sceIoStat.st_mtime.parse(fileStat.mtime);
+	sceIoStat.st_private[0] = fileStat.sectorOffset;
+	sceIoStat.st_private[1..$] = 0;
+	return sceIoStat;
+}
+
+FileOpenMode sceFlagsToFileOpenMode(uint flags) {
+	FileOpenMode fmode;
+	if (flags & SceIoFlags.PSP_O_RDONLY) fmode |= FileOpenMode.In;
+	if (flags & SceIoFlags.PSP_O_WRONLY) fmode |= FileOpenMode.Out;
+	if (flags & SceIoFlags.PSP_O_APPEND) fmode |= FileOpenMode.Append;
+	if (flags & SceIoFlags.PSP_O_CREAT ) fmode |= FileOpenMode.OutNew;
+	return fmode;
+}
+
+FileAccessMode sceModeToFileAccessMode(SceMode mode) {
+	return cast(FileAccessMode)mode;
+}
 
 static this() {
 	mixin(ModuleNative.registerModule("IoFileMgrForKernel"));

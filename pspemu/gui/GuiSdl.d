@@ -8,10 +8,6 @@ import std.process;
 import pspemu.gui.GuiBase;
 import pspemu.utils.MathUtils;
 
-import pspemu.core.cpu.CpuThreadBase;
-
-import pspemu.hle.kd.iofilemgr.Devices;
-
 class GuiSdl : GuiBase {
 	bool[SDLK_LAST] keyIsPressed;
 	PspCtrlButtons[SDLK_LAST] buttonMask;
@@ -28,6 +24,7 @@ class GuiSdl : GuiBase {
 		DerelictSDL.load();
 		SDL_Init(SDL_INIT_VIDEO);
 		screenSurface = SDL_SetVideoMode(480, 272, 32, 0);
+		//screenSurface = SDL_SetVideoMode(480 * 2, 272 * 2, 32, 0);
 		
 		buttonMask[SDLK_UP    ] = PspCtrlButtons.PSP_CTRL_UP;
 		buttonMask[SDLK_DOWN  ] = PspCtrlButtons.PSP_CTRL_DOWN; 
@@ -65,42 +62,17 @@ class GuiSdl : GuiBase {
 				if (!Pressed) {
 					switch (sym) {
 						case SDLK_F2:
-							try {
-								writefln("Threads(%d):", Thread.getAll.length);
-								foreach (thread; Thread.getAll) {
-									writefln("  - Thread: '%s', running:%d, priority:%d", thread.name, thread.isRunning, thread.priority);
-								}
-								writefln("CpuThreads(%d):", emulatorState.cpuThreads.length);
-								foreach (CpuThreadBase cpuThread; emulatorState.cpuThreads.keys.dup) {
-									writef("  - CpuThread:");
-									try {
-										writef("%s", cpuThread);
-									} catch {
-										
-									}
-									writefln("");
-									//int callStackPosEnd   = min(cast(int)cpuThread.threadState.registers.CallStackPos, cast(int)cpuThread.threadState.registers.CallStack.length);
-									//int callStackPosStart = max(0, callStackPosEnd - 10);
-	
-									try {								
-										//foreach (k, pc; cpuThread.threadState.registers.CallStack[callStackPosStart..callStackPosEnd])
-										foreach (k, pc; cpuThread.threadState.registers.CallStack[0..cpuThread.threadState.registers.CallStackPos]) {
-											writefln("    - %d - 0x%08X", k, pc);
-										}
-									} catch (Throwable o) {
-										
-									}
-								}
-							} catch (Throwable o) {
-								
-							}
+							dumpThreads();
 						break;
 						case SDLK_F3:
 							this.display.enableWaitVblank = !this.display.enableWaitVblank; 
 						break;
 						case SDLK_F4: {
-							MemoryStickDevice memoryStickDevice = cast(MemoryStickDevice)hleEmulatorState.rootFileSystem.devices["ms:"];
+							MemoryStickDevice memoryStickDevice = hleEmulatorState.rootFileSystem.getDevice!MemoryStickDevice("ms0:");
 							memoryStickDevice.inserted = !memoryStickDevice.inserted;
+						} break;
+						case SDLK_F6: {
+							hleEmulatorState.emulatorState.gpu.recordFrame();
 						} break;
 						default:
 						break;
@@ -117,21 +89,7 @@ class GuiSdl : GuiBase {
 			break;
 		}
 		
-		if (sceCtrlData.IsPressedButton(PspCtrlButtons.PSP_CTRL_LEFT)) {
-			sceCtrlData.x = sceCtrlData.x - 0.1;
-		} else if (sceCtrlData.IsPressedButton(PspCtrlButtons.PSP_CTRL_RIGHT)) {
-			sceCtrlData.x = sceCtrlData.x + 0.1;
-		} else {
-			sceCtrlData.x = sceCtrlData.x / 10.0;
-		}
-
-		if (sceCtrlData.IsPressedButton(PspCtrlButtons.PSP_CTRL_UP)) {
-			sceCtrlData.y = sceCtrlData.y - 0.1;
-		} else if (sceCtrlData.IsPressedButton(PspCtrlButtons.PSP_CTRL_DOWN)) {
-			sceCtrlData.y = sceCtrlData.y + 0.1;
-		} else {
-			sceCtrlData.y = sceCtrlData.y / 10.0;
-		}
+		sceCtrlData.DoEmulatedAnalogFrame();
 		
 		this.controller.push();
 	}

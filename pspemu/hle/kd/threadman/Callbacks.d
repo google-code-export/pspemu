@@ -51,13 +51,20 @@ template ThreadManForUser_Callbacks() {
 	}
 
 	/**
-	 * Check callback ?
+	 * Run all peding callbacks and return if executed any.
 	 *
-	 * @return Something or another
+	 * @note Callbacks cannot be executed inside a interrupt
+	 *       Here callbacks can be executed.
+	 *
+	 * @return Returns:
+	 *       0 - if the calling thread has no reported callbacks
+	 *       1 - if the calling thread has reported callbacks which were executed successfully.
 	 */
 	int sceKernelCheckCallback() {
-		//unimplemented();
-		logTrace("Not implemented sceKernelCheckCallback");
-		return 0;
+		int result = hleEmulatorState.callbacksHandler.executeQueued(currentThreadState) ? 1 : 0;
+		if (result != 0) {
+			logError("sceKernelCheckCallback: %s", result);
+		}
+		return result;
 	}
 }

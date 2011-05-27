@@ -61,14 +61,14 @@ class sceCtrl_driver : ModuleNative {
 	int sceCtrlReadBufferPositive(SceCtrlData* pad_data, int count) {
 		currentEmulatorState().display.waitVblank();
 		readBufferedFrames(pad_data, count, true);
-		logInfo("sceCtrlReadBufferPositive(%d):%s", count, *pad_data);
+		logTrace("sceCtrlReadBufferPositive(%d):%s", count, *pad_data);
 		return count;
 	}
 
 	// sceCtrlPeekBufferPositive () is non-blocking (faster)
 	int sceCtrlPeekBufferPositive(SceCtrlData* pad_data, int count) {
 		readBufferedFrames(pad_data, count, true);
-		logInfo("sceCtrlPeekBufferPositive(%d):%s", count, *pad_data);
+		logTrace("sceCtrlPeekBufferPositive(%d):%s", count, *pad_data);
 		return count;
 	}
 

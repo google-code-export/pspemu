@@ -51,10 +51,10 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	uint sceDisplayGetVcount() {
 		return currentEmulatorState.display.VBLANK_COUNT;
 	}
-
+	
 	int _sceDisplayWaitVblankStart(bool _processCallbacks) {
 		Logger.log(Logger.Level.TRACE, "sceDisplay_driver", "_sceDisplayWaitVblankStart");
-		currentEmulatorState.display.waitVblank();
+		currentEmulatorState.display.waitVblank(_processCallbacks);
 		
 		return 0;
 

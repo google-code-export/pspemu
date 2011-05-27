@@ -6,6 +6,7 @@ import std.stdio;
 import pspemu.hle.ModuleNative;
 import pspemu.hle.ModulePsp;
 import pspemu.hle.kd.modulemgr.Types;
+import pspemu.hle.kd.iofilemgr.Types;
 
 //debug = DEBUG_SYSCALL;
 
@@ -93,7 +94,7 @@ class ModuleMgrForUser : ModuleNative {
 			//writefln("################# %s", ioFileMgrForKernel.locateParentAndUpdateFile(path));
 			//writefln("################# %s", ioFileMgrForKernel.locateParentAndUpdateFile(path).open(path, FileMode.In));
 			Stream moduleStream;
-			moduleStream = ioFileMgrForKernel.locateParentAndUpdateFile(path).open(path, FileMode.In);
+			moduleStream = ioFileMgrForKernel._open(path, SceIoFlags.PSP_O_RDONLY, octal!777);
 			//writefln("############# %d", moduleStream.size);
 			
 			//ModulePsp modulePsp = hleEmulatorState.moduleLoader.load(path);

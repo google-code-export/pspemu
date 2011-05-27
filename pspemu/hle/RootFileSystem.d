@@ -10,12 +10,19 @@ import pspemu.utils.Logger;
 import pspemu.utils.Path;
 
 import pspemu.hle.HleEmulatorState;
-import pspemu.utils.VirtualFileSystem;
-import pspemu.hle.kd.iofilemgr.Devices;
+
+import pspemu.hle.vfs.devices.UmdDevice;
+import pspemu.hle.vfs.devices.MemoryStickDevice;
+import pspemu.hle.vfs.LocalFileSystem;
+import pspemu.hle.vfs.IsoFileSystem;
+import pspemu.hle.vfs.MountableVirtualFileSystem;
+
+import pspemu.formats.iso.IsoFactory;
 
 class RootFileSystem {
 	HleEmulatorState hleEmulatorState;
-	VFS fsroot, gameroot;
+	MountableVirtualFileSystem fsroot, ms0root, umd0root;
+	VirtualFileSystem gameroot;
 	IoDevice[string] devices;
 	string fscurdir;
 	bool isUmdGame;
@@ -24,17 +31,22 @@ class RootFileSystem {
 		this.hleEmulatorState = hleEmulatorState;
 		init();
 	}
+	
+	T getDevice(T = IoDevice)(string name) {
+		if (name !in devices) throw(new Exception("Can't find device '%s'", name));
+		return cast(T)devices[name];
+	}
 
 	void init() {
 		//.writefln("[1]");
-		fsroot = new VFS("<root>");
+		fsroot = new MountableVirtualFileSystem(new VirtualFileSystem());
 		//.writefln("[2]");
 
 		// Devices.
-		devices["ms0:"   ] = new MemoryStickDevice(hleEmulatorState, new FileSystem(ApplicationPaths.exe ~ "/pspfs/ms0", "ms0:"));
-		devices["flash0:"] = new IoDevice         (hleEmulatorState, new FileSystem(ApplicationPaths.exe ~ "/pspfs/flash0", "flash0:"));
-		devices["flash1:"] = new IoDevice         (hleEmulatorState, new FileSystem(ApplicationPaths.exe ~ "/pspfs/flash1", "flash1:"));
-		devices["umd0:"  ] = new UmdDevice        (hleEmulatorState, new FileSystem(ApplicationPaths.exe ~ "/pspfs/umd0", "umd0:"));
+		devices["ms0:"   ] = new MemoryStickDevice(hleEmulatorState, ms0root = new MountableVirtualFileSystem(new LocalFileSystem(ApplicationPaths.exe ~ "/pspfs/ms0")));
+		devices["flash0:"] = new IoDevice         (hleEmulatorState, new MountableVirtualFileSystem(new LocalFileSystem(ApplicationPaths.exe ~ "/pspfs/flash0")));
+		devices["flash1:"] = new IoDevice         (hleEmulatorState, new MountableVirtualFileSystem(new LocalFileSystem(ApplicationPaths.exe ~ "/pspfs/flash1")));
+		devices["umd0:"  ] = new UmdDevice        (hleEmulatorState, umd0root = new MountableVirtualFileSystem(new LocalFileSystem(ApplicationPaths.exe ~ "/pspfs/umd0")));
 		//.writefln("[3]");
 	
 		// Aliases.
@@ -42,16 +54,19 @@ class RootFileSystem {
 		devices["ms:"     ] = devices["ms0:"];
 		devices["mscmhc0:"] = devices["ms0:"];
 		devices["fatms0:" ] = devices["ms0:"];
+		//devices["fatms:"  ] = devices["ms0:"];
+		devices["fatms:"  ] = devices["umd0:"];
 		//.writefln("[4]");
 
 		// Mount registered devices:
-		foreach (deviceName, device; devices) fsroot.addChild(device, deviceName);
-		
-		//.writefln("[5]");
-		
-		fscurdir = "ms0:/PSP/GAME/virtual";
-		//writefln("%s", fsroot[fscurdir]);
-		gameroot = new VFS_Proxy("<gameroot>", fsroot[fscurdir]);
+		foreach (deviceName, device; devices) fsroot.mount(deviceName, device);
+	}
+	
+	void setIsoPath(string path) {
+		devices["umd0:"].parentVirtualFileSystem = new IsoFileSystem(IsoFactory.getIsoFromStream(path));
+	}
+	
+	void setVirtualBoot(string bootpath) {
 	}
 	
 	void setVirtualDir(string path) {
@@ -69,17 +84,24 @@ class RootFileSystem {
 		
 		if (!m.empty) {
 			auto path2 = replace(path, r, "PSP_GAME");
-			fsroot["disc0:"].addChild(new FileSystem(path2), "PSP_GAME");
-			fsroot["umd0:"].addChild(new FileSystem(path2), "PSP_GAME");
+			//fsroot["disc0:"].addChild(new FileSystem(path2), "PSP_GAME");
+			//fsroot["umd0:"].addChild(new FileSystem(path2), "PSP_GAME");
+			//devices["umd0:"].parentVirtualFileSystem = new FileSystem(path2);
+			//throw(new Exception("Not implemented"));
+			
 			this.isUmdGame = true;
 			fscurdir = "umd0:/PSP_GAME/SYSDIR";
+			umd0root.mount("PSP_GAME", new LocalFileSystem(path ~ "/.."));
 		} else {
 			this.isUmdGame = false;
 			fscurdir = "ms0:/PSP/GAME/virtual";
 		}
 
-		fsroot["ms0:/PSP/GAME"].addChild(new FileSystem(path), "virtual");
-		gameroot = new VFS_Proxy("<gameroot>", fsroot[fscurdir]);
+		//fsroot["ms0:/PSP/GAME"].addChild(new FileSystem(path), "virtual");
+		//gameroot = new VFS_Proxy("<gameroot>", fsroot[fscurdir]);
+		ms0root.mount("PSP/GAME/virtual", new LocalFileSystem(path));
+		//ms0root.mount("PSP/GAME/virtual", new LocalFileSystem(path));
+
 		
 		Logger.log(Logger.Level.INFO, "IoFileMgrForKernel", "Setted ms0:/PSP/GAME/virtual to '%s'", path);
 	}

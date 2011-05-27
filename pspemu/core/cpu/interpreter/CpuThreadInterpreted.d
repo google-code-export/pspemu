@@ -13,13 +13,13 @@ import pspemu.core.cpu.Registers;
 import pspemu.core.exceptions.HaltException;
 import pspemu.core.exceptions.NotImplementedException;
 
-import pspemu.core.cpu.interpreted.ops.Alu;
-import pspemu.core.cpu.interpreted.ops.Memory;
-import pspemu.core.cpu.interpreted.ops.Branch;
-import pspemu.core.cpu.interpreted.ops.Special;
-import pspemu.core.cpu.interpreted.ops.Jump;
-import pspemu.core.cpu.interpreted.ops.Fpu;
-import pspemu.core.cpu.interpreted.ops.VFpu;
+import pspemu.core.cpu.interpreter.ops.Alu;
+import pspemu.core.cpu.interpreter.ops.Memory;
+import pspemu.core.cpu.interpreter.ops.Branch;
+import pspemu.core.cpu.interpreter.ops.Special;
+import pspemu.core.cpu.interpreter.ops.Jump;
+import pspemu.core.cpu.interpreter.ops.Fpu;
+import pspemu.core.cpu.interpreter.ops.VFpu;
 
 import pspemu.core.cpu.tables.Table;
 import pspemu.core.cpu.tables.SwitchGen;
@@ -90,46 +90,51 @@ class CpuThreadInterpreted : CpuThreadBase {
 			    	}
 			    	
 			    	mixin(genSwitchAll());
-			    	executedInstructionsCount++;
+			    	//executedInstructionsCount++;
+			    	registers.EXECUTED_INSTRUCTION_COUNT_THIS_THREAD++;
 			    }
 				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "!running: %s", this);
 		    } catch (HaltException haltException) {
 				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "halted thread: %s", this);
 		    } catch (Exception exception) {
-		    	.writefln("at 0x%08X : %s", registers.PC, threadState);
-		    	.writefln("THREADSTATE: %s", threadState);
-		    	.writefln("MODULE: %s", threadState.threadModule);
-		    	
-		    	//.,writefln();
-		    	.writefln("CALLSTACK:");
-		    	scope uint[] callStack = registers.RealCallStack.dup;
-		    	callStack ~= registers.PC;
-		    	foreach (callPC; callStack) {
-		    		//.writef("   ");
-		    		.writef("   %08X", callPC);
-		    		bool printed = false;
-		    		if (threadState.threadModule !is null) {
-		    			if (threadState.threadModule.dwarf !is null) {
-		    				auto state = threadState.threadModule.dwarf.find(callPC);
-		    				if (state !is null) {
-		    					writef(":%s", (*state).toString);
-		    					printed = true;
-		    				}
-		    			}
-		    		}
-		    		if (!printed) {
-		    			//.writef("%08X", callPC);
-		    		}
-		    		.writefln("");
-		    	}
-		    	.writefln("REGISTERS:");
-		    	foreach (k, value; registers.R) {
-		    		//.writef("   r%2d: %08X", k, value);
-		    		.writef("   %s: %08X", Registers.aliasesInv[k], value);
-		    		if ((k % 4) == 3) .writefln("");
-		    	}
-		    	.writefln("%s", exception);
-		    	.writefln("%s", this);
+		    	synchronized {
+			    	.writefln("at 0x%08X : %s", registers.PC, threadState);
+			    	.writefln("THREADSTATE: %s", threadState);
+			    	.writefln("MODULE: %s", threadState.threadModule);
+			    	
+			    	//.,writefln();
+			    	.writefln("CALLSTACK:");
+			    	scope uint[] callStack = registers.RealCallStack.dup;
+			    	callStack ~= registers.PC;
+			    	foreach (callPC; callStack) {
+			    		//.writef("   ");
+			    		.writef("   %08X", callPC);
+			    		bool printed = false;
+			    		if (threadState.threadModule !is null) {
+			    			if (threadState.threadModule.dwarf !is null) {
+			    				auto state = threadState.threadModule.dwarf.find(callPC);
+			    				if (state !is null) {
+			    					writef(":%s", (*state).toString);
+			    					printed = true;
+			    				}
+			    			}
+			    		}
+			    		if (!printed) {
+			    			//.writef("%08X", callPC);
+			    		}
+			    		.writefln("");
+			    	}
+			    	.writefln("REGISTERS:");
+			    	foreach (k, value; registers.R) {
+			    		//.writef("   r%2d: %08X", k, value);
+			    		.writef("   %s: %08X", Registers.aliasesInv[k], value);
+			    		if ((k % 4) == 3) .writefln("");
+			    	}
+			    	.writefln("%s", exception);
+			    	.writefln("%s", this);
+			    	
+			    	//cpuThread.threadState.emulatorState.runningState.stop();
+			    }
 		    } finally {
 				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: END (%s)", Thread.getThis().name);
 		    }

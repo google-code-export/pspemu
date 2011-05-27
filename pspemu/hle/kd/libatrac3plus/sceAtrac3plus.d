@@ -9,6 +9,18 @@ class Atrac3Object {
 	int nloops;
 }
 
+struct PspBufferInfo {
+	u8* pucWritePositionFirstBuf;
+	u32 uiWritableByteFirstBuf;
+	u32 uiMinWriteByteFirstBuf;
+	u32 uiReadPositionFirstBuf;
+
+	u8* pucWritePositionSecondBuf;
+	u32 uiWritableByteSecondBuf;
+	u32 uiMinWriteByteSecondBuf;
+	u32 uiReadPositionSecondBuf;
+}
+
 class sceAtrac3plus : ModuleNative {
 	void initNids() {
 		mixin(registerd!(0x7A20E7AF, sceAtracSetDataAndGetID));
@@ -19,6 +31,14 @@ class sceAtrac3plus : ModuleNative {
 		mixin(registerd!(0x780F88D1, sceAtracGetAtracID));
 		mixin(registerd!(0x36FAABFB, sceAtracGetNextSample));
 		mixin(registerd!(0xE88F759B, sceAtracGetInternalErrorInfo));
+	    mixin(registerd!(0x5D268707, sceAtracGetStreamDataInfo));
+	    mixin(registerd!(0x7DB31251, sceAtracAddStreamData));
+	    mixin(registerd!(0x83E85EA0, sceAtracGetSecondBufferInfo));
+	    mixin(registerd!(0x83BF7AFD, sceAtracSetSecondBuffer));
+	    mixin(registerd!(0xE23E3A35, sceAtracGetNextDecodePosition));
+	    mixin(registerd!(0xA2BBA8BE, sceAtracGetSoundSample));
+	    mixin(registerd!(0xCA3CA3D2, sceAtracGetBufferInfoForReseting));
+	    mixin(registerd!(0x644E5607, sceAtracResetPlayPosition));
 	}
 	
 	/**
@@ -129,6 +149,39 @@ class sceAtrac3plus : ModuleNative {
 		*piResult = 0;
 		return 0;
 	}
+	
+	/**
+	 *
+	 * @param atracID - the atrac ID
+	 * @param writePointer - Pointer to where to read the atrac data
+	 * @param availableBytes - Number of bytes available at the writePointer location
+	 * @param readOffset - Offset where to seek into the atrac file before reading
+	 *
+	 * @return < 0 on error, otherwise 0
+	*/
+	int sceAtracGetStreamDataInfo(int atracID, u8** writePointer, u32* availableBytes, u32* readOffset) {
+		unimplemented();
+		return 0;
+	}
+	
+	/**
+	 *
+	 * @param atracID - the atrac ID
+	 * @param bytesToAdd - Number of bytes read into location given by sceAtracGetStreamDataInfo().
+	 *
+	 * @return < 0 on error, otherwise 0
+	*/
+	int sceAtracAddStreamData(int atracID, uint bytesToAdd) {
+		unimplemented();
+		return 0;
+	}
+		
+	int sceAtracGetSecondBufferInfo(int atracID, u32 *puiPosition, u32 *puiDataByte) { unimplemented(); return 0; }
+	int sceAtracSetSecondBuffer(int atracID, u8 *pucSecondBufferAddr, u32 uiSecondBufferByte) { unimplemented(); return 0; }
+	int sceAtracGetNextDecodePosition(int atracID, u32 *puiSamplePosition) { unimplemented(); return 0; }
+	int sceAtracGetSoundSample(int atracID, int *piEndSample, int *piLoopStartSample, int *piLoopEndSample) { unimplemented(); return 0; }
+	int sceAtracGetBufferInfoForReseting(int atracID, u32 uiSample, PspBufferInfo *pBufferInfo) { unimplemented(); return 0; }
+	int sceAtracResetPlayPosition(int atracID, u32 uiSample, u32 uiWriteByteFirstBuf, u32 uiWriteByteSecondBuf) { unimplemented(); return 0; }
 }
 
 static this() {

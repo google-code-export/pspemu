@@ -33,6 +33,8 @@ template Gpu_Texture() {
 			mipmapShareClut = !command.extract!(bool,  8, 8);
 			mipmapMaxLevel  =  command.extract!(ubyte, 16, 8);
 		}
+		
+		//writefln("%d, %d", gpu.state.texture.mipmapShareClut, gpu.state.texture.mipmapMaxLevel);
 	}
 
 	// Texture Pixel Storage Mode
@@ -226,4 +228,14 @@ template Gpu_Texture() {
 	// UV OFFSET
 	auto OP_UOFFSET() { gpu.state.texture.offset.u = command.float1; }
 	auto OP_VOFFSET() { gpu.state.texture.offset.v = command.float1; }
+	
+	auto OP_TEXTURE_ENV_MAP_MATRIX() {
+		gpu.state.texture.texShade[0] = command.extract!(int, 0, 8) & 3;
+		gpu.state.texture.texShade[1] = command.extract!(int, 8, 8) & 3;
+	}
+	
+	auto OP_TMAP() {
+		gpu.state.texture.mapMode     = command.extractEnum!(TextureMapMode          , 0);
+		gpu.state.texture.projMapMode = command.extractEnum!(TextureProjectionMapMode, 8);
+	}
 }

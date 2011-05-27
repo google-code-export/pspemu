@@ -2,6 +2,24 @@ module pspemu.utils.String;
 
 import std.ctype;
 
+T[] ltrim(T)(T[] array, T valueToRemove) {
+	foreach (index, value; array) if (value != valueToRemove) return array[index..$];
+	return [];
+}
+
+string ltrim_str(string array, char valueToRemove) {
+	return cast(string)ltrim(cast(char[])array, valueToRemove);
+}
+
+T[] rtrim(T)(T[] array, T valueToRemove) {
+	foreach_reverse (index, value; array) if (value != valueToRemove) return array[0..index + 1];
+	return [];
+}
+
+string rtrim_str(string array, char valueToRemove) {
+	return cast(string)rtrim(cast(char[])array, valueToRemove);
+}
+
 string stringInterpolate2(string base, char[] chars, string[] map) {
 	string r;
 	assert(chars.length == map.length);
@@ -45,6 +63,7 @@ static pure nothrow {
 		return r;
 	}
 
+	/*
 	unittest {
 		string[string] map;
 		map["test"] = "prueba";
@@ -52,6 +71,7 @@ static pure nothrow {
 		map["is"] = "es";
 		assert(stringInterpolate("{$hello}, esto {$is} una {$test}", map) == "hola, esto es una prueba");
 	}
+	*/
 
 	string tos(T)(T v, int base = 10, int pad = 0) {
 		if (v == 0) return "0";
@@ -70,10 +90,12 @@ static pure nothrow {
 		return r;
 	}
 
+	/*
 	unittest {
 		assert(tos(100) == "100");
 		assert(tos(-99) == "-99");
 	}
+	*/
 }
 
 //void main() { }
