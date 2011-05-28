@@ -9,6 +9,7 @@ import pspemu.core.gpu.Types;
 import pspemu.utils.MathUtils;
 import pspemu.utils.StructUtils;
 import pspemu.utils.String;
+import std.intrinsic;
 //import pspemu.utils.Utils;
 
 import pspemu.hle.kd.ge.Types;
@@ -50,6 +51,17 @@ struct ClutState {
 	int blocksSize(int num_blocks) {
 		return PixelFormatSize(format, num_blocks * 8);
 	}
+	
+	int getIndex(int index) {
+		return ((start + index) >> shift) & mask;
+	}
+	
+	ubyte[] getRealClutData() {
+		int from = getIndex(0) * colorEntrySize;
+		int to   = getIndex(bsr(mask) - 1) * colorEntrySize;
+		return data[from..to];
+	}
+	
 	string hash() {
 		return cast(string)(cast(ubyte*)cast(void*)&this)[0..data.offsetof];
 		//return toString;
