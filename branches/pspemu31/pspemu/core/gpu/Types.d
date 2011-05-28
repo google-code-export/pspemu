@@ -82,11 +82,30 @@ struct VertexType {
 		size += 3 * typeSize[normal  ];
 		return size;
 	}
+	
+	string toString() {
+		return std.string.format(
+			"VertexType(texture=%d, color=%d, normal=%d, "
+			"position=%d, weight=%d, index=%d, skinningWeightCount=%d, "
+			"morphingVertexCount=%d, transform2D=%d)"
+			, texture
+			, color
+			, normal
+			, position
+			, weight
+			, index
+			, skinningWeightCount
+			, morphingVertexCount
+			, transform2D
+		);
+	}
 }
 
 struct UV {
 	float u, v;
 	Vector uv() { return Vector(u, v); }
+	
+	string toString() { return std.string.format("UV(%f, %f)", u, v); }
 }
 
 struct Rect {

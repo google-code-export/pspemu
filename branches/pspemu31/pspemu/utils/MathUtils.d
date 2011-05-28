@@ -29,6 +29,12 @@ T clamp(T)(T v, T l = 0, T r = 1) {
 	return v;
 }
 
+/*
+T nextAlignedValueTpl(T, uint aligned)(T value) {
+	return value + nextAlignedIncrement(cast(uint)value, alignment);
+}
+*/
+
 T nextAlignedValue(T)(T value, T alignment) {
 	return value + nextAlignedIncrement(value, alignment);
 }
