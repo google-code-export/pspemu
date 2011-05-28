@@ -17,6 +17,9 @@ version = VERSION_ENABLED_STATE_CORTOCIRCUIT_EX;
 //debug = DEBUG_PRIM_PERFORMANCE;
 //debug = DEBUG_FRAME_TRANSFER;
 
+import std.file;
+import std.datetime;
+import std.path;
 import std.conv;
 import std.stream;
 import pspemu.utils.StructUtils;
@@ -116,19 +119,23 @@ class GpuOpengl : GpuImplAbstract {
 		//program.use(0);
 	}
 	
-	bool _recordFrameAction;
+	uint recordFrameID = 0;
+	long recordFrameTime = 0;
+	bool recordFrame = false;
 
-	void recordFrameAction(bool value) {
-		_recordFrameAction = value;
+	void recordFrameStart() {
+		recordFrame = true;
+		recordFrameID = 0;
+		recordFrameTime = std.datetime.Clock.currStdTime;
 	}
 
-	bool recordFrameAction() {
-		return _recordFrameAction;
+	void recordFrameEnd() {
+		recordFrame = false;
 	}
 	
 	void fastTrxKickToFrameBuffer() {
 		// trxkick:TextureTransfer(Size(480, 272) : SRC(addr=08EB4510, w=480, XY(0, 0))-DST(addr=04088000, w=512, XY(0, 0))) : Bpp:4
-		//writefln("trxkick:%s", state.textureTransfer);
+		writefln("trxkick:%s", state.textureTransfer);
 		with (state.textureTransfer) {
 			GlPixelFormat glPixelFormat = GlPixelFormats[state.drawBuffer.format];
 			int _dstX = dstX, _dstY = dstY;
@@ -193,26 +200,100 @@ class GpuOpengl : GpuImplAbstract {
 
 	void clear() {
 	}
+	
+	static struct DumpStruct {
+		string textureName;
+		ushort[] indexList;
+		VertexState[] vertexList;
+		GpuState gpuState;
+		PrimitiveType type;
+		PrimitiveFlags flags;
+		
+		void dump() {
+			writefln("textureName: '%s'", textureName);
+			writefln("primitiveType: %s(%d)", to!string(type), type);
+			writefln("flags: %s)", flags);
+			writefln("indexList(%d): %s", indexList.length, indexList);
+			writefln("vertexList(%d):", vertexList.length);
+			foreach (ref vertex; vertexList) writefln("  %s", vertex);
+			writefln("gpuState:%s", gpuState);
+		}
+	}
+	
+	static ubyte[] saveDump(ref DumpStruct dumpStruct) {
+		MemoryStream stream = new MemoryStream();
+		ubyte[] output;
+		
+		stream.write(cast(uint)dumpStruct.textureName.length);
+		stream.write(cast(uint)dumpStruct.indexList.length);
+		stream.write(cast(uint)dumpStruct.vertexList.length);
+		stream.write(cast(ubyte[])dumpStruct.textureName);
+		stream.write(TA(dumpStruct.gpuState));
+		stream.write(TA(dumpStruct.type));
+		stream.write(TA(dumpStruct.flags));
+		stream.write(cast(ubyte[])dumpStruct.indexList);
+		stream.write(cast(ubyte[])dumpStruct.vertexList);
+		
+		return stream.data;
+	}
+	
+	static DumpStruct loadDump(ubyte[] data) {
+		DumpStruct dumpStruct;
+		uint textureNameLength;
+		uint indexListLength;
+		uint vertexListLength;
+		scope stream = new MemoryStream(data);
+		
+		uint read32() {
+			uint v;
+			stream.read(v);
+			return v;
+		}
+		
+		dumpStruct.textureName.length = read32();
+		dumpStruct.indexList.length = read32();
+		dumpStruct.vertexList.length = read32();
+		
+		stream.read(cast(ubyte[])dumpStruct.textureName);
+		stream.read(TA(dumpStruct.gpuState));
+		stream.read(TA(dumpStruct.type));
+		stream.read(TA(dumpStruct.flags));
+		stream.read(cast(ubyte[])dumpStruct.indexList);
+		stream.read(cast(ubyte[])dumpStruct.vertexList);
+		
+		return dumpStruct;
+	}
 
 	void draw(ushort[] indexList, VertexState[] vertexList, PrimitiveType type, PrimitiveFlags flags) {
-		if (_recordFrameAction) {
+		if (recordFrame) {
+			string dumpPath = std.string.format("GPU/%s", recordFrameTime);
+			try { std.file.mkdirRecurse(dumpPath); } catch { }
 			//prevState.texture.
-			Texture texture = getTexture(state.texture, state.clut);
-			string filename = std.string.format("TEXTURE_%08X_%s_%s.png", texture.textureHash, to!string(texture.textureFormat), to!string(texture.clutFormat));
-			ubyte[] data = texture.getTexturePixels();
-			SimplePng.write(cast(uint[])data, texture.getTextureWidth(), texture.getTextureHeight(), filename);
-			/*
-			TGA_HEADER tgaHeader;
-			tgaHeader.width = cast(short)texture.getTextureWidth();
-			tgaHeader.height = cast(short)texture.getTextureHeight();
-			{
-				scope tgaFile = new BufferedFile(filename, FileMode.OutNew);
-				tgaFile.write(TA(tgaHeader));
-				tgaFile.write(data);
-				tgaFile.flush();
-				tgaFile.close();
+			
+			string textureFileName;
+			
+			if (state.textureMappingEnabled) {
+				Texture texture = getTexture(state.texture, state.clut);
+				textureFileName = std.string.format("%s/TEXTURE_%08X_%s_%s.png", dumpPath, texture.textureHash, to!string(texture.textureFormat), to!string(texture.clutFormat));
+				if (!std.file.exists(textureFileName)) {
+					ubyte[] data = texture.getTexturePixels();
+					SimplePng.write(cast(uint[])data, texture.getTextureWidth(), texture.getTextureHeight(), textureFileName);
+				}
 			}
-			*/
+			
+			{
+				DumpStruct dumpStruct;
+				dumpStruct.flags = flags;
+				dumpStruct.gpuState = *state;
+				dumpStruct.indexList = indexList;
+				dumpStruct.vertexList = vertexList;
+				dumpStruct.textureName = textureFileName;
+				dumpStruct.type = type;
+				
+				std.file.write(std.string.format("%s/%d.bin", dumpPath, recordFrameID), saveDump(dumpStruct));
+			}
+			
+			recordFrameID++;
 		}
 		
 		//if (gpu.state.clearingMode) return; // Do not draw in clearmode.
@@ -595,17 +676,18 @@ template OpenglUtils() {
 		}
 		
 		void prepareBlend() {
-			if (!glEnableDisable(GL_BLEND, state.alphaBlendEnabled)) {
+			if (!glEnableDisable(GL_BLEND, state.blend.enabled)) {
 				version (VERSION_ENABLED_STATE_CORTOCIRCUIT) return;
 			}
 
-			glBlendEquationEXT(BlendEquationTranslate[state.blendEquation]);
-			glBlendFunc(BlendFuncSrcTranslate[state.blendFuncSrc], BlendFuncDstTranslate[state.blendFuncDst]);
+			glBlendEquationEXT(BlendEquationTranslate[state.blend.equation]);
+			glBlendFunc(BlendFuncSrcTranslate[state.blend.funcSrc], BlendFuncDstTranslate[state.blend.funcDst]);
+			// @CHECK @FIX
 			glBlendColor(
-				state.fixColorDst.r,
-				state.fixColorDst.g,
-				state.fixColorDst.b,
-				state.fixColorDst.a
+				state.blend.fixColorDst.r,
+				state.blend.fixColorDst.g,
+				state.blend.fixColorDst.b,
+				state.blend.fixColorDst.a
 			);
 		}
 
@@ -617,12 +699,11 @@ template OpenglUtils() {
 			
 			//return;
 
-			glEnableDisable(GL_COLOR_LOGIC_OP, state.logicalOperationEnabled);		
-			glEnableDisable(GL_COLOR_MATERIAL, flags.hasColor && cast(bool)state.materialColorComponents && state.lightingEnabled);
+			glEnableDisable(GL_COLOR_MATERIAL, flags.hasColor && cast(bool)state.materialColorComponents && state.lighting.enabled);
 
 			glColor4fv(state.ambientModelColor.ptr);
 			
-			if (!flags.hasColor && state.lightingEnabled) {
+			if (!flags.hasColor && state.lighting.enabled) {
 				int flags;
 				/*
 				glMaterialfv(faces, GL_AMBIENT , [0.0f, 0.0f, 0.0f, 0.0f].ptr);
@@ -689,7 +770,8 @@ template OpenglUtils() {
 		}
 
 		void prepareLogicOp() {
-			glLogicOp(LogicalOperationTranslate[state.logicalOperation]);
+			glEnableDisable(GL_COLOR_LOGIC_OP, state.logicalOperation.enabled);		
+			glLogicOp(LogicalOperationTranslate[state.logicalOperation.operation]);
 		}
 
 		// http://jerome.jouvie.free.fr/OpenGl/Tutorials/Tutorial13.php
@@ -697,14 +779,14 @@ template OpenglUtils() {
 		// http://www.sjbaker.org/steve/omniv/opengl_lighting.html
 		// http://www.sorgonet.com/linux/openglguide/parte2.html
 		void prepareLighting() {
-			if (!glEnableDisable(GL_LIGHTING, state.lightingEnabled) && (state.texture.mapMode != TextureMapMode.GU_ENVIRONMENT_MAP)) {
+			if (!glEnableDisable(GL_LIGHTING, state.lighting.enabled) && (state.texture.mapMode != TextureMapMode.GU_ENVIRONMENT_MAP)) {
 				version (VERSION_ENABLED_STATE_CORTOCIRCUIT) return;
 			}
 			
-			glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL, state.lightModel ? GL_SEPARATE_SPECULAR_COLOR : GL_SINGLE_COLOR);
-			glLightModelfv(GL_LIGHT_MODEL_AMBIENT, state.ambientLightColor.ptr);
+			glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL, state.lighting.lightModel ? GL_SEPARATE_SPECULAR_COLOR : GL_SINGLE_COLOR);
+			glLightModelfv(GL_LIGHT_MODEL_AMBIENT, state.lighting.ambientLightColor.ptr);
 
-			foreach (n, ref light; state.lights) {
+			foreach (n, ref light; state.lighting.lights) {
 				auto GL_LIGHT_n = GL_LIGHT0 + n;
 
 				if (!glEnableDisable(GL_LIGHT_n, light.enabled)) {
@@ -745,67 +827,70 @@ template OpenglUtils() {
 		}
 		
 		void prepareAlphaTest() {
-			if (!glEnableDisable(GL_ALPHA_TEST, state.alphaTestEnabled)) {
+			if (!glEnableDisable(GL_ALPHA_TEST, state.alphaTest.enabled)) {
 				version (VERSION_ENABLED_STATE_CORTOCIRCUIT) return;
 			}
 
 			glAlphaFunc(
-				TestTranslate[state.alphaTestFunc],
-				state.alphaTestValue
+				TestTranslate[state.alphaTest.func],
+				state.alphaTest.value
 			);
+		}
+		
+		void prepareDepth() {
+			glDepthRange(state.depth.rangeFar, state.depth.rangeNear);
 		}
 
 		// http://www.openorg/resources/faq/technical/depthbuffer.htm
 		void prepareDepthTest() {
 			//return;
 
-			if (!glEnableDisable(GL_DEPTH_TEST, state.depthTestEnabled)) {
+			if (!glEnableDisable(GL_DEPTH_TEST, state.depth.testEnabled)) {
 				version (VERSION_ENABLED_STATE_CORTOCIRCUIT) return;
 			}
-			glDepthFunc(TestTranslate[state.depthFunc]);
+			glDepthFunc(TestTranslate[state.depth.testFunc]);
 		}
 		
 		void prepareDepthWrite() {
 			//return;
 			
-			glDepthMask(state.depthMask == 0);
+			glDepthMask(state.depth.mask == 0);
 
-			if (state.depthMask) {
+			if (state.depth.mask) {
 				version (VERSION_ENABLED_STATE_CORTOCIRCUIT) return;
 			}
 
 			//glDepthRange(state.depthRangeNear, state.depthRangeFar);
-			glDepthRange(state.depthRangeFar, state.depthRangeNear);
 		}
 
 		void prepareStencil() {
-			if (!glEnableDisable(GL_STENCIL_TEST, state.stencilTestEnabled)) {
+			if (!glEnableDisable(GL_STENCIL_TEST, state.stencil.testEnabled)) {
 				version (VERSION_ENABLED_STATE_CORTOCIRCUIT) return;
 			}
 
 			//if (state.stencilFuncFunc == 2) { outputDepthAndStencil(); assert(0); }
 			
 			glStencilFunc(
-				TestTranslate[state.stencilFuncFunc],
-				state.stencilFuncRef,
-				state.stencilFuncMask
+				TestTranslate[state.stencil.funcFunc],
+				state.stencil.funcRef,
+				state.stencil.funcMask
 			);
 			
 			glStencilOp(
-				StencilOperationTranslate[state.stencilOperationSfail ],
-				StencilOperationTranslate[state.stencilOperationDpfail],
-				StencilOperationTranslate[state.stencilOperationDppass]
+				StencilOperationTranslate[state.stencil.operationSfail ],
+				StencilOperationTranslate[state.stencil.operationDpfail],
+				StencilOperationTranslate[state.stencil.operationDppass]
 			);
 		}
 
 		void prepareFog() {
-			if (!glEnableDisable(GL_FOG, state.fogEnabled)) {
+			if (!glEnableDisable(GL_FOG, state.fog.enabled)) {
 				version (VERSION_ENABLED_STATE_CORTOCIRCUIT) return;
 			}
 
-			glFogfv(GL_FOG_COLOR, state.fogColor.pointer);
-			glFogf(GL_FOG_START, state.fogEnd - (1 / state.fogDist));
-			glFogf(GL_FOG_END, state.fogEnd);
+			glFogfv(GL_FOG_COLOR, state.fog.color.pointer);
+			glFogf(GL_FOG_START, state.fog.end - (1 / state.fog.dist));
+			glFogf(GL_FOG_END, state.fog.end);
 		}
 
 		//glEnable(GL_NORMALIZE);
@@ -814,7 +899,7 @@ template OpenglUtils() {
 		glEnableDisable(GL_LINE_SMOOTH, state.lineSmoothEnabled);
 		glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 		glShadeModel(state.shadeModel ? GL_SMOOTH : GL_FLAT);
-		glMaterialf(GL_FRONT, GL_SHININESS, state.specularPower);
+		glMaterialf(GL_FRONT, GL_SHININESS, state.lighting.specularPower);
 		glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, state.textureEnviromentColor.ptr);
 		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
 		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE);
@@ -838,6 +923,7 @@ template OpenglUtils() {
 		prepareLogicOp();
 		//writefln("drawBeginNormal[3]");
 		prepareAlphaTest();
+		prepareDepth();
 		prepareDepthTest();
 		prepareDepthWrite();
 		//writefln("drawBeginNormal[4]");

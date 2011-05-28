@@ -94,6 +94,8 @@ struct Rect {
 	bool isFull() {
 		return (x1 <= 0 && y1 <= 0) && (x2 >= 480 && y2 >= 272);
 	}
+	
+	string toString() { return std.string.format("Rect((%d,%d)-(%d,%d))", x1, y1, x2, y2); }
 }
 
 const auto GU_PI = 3.141593f;

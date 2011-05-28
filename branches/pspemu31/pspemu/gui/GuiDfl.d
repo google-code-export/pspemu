@@ -70,7 +70,8 @@ class MainForm : Form, IMessageFilter {
 	DrawingArea drawingArea1x;
 	int windowSize = -1;
 	bool justUpdatedWindowSize;
-	PspCtrlButtons[255] buttonMask;
+	PspCtrlButtons[255] buttonMaskDigital;
+	PspCtrlButtons[255] buttonMaskAnalog;
 	bool _scale2x = false;
 	
 	bool scale2x() {
@@ -237,29 +238,41 @@ class MainForm : Form, IMessageFilter {
 	}
 
 	void setButtonMasks() {
-		buttonMask[37 ] = PspCtrlButtons.PSP_CTRL_LEFT;
-		buttonMask[38 ] = PspCtrlButtons.PSP_CTRL_UP;
-		buttonMask[39 ] = PspCtrlButtons.PSP_CTRL_RIGHT;
-		buttonMask[40 ] = PspCtrlButtons.PSP_CTRL_DOWN; 
-		buttonMask['W'] = PspCtrlButtons.PSP_CTRL_TRIANGLE;
-		buttonMask['A'] = PspCtrlButtons.PSP_CTRL_SQUARE;
-		buttonMask['S'] = PspCtrlButtons.PSP_CTRL_CROSS;
-		buttonMask['D'] = PspCtrlButtons.PSP_CTRL_CIRCLE;
-		buttonMask['Q'] = PspCtrlButtons.PSP_CTRL_LTRIGGER;
-		buttonMask['E'] = PspCtrlButtons.PSP_CTRL_RTRIGGER;
-		buttonMask[13 ] = PspCtrlButtons.PSP_CTRL_START;
-		buttonMask[32 ] = PspCtrlButtons.PSP_CTRL_SELECT;
+		buttonMaskDigital[37 ] = PspCtrlButtons.PSP_CTRL_LEFT;
+		buttonMaskDigital[38 ] = PspCtrlButtons.PSP_CTRL_UP;
+		buttonMaskDigital[39 ] = PspCtrlButtons.PSP_CTRL_RIGHT;
+		buttonMaskDigital[40 ] = PspCtrlButtons.PSP_CTRL_DOWN; 
+		buttonMaskDigital['W'] = PspCtrlButtons.PSP_CTRL_TRIANGLE;
+		buttonMaskDigital['A'] = PspCtrlButtons.PSP_CTRL_SQUARE;
+		buttonMaskDigital['S'] = PspCtrlButtons.PSP_CTRL_CROSS;
+		buttonMaskDigital['D'] = PspCtrlButtons.PSP_CTRL_CIRCLE;
+		buttonMaskDigital['Q'] = PspCtrlButtons.PSP_CTRL_LTRIGGER;
+		buttonMaskDigital['E'] = PspCtrlButtons.PSP_CTRL_RTRIGGER;
+		buttonMaskDigital[13 ] = PspCtrlButtons.PSP_CTRL_START;
+		buttonMaskDigital[32 ] = PspCtrlButtons.PSP_CTRL_SELECT;
+
+		buttonMaskAnalog['J'] = PspCtrlButtons.PSP_CTRL_LEFT;
+		buttonMaskAnalog['I'] = PspCtrlButtons.PSP_CTRL_UP;
+		buttonMaskAnalog['L'] = PspCtrlButtons.PSP_CTRL_RIGHT;
+		buttonMaskAnalog['K'] = PspCtrlButtons.PSP_CTRL_DOWN;
 	}
 	
 	override bool preFilterMessage(ref Message msg) {
 		switch (msg.msg) {
 			case WM_KEYDOWN, WM_KEYUP: {
+				bool processedKey = false;
 				SceCtrlData *sceCtrlData = &guiDfl.controller.sceCtrlData;
-				PspCtrlButtons buttonMask = buttonMask[msg.wParam & 0xFF];
+				PspCtrlButtons maskDigital = buttonMaskDigital[msg.wParam & 0xFF];
+				PspCtrlButtons maskAnalog = buttonMaskAnalog[msg.wParam & 0xFF];
 				bool Pressed = (msg.msg == WM_KEYDOWN);
 				//writefln("%032b:%d", buttonMask, Pressed);
-				sceCtrlData.SetPressedButton(buttonMask, Pressed);
-				if (buttonMask != 0) return true;
+				sceCtrlData.SetPressedButton(maskDigital, Pressed);
+				sceCtrlData.SetPressedButton(maskAnalog, Pressed);
+				
+				if (maskDigital != 0) processedKey = true;
+				if (maskAnalog != 0) processedKey = true;
+				
+				if (processedKey) return true;
 			} break;
 			default: break;
 		}

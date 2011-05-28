@@ -1,11 +1,14 @@
 module pspemu.core.gpu.GpuState;
 
+import std.conv;
+
 import pspemu.core.gpu.Types;
 
 import pspemu.core.Memory;
 import pspemu.core.gpu.Types;
 import pspemu.utils.MathUtils;
 import pspemu.utils.StructUtils;
+import pspemu.utils.String;
 //import pspemu.utils.Utils;
 
 import pspemu.hle.kd.ge.Types;
@@ -112,7 +115,16 @@ struct TextureTransfer {
 }
 
 struct LightState {
-	struct Attenuation { float constant, linear, quadratic; }
+	struct Attenuation {
+		float constant, linear, quadratic;
+		
+		string toString() {
+			return std.string.format(
+				"Attenuation(constant=%f, linear=%f, quadratic=%f)",
+				constant, linear, quadratic
+			);
+		}
+	}
 	bool enabled = false;
 	LightType type;
 	LightModel kind;
@@ -121,6 +133,37 @@ struct LightState {
 	float spotExponent;
 	float spotCutoff;
 	Colorf ambientColor, diffuseColor, specularColor;
+	
+	string toString() {
+		if (!enabled) return std.string.format("LightState(enabled = false)");
+		
+		return std.string.format(
+			"LightState(\n"
+			"    enabled       = %s\n"
+			"    type          = %s\n"
+			"    kind          = %s\n"
+			"    position      = %s\n"
+			"    spotDirection = %s\n"
+			"    attenuation   = %s\n"
+			"    spotExponent  = %f\n"
+			"    spotCutoff    = %f\n"
+			"    ambientColor  = %s\n"
+			"    diffuseColor  = %s\n"
+			"    specularColor = %s\n"
+			")\n"
+			, enabled
+			, to!string(type)
+			, to!string(kind)
+			, position
+			, spotDirection
+			, attenuation
+			, spotExponent
+			, spotCutoff
+			, ambientColor
+			, diffuseColor
+			, specularColor
+		);
+	}
 }
 
 static struct VertexState {
@@ -147,6 +190,16 @@ static struct VertexState {
 	// Aliases
 	alias p position;
 	alias n normal;
+	
+	string toString() {
+		return std.string.format(
+			"VertexState(UV=%f,%f)(RGBA:%02X%02X%02X%02X)(NXYZ=%f,%f,%f)(PXYZ=%f,%f,%f)",
+			u, v,
+			cast(uint)(r * 255), cast(uint)(g * 255), cast(uint)(b * 255), cast(uint)(a * 255),
+			nx, ny, nz,
+			px, py, pz
+		);
+	}
 }
 
 /*static struct VertexStateArrays {
@@ -170,6 +223,10 @@ static struct VertexState {
 struct Viewport {
 	float px, py, pz;
 	float sx, sy, sz;
+	
+	string toString() {
+		return std.string.format("Viewport(%f, %f, %f)(%f, %f, %f)", px, py, pz, sx, sy, sz);
+	}
 }
 
 struct TextureState {
@@ -213,11 +270,151 @@ struct TextureState {
 	int height() { return mipmaps[0].height; }
 	bool hasPalette() { return (format >= PixelFormats.GU_PSM_T4 && format <= PixelFormats.GU_PSM_T32); }
 	uint paletteRequiredComponents() { return hasPalette ? (1 << (4 + (format - PixelFormats.GU_PSM_T4))) : 0; }
+	
+	string toString() {
+		return std.string.format(
+			"TextureState(\n"
+			"    swizzled    =%s\n"
+			"    format      =%s\n"
+			"    ...\n"
+			")\n"
+			, swizzled
+			, to!string(format)
+		);
+	}
 }
 
 struct Patch {
 	float div_s;
 	float div_t;
+}
+
+struct FogState {
+	bool enabled;
+	Colorf color;
+	float  dist, end;
+	float  density; // 0.1
+	int    mode;
+	int    hint;
+	
+	string toString() {
+		if (!enabled) return "FogState(enabled:false)";
+		return std.string.format("FogState(enabled:%s, color:%s, dist:%f, end:%f, density:%f, mode:%d, hint:%d)", enabled, color, dist, end, density, mode, hint);
+	}
+}
+
+struct DepthState {
+	bool testEnabled;        // depth (Z) Test Enable (GL_DEPTH_TEST)
+	TestFunction testFunc; // TestFunction.GU_ALWAYS
+	float rangeNear, rangeFar; // 0.0 - 1.0
+	ushort mask;
+	
+	string toString() {
+		return std.string.format(
+			"DepthState(testEnabled:%s, testFunc=%s, range(%f-%f), mask=%04X"
+			, testEnabled
+			, to!string(testFunc)
+			, rangeNear, rangeFar
+			, mask
+		);
+	}
+}
+
+struct BlendState {
+	// Blending.
+	bool enabled;       // Alpha Blend Enable (GL_BLEND)
+	BlendingOp     equation;
+	BlendingFactor funcSrc;
+	BlendingFactor funcDst;
+	Colorf fixColorSrc, fixColorDst;
+
+	string toString() {
+		if (!enabled) return std.string.format("BlendState(enabled: %s)", false);
+
+		return std.string.format(
+			"BlendState(enabled: %s, equation: %s, funcSrc: %s, funcDst: %s, fixColorSrc: %s, fixColorDst: %s)",
+			enabled, to!string(equation), to!string(funcSrc), to!string(funcDst), fixColorSrc, fixColorDst
+		);
+	}
+}
+
+struct AlphaTestState {
+	bool enabled;        // Alpha Test Enable (GL_ALPHA_TEST) glAlphaFunc(GL_GREATER, 0.03f);
+	TestFunction func; // TestFunction.GU_ALWAYS
+	float value;
+	ubyte mask; // 0xFF
+	
+	string toString() {
+		if (!enabled) return "AlphaTestState(enabled:false)";
+		return std.string.format(
+			"AlphaTestState(enabled:%s, func:%s, value:%f, mask:%02X)"
+			, enabled
+			, to!string(func)
+			, value
+			, mask
+		);
+	}
+}
+
+struct StencilState {
+	bool testEnabled;      // Stencil Test Enable (GL_STENCIL_TEST)
+	TestFunction funcFunc;
+	ubyte funcRef;
+	ubyte funcMask; // 0xFF
+	StencilOperations operationSfail;
+	StencilOperations operationDpfail;
+	StencilOperations operationDppass;
+	string toString() {
+		if (!testEnabled) return std.string.format("StencilState(enabled: %s)", false);
+		return std.string.format(
+			"StencilState(enabled: %s, funcFunc:%s, funcRef:%02X, funcMask:%02X, opSfail:%s, opDpfail:%s, opDppass:%s)",
+			testEnabled, to!string(funcFunc), funcRef, funcMask, to!string(operationSfail), to!string(operationDpfail), to!string(operationDppass)
+		);
+	}
+}
+
+struct LogicalOperationState {
+	bool enabled;
+	LogicalOperation operation; // LogicalOperation.GU_COPY
+	string toString() {
+		if (!enabled) return std.string.format("LogicalOperationState(enabled: %s)", false);
+		return std.string.format(
+			"LogicalOperationState(enabled: %s, operation:%s)",
+			enabled, to!string(operation),
+		);
+	}
+}
+
+struct LightingState {
+	bool enabled;         // Lighting Enable (GL_LIGHTING)
+	LightModel lightModel;
+	Colorf ambientLightColor;
+	float  specularPower;
+	LightState[4] lights;
+
+	string toString() {
+		if (!enabled) return std.string.format("LightingState(enabled: %s)", false);
+		return std.string.format(
+			"LightingState(\n",
+			"    enabled: %s\n"
+			"    lightModel: %s\n"
+			"    ambientLightColor: %s\n"
+			"    specularPower: %f\n"
+			"    lights[0]: %s\n"
+			"    lights[1]: %s\n"
+			"    lights[2]: %s\n"
+			"    lights[3]: %s\n"
+			")\n"
+			, enabled
+			, to!string(lightModel)
+			, ambientLightColor
+			, specularPower
+			, lights[0]
+			, lights[1]
+			, lights[2]
+			, lights[3]
+		);
+	}
 }
 
 static struct GpuState {
@@ -242,16 +439,11 @@ static struct GpuState {
 			Colorf textureEnviromentColor;
 			LightComponents materialColorComponents;
 			
-			Colorf fogColor;
-			float  fogDist, fogEnd;
-
 			// Matrix.
 			Matrix projectionMatrix, worldMatrix, viewMatrix, textureMatrix;
 			Matrix[8] boneMatrix;
 			uint boneMatrixIndex;
 			Patch patch;
-			
-			LightModel lightModel;
 			
 			// Textures.
 			// Temporal values.
@@ -267,55 +459,22 @@ static struct GpuState {
 
 			float[8] morphWeights;
 
-			// Lights related.
-			Colorf ambientLightColor;
-			float  specularPower;
-			LightState[4] lights;
-
 			// State.
 			bool textureMappingEnabled;   // Texture Mapping Enable (GL_TEXTURE_2D)
 			bool clipPlaneEnabled;        // Clip Plane Enable (GL_CLIP_PLANE0)
 			bool backfaceCullingEnabled;  // Backface Culling Enable (GL_CULL_FACE)
-			bool alphaBlendEnabled;       // Alpha Blend Enable (GL_BLEND)
-			bool depthTestEnabled;        // depth (Z) Test Enable (GL_DEPTH_TEST)
-			bool stencilTestEnabled;      // Stencil Test Enable (GL_STENCIL_TEST)
-			bool logicalOperationEnabled; // Logical Operation Enable (GL_COLOR_LOGIC_OP)
-			bool alphaTestEnabled;        // Alpha Test Enable (GL_ALPHA_TEST) glAlphaFunc(GL_GREATER, 0.03f);
-			bool lightingEnabled;         // Lighting Enable (GL_LIGHTING)
-			bool fogEnabled;              // FOG Enable (GL_FOG)
 			bool ditheringEnabled;
 			bool lineSmoothEnabled;
 			bool colorTestEnabled;
 			bool patchCullEnabled;
 
-			float fogDensity; // 0.1
-			int fogMode;
-			int fogHint;
-			
-			// Blending.
-			int blendEquation;
-			int blendFuncSrc;
-			int blendFuncDst;
-
-			TestFunction depthFunc; // TestFunction.GU_ALWAYS
-			float depthRangeNear, depthRangeFar; // 0.0 - 1.0
-			ushort depthMask;
-
-			TestFunction alphaTestFunc; // TestFunction.GU_ALWAYS
-			float alphaTestValue;
-			ubyte alphaTestMask; // 0xFF
-			
-			TestFunction stencilFuncFunc;
-			ubyte stencilFuncRef;
-			ubyte stencilFuncMask; // 0xFF
-
-			StencilOperations stencilOperationSfail;
-			StencilOperations stencilOperationDpfail;
-			StencilOperations stencilOperationDppass;
-
-			Colorf fixColorSrc, fixColorDst;
-
-			LogicalOperation logicalOperation; // LogicalOperation.GU_COPY
+			LightingState   lighting;
+			FogState        fog;
+			BlendState      blend;
+			DepthState      depth;
+			AlphaTestState  alphaTest;
+			StencilState    stencil;
+			LogicalOperationState logicalOperation;
 			
 			ubyte[4] colorMask; // [0xFF, 0xFF, 0xFF, 0xFF];
 		}
@@ -326,6 +485,88 @@ static struct GpuState {
 	
 	// RealState ends the struct
 	static assert (this.RealState.offsetof + this.RealState.sizeof == this.sizeof);
+	
+	string toString() {
+		return std.string.format(
+			"GpuState(\n"
+			"    baseAddress      =%08X;\n"
+			"    vertexAddress    =%08X;\n"
+			"    indexAddress     =%08X;\n"
+			"    textureTransfer  =%s\n"
+			"    viewport         =%s\n"
+			"    offset           =(%d, %d)\n"
+			"    clearFlags       =(%s)\n"
+			"    ambientModelColor=(%s)\n"
+			"    diffuseModelColor=(%s)\n"
+			"    specularModelColor=(%s)\n"
+			"    emissiveModelColor=(%s)\n"
+			"    textureEnviromentColor=(%s)\n"
+			"    materialColorComponents=(%s)\n"
+			"    fog               =%s\n"
+			"    projectionMatrix  =%s\n"
+			"    worldMatrix       =%s\n"
+			"    viewMatrix        =%s\n"
+			"    textureMatrix     =%s\n"
+			"    transformMode     =%s\n"
+			"    texture           =%s\n"
+			"    uploadedClut      =%s\n"
+			"    clut              =%s\n"
+			"    scissor           =%s\n"
+			"    frontFaceDirection=%s\n"
+			"    shadeModel        =%s\n"
+			"    textureMappingEnabled   = %s\n"
+			"    clipPlaneEnabled        = %s\n"
+			"    backfaceCullingEnabled  = %s\n"
+			"    ditheringEnabled        = %s\n"
+			"    lineSmoothEnabled       = %s\n"
+			"    colorTestEnabled        = %s\n"
+			"    patchCullEnabled        = %s\n"
+			"    lighting                = %s\n"
+			"    blend                   = %s\n"
+			"    depth                   = %s\n"
+			"    alphaTest               = %s\n"
+			"    stencil                 = %s\n"
+			"    logicalOperation        = %s\n"
+			"    colorMask               = %s\n"
+			")"
+			, baseAddress
+			, vertexAddress
+			, indexAddress
+			, textureTransfer
+			, viewport
+			, offsetX, offsetY
+			, toSet(clearFlags)
+			, ambientModelColor
+			, diffuseModelColor
+			, specularModelColor
+			, emissiveModelColor
+			, textureEnviromentColor
+			, toSet(materialColorComponents)
+			, fog
+			, projectionMatrix, worldMatrix, viewMatrix, textureMatrix
+			, to!string(transformMode)
+			, texture
+			, uploadedClut
+			, clut
+			, scissor
+			, to!string(frontFaceDirection)
+			, shadeModel
+			, textureMappingEnabled
+			, clipPlaneEnabled
+			, backfaceCullingEnabled
+			, ditheringEnabled
+			, lineSmoothEnabled
+			, colorTestEnabled
+			, patchCullEnabled
+			, lighting
+			, blend
+			, depth
+			, alphaTest
+			, stencil
+			, logicalOperation
+			, colorMask
+		);
+	}
 }
 
 struct PrimitiveFlags {
@@ -335,4 +576,16 @@ struct PrimitiveFlags {
 	bool hasNormal;
 	bool hasPosition;
 	int  numWeights;
+	
+	string toString() {
+		return std.string.format(
+			"PrimitiveFlags(hasWeights=%d,hasTexture=%d,hasColor=%d,hasNormal=%d,hasPosition=%d,numWeights=%d)",
+			hasWeights,
+			hasTexture,
+			hasColor,
+			hasNormal,
+			hasPosition,
+			numWeights
+		);
+	}
 }

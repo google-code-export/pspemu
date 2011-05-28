@@ -53,15 +53,24 @@ struct SceCtrlLatch {
 }
 
 /** Returned controller data */
-struct SceCtrlData {
+align (1) struct SceCtrlData {
 	uint 	TimeStamp = 0; /// The current read frame.
-	uint 	Buttons = 0;   /// Bit mask containing zero or more of ::PspCtrlButtons.
+	PspCtrlButtons 	Buttons = PspCtrlButtons.PSP_CTRL_NONE;   /// Bit mask containing zero or more of ::PspCtrlButtons.
 	ubyte 	Lx = 127;      /// Analogue stick, X axis.
 	ubyte 	Ly = 127;      /// Analogue stick, Y axis.
-	ubyte 	Rsrv[6];       /// Reserved.
+	union {
+		PspCtrlButtons ButtonsAnalog = PspCtrlButtons.PSP_CTRL_NONE;
+		struct {
+			ubyte 	Rsrv[6];       /// Reserved.
+		}
+	}
 	
 	public bool IsPressedButton(PspCtrlButtons pspCtrlButton) {
 		return (Buttons & pspCtrlButton) != 0;
+	}
+	
+	public bool IsPressedButtonAnalog(PspCtrlButtons pspCtrlButton) {
+		return (ButtonsAnalog & pspCtrlButton) != 0;
 	}
 
 	public int IsPressedButton2(PspCtrlButtons pspCtrlButton1, PspCtrlButtons pspCtrlButton2) {
@@ -69,32 +78,39 @@ struct SceCtrlData {
 		if (IsPressedButton(pspCtrlButton2)) return +1;
 		return 0;
 	}
-	
-	public void SetPressedButton(PspCtrlButtons pspCtrlButton, bool Pressed) {
+
+	public void _SetPressedButton(T)(ref T BUTTONS, PspCtrlButtons pspCtrlButton, bool Pressed) {
 		if (Pressed) {
-			Buttons |= pspCtrlButton; 
+			BUTTONS |= pspCtrlButton; 
 		} else {
-			Buttons &= ~pspCtrlButton;
+			BUTTONS &= ~pspCtrlButton;
 		}
 	}
 	
+	public void SetPressedButton(PspCtrlButtons pspCtrlButton, bool Pressed) {
+		_SetPressedButton(Buttons, pspCtrlButton, Pressed);
+	}
+	
+	public void SetPressedButtonAnalog(PspCtrlButtons pspCtrlButton, bool Pressed) {
+		_SetPressedButton(ButtonsAnalog, pspCtrlButton, Pressed);
+	}
+	
 	public void DoEmulatedAnalogFrame() {
-		if (IsPressedButton(PspCtrlButtons.PSP_CTRL_LEFT)) {
+		if (IsPressedButtonAnalog(PspCtrlButtons.PSP_CTRL_LEFT)) {
 			x = x - 0.1;
-		} else if (IsPressedButton(PspCtrlButtons.PSP_CTRL_RIGHT)) {
+		} else if (IsPressedButtonAnalog(PspCtrlButtons.PSP_CTRL_RIGHT)) {
 			x = x + 0.1;
 		} else {
 			x = x / 10.0;
 		}
 
-		if (IsPressedButton(PspCtrlButtons.PSP_CTRL_UP)) {
+		if (IsPressedButtonAnalog(PspCtrlButtons.PSP_CTRL_UP)) {
 			y = y - 0.1;
-		} else if (IsPressedButton(PspCtrlButtons.PSP_CTRL_DOWN)) {
+		} else if (IsPressedButtonAnalog(PspCtrlButtons.PSP_CTRL_DOWN)) {
 			y = y + 0.1;
 		} else {
 			y = y / 10.0;
 		}
-		
 	}
 	
 	static string component(string v) {

@@ -1,6 +1,20 @@
 module pspemu.utils.String;
 
+import std.conv;
+import std.traits;
 import std.ctype;
+
+string toSet(T)(T v) {
+	string r;
+    foreach (i, e; EnumMembers!T)
+    {
+        if (v & e) {
+        	if (r.length > 0) r ~= " | ";
+            r ~= __traits(allMembers, T)[i];
+        }
+    }
+	return r;
+}
 
 T[] ltrim(T)(T[] array, T valueToRemove) {
 	foreach (index, value; array) if (value != valueToRemove) return array[index..$];
