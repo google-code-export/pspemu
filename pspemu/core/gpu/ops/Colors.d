@@ -103,10 +103,10 @@ template Gpu_Colors() {
 	}
 
 	// source fix color
-	auto OP_SFIX() { gpu.state.blend.fixColorSrc.rgb[] = command.float3[]; }
+	auto OP_SFIX() { gpu.state.blend.fixColorSrc.rgb[] = command.float3[]; gpu.state.blend.fixColorSrc.a = 1.0; }
 
 	// destination fix color
-	auto OP_DFIX() { gpu.state.blend.fixColorDst.rgb[] = command.float3[]; }
+	auto OP_DFIX() { gpu.state.blend.fixColorDst.rgb[] = command.float3[]; gpu.state.blend.fixColorDst.a = 1.0; }
 
 	/**
 	 * Set mask for which bits of the pixels to write

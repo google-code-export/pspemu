@@ -127,14 +127,20 @@ class Display {
 		while (this.runningState.running) {
 			CURRENT_HCOUNT = 0;
 			
+			ulong second = 1_000_000;
+			
+			if (!enableWaitVblank) {
+				second = 100_000;
+			}
+
 			this.drawRow0Condition.notifyAll();
-			Thread.sleep(dur!"usecs"(cast(ulong)(1_000_000 * (vsync_row / hsync_hz))));
+			Thread.sleep(dur!"usecs"(cast(ulong)(second * (vsync_row / hsync_hz))));
 			CURRENT_HCOUNT = cast(uint)vsync_row;
 
 			this.vblankEvent();
 			this.vblankStartCondition.notifyAll();
 			VBLANK_COUNT++;
-			Thread.sleep(dur!"usecs"(cast(ulong)(1_000_000 * ((number_of_rows - vsync_row) / hsync_hz))));
+			Thread.sleep(dur!"usecs"(cast(ulong)(second * ((number_of_rows - vsync_row) / hsync_hz))));
 		}
 		
 		Logger.log(Logger.Level.TRACE, "Display", "Display.run::ended");

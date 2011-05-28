@@ -10,6 +10,7 @@ http://code.google.com/p/pspplayer/source/browse/trunk/Noxa.Emulation.Psp.Video.
 
 //version = VERSION_ENABLE_FRAME_LOAD; // Disabled temporary. It cause problems with some games (Dividead for example and a lot of games using SDL. I have to fix it first.).
 //version = VERSION_HOLD_DEPTH_BUFFER_IN_MEMORY; // Disabled temporary
+
 version = VERSION_ENABLED_STATE_CORTOCIRCUIT;
 version = VERSION_ENABLED_STATE_CORTOCIRCUIT_EX;
 
@@ -272,7 +273,7 @@ class GpuOpengl : GpuImplAbstract {
 			
 			string textureFileName;
 			
-			if (state.textureMappingEnabled) {
+			if (state.texture.enabled) {
 				Texture texture = getTexture(state.texture, state.clut);
 				textureFileName = std.string.format("%s/TEXTURE_%08X_%s_%s.png", dumpPath, texture.textureHash, to!string(texture.textureFormat), to!string(texture.clutFormat));
 				if (!std.file.exists(textureFileName)) {
@@ -566,8 +567,9 @@ template OpenglUtils() {
 		void prepareMatrix() {
 			if (state.vertexType.transform2D) {
 				glMatrixMode(GL_PROJECTION); glLoadIdentity();
-				glOrtho(0.0f, 512.0f, 272.0f, 0.0f, -1.0f, 1.0f);
-				//glOrtho(0, 512, 272, 0, 0, -0xFFFF);
+				//glOrtho(0.0f, 512.0f, 272.0f, 0.0f, -1.0f, 1.0f);
+				//glOrtho(0, 480, 272, 0, 0, -0xFFFF);
+				glOrtho(0, 512, 272, 0, -0x7FFF, +0x7FFF);
 				//glTranslatef(0, 1, 0);
 				glMatrixMode(GL_MODELVIEW); glLoadIdentity();
 			} else {
@@ -640,7 +642,7 @@ template OpenglUtils() {
 	void drawBeginNormal(PrimitiveFlags flags) {
 		void prepareTexture() {
 			//writefln("prepareTexture[1]");
-			if (!glEnableDisable(GL_TEXTURE_2D, state.textureMappingEnabled)) {
+			if (!glEnableDisable(GL_TEXTURE_2D, state.texture.enabled)) {
 				version (VERSION_ENABLED_STATE_CORTOCIRCUIT) return;
 			}
 
@@ -942,6 +944,10 @@ template OpenglUtils() {
 				return;
 			}
 		}
+		
+		// @TEMP @HACK
+		//state.depth.testEnabled = false;
+		//state.alphaTest.enabled = false;
 
 		//writefln("drawBegin[1]");
 		if (state.clearingMode) {

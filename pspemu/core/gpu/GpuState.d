@@ -135,34 +135,23 @@ struct LightState {
 	Colorf ambientColor, diffuseColor, specularColor;
 	
 	string toString() {
-		if (!enabled) return std.string.format("LightState(enabled = false)");
+		string ret;
 		
-		return std.string.format(
-			"LightState(\n"
-			"    enabled       = %s\n"
-			"    type          = %s\n"
-			"    kind          = %s\n"
-			"    position      = %s\n"
-			"    spotDirection = %s\n"
-			"    attenuation   = %s\n"
-			"    spotExponent  = %f\n"
-			"    spotCutoff    = %f\n"
-			"    ambientColor  = %s\n"
-			"    diffuseColor  = %s\n"
-			"    specularColor = %s\n"
-			")\n"
-			, enabled
-			, to!string(type)
-			, to!string(kind)
-			, position
-			, spotDirection
-			, attenuation
-			, spotExponent
-			, spotCutoff
-			, ambientColor
-			, diffuseColor
-			, specularColor
-		);
+		ret ~= std.string.format("LightState(enabled = %s", enabled);
+		if (enabled) {
+			ret ~= std.string.format("\n    type         =%s", to!string(type));
+			ret ~= std.string.format("\n    kind         =%s", to!string(kind));
+			ret ~= std.string.format("\n    position     =%s", position);
+			ret ~= std.string.format("\n    spotDirection=%s", spotDirection);
+			ret ~= std.string.format("\n    attenuation  =%s", attenuation);
+			ret ~= std.string.format("\n    spotExponent =%f", spotExponent);
+			ret ~= std.string.format("\n    spotCutoff   =%f", spotCutoff);
+			ret ~= std.string.format("\n    ambientColor =%f", ambientColor);
+			ret ~= std.string.format("\n    diffuseColor =%f", diffuseColor);
+			ret ~= std.string.format("\n    specularColor=%f", specularColor);
+		}
+		ret ~= ")";
+		return ret;
 	}
 }
 
@@ -202,24 +191,6 @@ static struct VertexState {
 	}
 }
 
-/*static struct VertexStateArrays {
-	UV[]       textureArray;
-	float[4][] colorArray;
-	float[3][] normalArray;
-	float[3][] positionArray;
-	float[8][] weights;
-
-	void reserve(int count) {
-		if (textureArray.length < count) {
-			textureArray.length  = count;
-			colorArray.length    = count;
-			normalArray.length   = count;
-			positionArray.length = count;
-			weights.length       = count;
-		}
-	}
-}*/
-
 struct Viewport {
 	float px, py, pz;
 	float sx, sy, sz;
@@ -230,6 +201,8 @@ struct Viewport {
 }
 
 struct TextureState {
+	bool enabled;   // Texture Mapping Enable (GL_TEXTURE_2D)
+	
 	// Format of the texture data.
 	bool           swizzled;              /// Is texture swizzled?
 	PixelFormats   format;                /// Texture Data mode
@@ -272,15 +245,14 @@ struct TextureState {
 	uint paletteRequiredComponents() { return hasPalette ? (1 << (4 + (format - PixelFormats.GU_PSM_T4))) : 0; }
 	
 	string toString() {
-		return std.string.format(
-			"TextureState(\n"
-			"    swizzled    =%s\n"
-			"    format      =%s\n"
-			"    ...\n"
-			")\n"
-			, swizzled
-			, to!string(format)
-		);
+		string ret;
+		ret ~= std.string.format("TextureState(enabled:%s", enabled);
+		if (enabled) {
+			ret ~= std.string.format("\n    swizzled: %s", swizzled);
+			ret ~= std.string.format("\n    format: %s", to!string(format));
+		}
+		ret ~= ")";
+		return ret;
 	}
 }
 
@@ -460,7 +432,6 @@ static struct GpuState {
 			float[8] morphWeights;
 
 			// State.
-			bool textureMappingEnabled;   // Texture Mapping Enable (GL_TEXTURE_2D)
 			bool clipPlaneEnabled;        // Clip Plane Enable (GL_CLIP_PLANE0)
 			bool backfaceCullingEnabled;  // Backface Culling Enable (GL_CULL_FACE)
 			bool ditheringEnabled;
@@ -489,32 +460,32 @@ static struct GpuState {
 	string toString() {
 		return std.string.format(
 			"GpuState(\n"
-			"    baseAddress      =%08X;\n"
-			"    vertexAddress    =%08X;\n"
-			"    indexAddress     =%08X;\n"
-			"    textureTransfer  =%s\n"
-			"    viewport         =%s\n"
-			"    offset           =(%d, %d)\n"
-			"    clearFlags       =(%s)\n"
-			"    ambientModelColor=(%s)\n"
-			"    diffuseModelColor=(%s)\n"
-			"    specularModelColor=(%s)\n"
-			"    emissiveModelColor=(%s)\n"
-			"    textureEnviromentColor=(%s)\n"
-			"    materialColorComponents=(%s)\n"
-			"    fog               =%s\n"
-			"    projectionMatrix  =%s\n"
-			"    worldMatrix       =%s\n"
-			"    viewMatrix        =%s\n"
-			"    textureMatrix     =%s\n"
-			"    transformMode     =%s\n"
-			"    texture           =%s\n"
-			"    uploadedClut      =%s\n"
-			"    clut              =%s\n"
-			"    scissor           =%s\n"
-			"    frontFaceDirection=%s\n"
-			"    shadeModel        =%s\n"
-			"    textureMappingEnabled   = %s\n"
+			"    vertexType              = %s;\n"
+			"    baseAddress             = %08X;\n"
+			"    vertexAddress           = %08X;\n"
+			"    indexAddress            = %08X;\n"
+			"    textureTransfer         = %s\n"
+			"    viewport                = %s\n"
+			"    offset                  = (%d, %d)\n"
+			"    clearFlags              = %s\n"
+			"    ambientModelColor       = %s\n"
+			"    diffuseModelColor       = %s\n"
+			"    specularModelColor      = %s\n"
+			"    emissiveModelColor      = %s\n"
+			"    textureEnviromentColor  = %s\n"
+			"    materialColorComponents = %s\n"
+			"    fog                     = %s\n"
+			"    projectionMatrix        = %s\n"
+			"    worldMatrix             = %s\n"
+			"    viewMatrix              = %s\n"
+			"    textureMatrix           = %s\n"
+			"    transformMode           = %s\n"
+			"    texture                 = %s\n"
+			"    uploadedClut            = %s\n"
+			"    clut                    = %s\n"
+			"    scissor                 = %s\n"
+			"    frontFaceDirection      = %s\n"
+			"    shadeModel              = %s\n"
 			"    clipPlaneEnabled        = %s\n"
 			"    backfaceCullingEnabled  = %s\n"
 			"    ditheringEnabled        = %s\n"
@@ -529,6 +500,7 @@ static struct GpuState {
 			"    logicalOperation        = %s\n"
 			"    colorMask               = %s\n"
 			")"
+			, vertexType
 			, baseAddress
 			, vertexAddress
 			, indexAddress
@@ -550,8 +522,7 @@ static struct GpuState {
 			, clut
 			, scissor
 			, to!string(frontFaceDirection)
-			, shadeModel
-			, textureMappingEnabled
+			, to!string(shadeModel)
 			, clipPlaneEnabled
 			, backfaceCullingEnabled
 			, ditheringEnabled

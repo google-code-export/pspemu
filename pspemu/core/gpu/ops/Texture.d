@@ -3,6 +3,9 @@ module pspemu.core.gpu.ops.Texture;
 template Gpu_Texture() {
 	static pure string TextureArrayOperation(string type, string code) { return ArrayOperation(type, 0, 7, code); }
 
+	// Texture Mapping Enable (GL_TEXTURE_2D)
+	auto OP_TME() { gpu.state.texture.enabled = command.bool1; }
+
 	/**
 	 * Set texture-mode parameters
 	 *

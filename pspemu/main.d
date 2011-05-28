@@ -166,8 +166,7 @@ int main(string[] args) {
 	}
 	
 	void loadgpuDump(string opt, string component) {
-		GpuState gpuState;
-		writefln("emptyGpuState: %s", gpuState);
+		//GpuState gpuState; writefln("emptyGpuState: %s", gpuState);
 		for (int n = 0; ; n++) {
 			string dumpFilename = std.string.format("%s/%d.bin", component, n);
 			if (!std.file.exists(dumpFilename)) break;

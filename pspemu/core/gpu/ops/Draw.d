@@ -291,6 +291,9 @@ template Gpu_Draw() {
 		auto extractIndex    = (indexPointer !is null) ? extractIndexTable[vertexType.index] : null;
 
 		void extractVertex(ref VertexState vertex) {
+			//while ((cast(uint)vertexPointer) & 0b11) vertexPointer++;
+			//if ((cast(uint)vertexPointer) & 0b11) writefln("ERROR!");
+			
 			if (extractWeights) {
 				extractWeights(vertex.weights[0..vertexType.skinningWeightCount]);
 				debug (EXTRACT_PRIM) writef("| weights(...) ");

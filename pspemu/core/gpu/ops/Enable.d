@@ -43,9 +43,6 @@ template Gpu_Enable() {
 	// Clip Plane Enable (GU_CLIP_PLANES/GL_CLIP_PLANE0)
 	auto OP_CPE() { gpu.state.clipPlaneEnabled = command.bool1; }
 
-	// Texture Mapping Enable (GL_TEXTURE_2D)
-	auto OP_TME() { gpu.state.textureMappingEnabled = command.bool1; }
-
 	// AnitAliasing Enable (GU_LINE_SMOOTH?)
 	auto OP_AAE() { gpu.state.lineSmoothEnabled = command.bool1; }
 	
