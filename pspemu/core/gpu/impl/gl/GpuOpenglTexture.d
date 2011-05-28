@@ -67,10 +67,6 @@ class Texture {
 		return data;
 	}
 	
-	static int getClutIndex(ref ClutState clut, int index) {
-		return ((clut.start + index) >> clut.shift) & clut.mask;
-	}
-
 	void update(Memory memory, ref TextureState texture, ref ClutState clut) {
 		//markForRecheck = true;
 		//refreshAnyway = true;
@@ -93,23 +89,23 @@ class Texture {
 					if (currentTextureHash != textureHash) {
 						textureHash = currentTextureHash;
 						refreshAnyway = true;
+						//writefln("  Different texture data");
 					}
 					
 					// clut.colorEntrySize
 
 					//auto currentClutHash = std.zlib.crc32(0, clutData[getClutIndex(clut, 0)..getClutIndex(clut, clut.mask + 1)]);
-					int from = getClutIndex(clut, 0) * clut.colorEntrySize;
-					int to = getClutIndex(clut, bsr(clut.mask) - 1) * clut.colorEntrySize;
-					auto currentClutHash = std.zlib.crc32(0, clutData[from..to]);
+					auto currentClutHash = std.zlib.crc32(0, clut.getRealClutData);
 					currentClutHash ^= clut.address;
 					currentClutHash ^= clut.format;
-					currentClutHash ^= clut.mask;
 					currentClutHash ^= clut.shift;
+					currentClutHash ^= clut.mask;
 					currentClutHash ^= clut.start;
 					//currentClutHash = std.zlib.crc32(currentClutHash, TA(clut));
 					if (currentClutHash != clutHash) {
 						clutHash = currentClutHash;
 						refreshAnyway = true;
+						//writefln("  Different clut");
 					}
 				}
 			}
@@ -125,6 +121,10 @@ class Texture {
 	}
 
 	void updateActually(ubyte[] textureData, ubyte* clutData, ref TextureState texture, ref ClutState clut) {
+		__gshared int missCount2 = 0;
+		//writefln("TEXTURE CACHE MISS (2)!! (%d)", missCount2);
+		missCount2++;
+		
 		auto texturePixelFormat = GlPixelFormats[this.textureFormat = texture.format];
 		auto clutPixelFormat    = GlPixelFormats[this.clutFormat = clut.format];
 		this.textureState = texture;
@@ -235,7 +235,7 @@ class Texture {
 		}*/
 		
 		void writeValue(uint index) {
-			textureDataWithPaletteApplied[0..clutEntrySize] = (clutData + getClutIndex(clut, index) * clutEntrySize)[0..clutEntrySize];
+			textureDataWithPaletteApplied[0..clutEntrySize] = (clutData + clut.getIndex(index) * clutEntrySize)[0..clutEntrySize];
 			textureDataWithPaletteApplied += clutEntrySize;
 		}
 		switch (texture.format) {

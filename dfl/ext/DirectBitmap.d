@@ -6,6 +6,7 @@ private {
 	import std.c.stdlib : malloc, free;
 	import std.string;
 	import std.conv;
+	import std.stdio;
 	
 	
 	extern(Windows) int GetDIBits(
@@ -139,7 +140,15 @@ class DirectBitmap : Image {
 	override void drawStretched(Graphics graphics, Rect rect) {
 		HDC hdcDest = graphics.handle;
 		
-		SetStretchBltMode(hdcDest, HALFTONE);
+		if ((rect.width == width_) && (rect.height == height_)) {
+			draw(graphics, Point(rect.x, rect.y));
+			return;
+		}
+		
+		//SetStretchBltMode(hdcDest, COLORONCOLOR);
+		//SetStretchBltMode(hdcDest, HALFTONE);
+		
+		//writefln("(%d,%d-%d,%d)(%d,%d)", rect.x, rect.y, rect.width, rect.height, width_, height_);
 
 		StretchBlt(
 			hdcDest,

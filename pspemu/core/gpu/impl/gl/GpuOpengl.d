@@ -54,26 +54,6 @@ import pspemu.core.exceptions.NotImplementedException;
 import pspemu.utils.imaging.SimplePng;
 import pspemu.utils.imaging.SimpleTga;
 
-/*
-align (1) struct TGA_HEADER {
-    byte  identsize = 0;          // size of ID field that follows 18 byte header (0 usually)
-    byte  colourmaptype = 0;      // type of colour map 0=none, 1=has palette
-    byte  imagetype = 2;          // type of image 0=none,1=indexed,2=rgb,3=grey,+8=rle packed
-
-    short colourmapstart = 0;     // first colour map entry in palette
-    short colourmaplength = 0;    // number of colours in palette
-    byte  colourmapbits = 0;      // number of bits per palette entry 15,16,24,32
-
-    short xstart = 0;             // image x origin
-    short ystart = 0;             // image y origin
-    short width;              // image width in pixels
-    short height;             // image height in pixels
-    byte  bits = 32;               // image bits per pixel 8,16,24,32
-    byte  descriptor = 0b00101111;         // image descriptor bits (vh flip bits)
-    
-    // pixel data follows header
-}
-*/
 
 class GpuOpengl : GpuImplAbstract {
 	mixin OpenglBase;
@@ -118,6 +98,8 @@ class GpuOpengl : GpuImplAbstract {
 		*/
 
 		//program.use(0);
+		
+		reset();
 	}
 	
 	uint recordFrameID = 0;
@@ -171,16 +153,14 @@ class GpuOpengl : GpuImplAbstract {
 	}
 
 	void reset() {
-		textureCache = null;
+		textureCachePool = new TextureCachePool(this);
 	}
 
 	void startDisplayList() {
 		debug (DEBUG_PRIM_PERFORMANCE) writefln("-");
 
 		// Here we should invalidate texture cache? and recheck hashes of the textures?
-		foreach (texture; textureCache) {
-			texture.markForRecheck = true;
-		}
+		textureCachePool.markForRecheckAll();
 	}
 
 	void endDisplayList() {
@@ -384,17 +364,22 @@ class GpuOpengl : GpuImplAbstract {
 						}
 
 						if (base is null) {
-							glTexCoordPointer(2, GL_FLOAT, VertexState.sizeof, base + vertexList[0].u.offsetof);
-							glColorPointer   (4, GL_FLOAT, VertexState.sizeof, base + vertexList[0].r.offsetof);
-							glNormalPointer  (   GL_FLOAT, VertexState.sizeof, base + vertexList[0].nx.offsetof);
-							glVertexPointer  (3, GL_FLOAT, VertexState.sizeof, base + vertexList[0].px.offsetof);
 						} else {
 						}
 						*/
+						auto base = cast(ubyte*)vertexList.ptr;
+						glTexCoordPointer(2, GL_FLOAT, VertexState.sizeof, base + vertexList[0].u.offsetof);
+						glColorPointer   (4, GL_FLOAT, VertexState.sizeof, base + vertexList[0].r.offsetof);
+						glNormalPointer  (   GL_FLOAT, VertexState.sizeof, base + vertexList[0].nx.offsetof);
+						glVertexPointer  (3, GL_FLOAT, VertexState.sizeof, base + vertexList[0].px.offsetof);
 						
 						//glDrawArrays(PrimitiveTypeTranslate[type], 0, vertexList.length);
 
-						glInterleavedArrays(GL_T2F_C4F_N3F_V3F, VertexState.sizeof, vertexList.ptr);
+						//glInterleavedArrays(GL_T2F_C4F_N3F_V3F, VertexState.sizeof, vertexList.ptr);
+						
+						//glDrawArrays(PrimitiveTypeTranslate[type], 0, vertexList.length);
+						
+						//glIndexPointer(GL_UNSIGNED_SHORT, 0, indexList.ptr);
 						glDrawElements(PrimitiveTypeTranslate[type], indexList.length, GL_UNSIGNED_SHORT, indexList.ptr);
 					}
 					// Faster?
@@ -513,8 +498,60 @@ class GpuOpengl : GpuImplAbstract {
 	}
 }
 
-template OpenglUtils() {
+class TextureCachePool {
+	// Implement.
+	static struct TextureCacheInfo {
+		Texture texture;
+		uint size;
+		uint hit;
+		uint lastUpdate;
+		string hash;
+	}
+	GpuOpengl gpuOpengl;
+	TextureCacheInfo[Texture] textureCacheInfos;
 	Texture[string] textureCache;
+	
+	this(GpuOpengl gpuOpengl) {
+		this.gpuOpengl = gpuOpengl;
+	}
+	
+	void remove(Texture texture) {
+		string hash = textureCacheInfos[texture].hash;
+		textureCache.remove(hash);
+		textureCacheInfos.remove(texture);
+		delete texture;
+	}
+	
+	Texture get(TextureState textureState, ClutState clutState) {
+		__gshared missCount = 0;
+		Texture texture = void;
+		
+		static ubyte[] emptyBuffer;
+		
+		auto textureData = textureState.address ? (cast(ubyte*)gpuOpengl.state.memory.getPointer(textureState.address))[0..textureState.mipmapTotalSize(0)] : emptyBuffer;
+		
+		string hash = textureState.hash ~ clutState.hash ~ cast(string)textureData ~ cast(string)clutState.getRealClutData;
+		if ((hash in textureCache) is null) {
+			texture = new Texture();
+			textureCache[hash] = texture;
+			//writefln("TEXTURE CACHE MISS!! (%d)", missCount);
+			missCount++;
+		} else {
+			texture = textureCache[hash];
+		}
+		texture.update(gpuOpengl.state.memory, textureState, clutState);
+		return texture;
+	}
+	
+	void markForRecheckAll() {
+		foreach (texture; textureCache) {
+			texture.markForRecheck = true;
+		}
+	}
+}
+
+template OpenglUtils() {
+	TextureCachePool textureCachePool;
 	//Clut[uint] clutCache;
 	
 	bool glEnableDisable(int type, bool enable) {
@@ -549,18 +586,9 @@ template OpenglUtils() {
 		*/
 		throw(new NotImplementedException("outputDepthAndStencil"));
 	}
-
+	
 	Texture getTexture(TextureState textureState, ClutState clutState) {
-		Texture texture = void;
-		string hash = textureState.hash ~ clutState.hash;
-		if ((hash in textureCache) is null) {
-			texture = new Texture();
-			textureCache[hash] = texture;
-		} else {
-			texture = textureCache[hash];
-		}
-		texture.update(state.memory, textureState, clutState);
-		return texture;
+		return textureCachePool.get(textureState, clutState);
 	}
 	
 	void drawBeginCommon() {

@@ -106,6 +106,8 @@ class MainForm : Form, IMessageFilter {
 		this.guiDfl = guiDfl;
 
 		setButtonMasks();
+
+		Application.addMessageFilter(this);
 		
 		setTitle();
 		startPosition = FormStartPosition.CENTER_SCREEN;
@@ -126,11 +128,7 @@ class MainForm : Form, IMessageFilter {
 
 		drawingArea1x.dock = DockStyle.FILL;
 		drawingArea2x.dock = DockStyle.FILL;
-		
-		clickToolsWindowSize(1);
-		
-		Application.addMessageFilter(this);
-		
+
 		resize ~= delegate(Control control, EventArgs ea) {
 			if (justUpdatedWindowSize) {
 				justUpdatedWindowSize = false;
@@ -138,6 +136,11 @@ class MainForm : Form, IMessageFilter {
 			}
 			windowSize = -1;
 		};
+
+		setClientSizeCore(480, 272);
+		minimumSize = size;
+		
+		clickToolsWindowSize(1);
 		
 		guiDfl.started = true;
 	}
@@ -267,7 +270,7 @@ class MainForm : Form, IMessageFilter {
 				bool Pressed = (msg.msg == WM_KEYDOWN);
 				//writefln("%032b:%d", buttonMask, Pressed);
 				sceCtrlData.SetPressedButton(maskDigital, Pressed);
-				sceCtrlData.SetPressedButton(maskAnalog, Pressed);
+				sceCtrlData.SetPressedButtonAnalog(maskAnalog, Pressed);
 				
 				if (maskDigital != 0) processedKey = true;
 				if (maskAnalog != 0) processedKey = true;
@@ -359,6 +362,8 @@ class GuiDfl : GuiBase {
 		
 		if (tempFullScreen.length == 0) tempFullScreen = new uint[480 * 272];
 		
+		//writefln("COMPONENTS: %s, %s", controller, display);
+		
 		DrawingArea drawingArea;
 		Pixel[] pixels;
 		if (mainForm.scale2x) {
@@ -368,6 +373,8 @@ class GuiDfl : GuiBase {
 			drawingArea = mainForm.drawingArea1x;
 		}
 		pixels = drawingArea.dbmp.lock();
+		
+		//writefln("[1]");
 		
 		for (int n = 0; n < 272; n++) {
 			void* rowInput = this.display.memory.getPointer(this.display.topaddr + n * 512 * PixelFormatSizeMul[display.pixelformat]);
@@ -382,16 +389,21 @@ class GuiDfl : GuiBase {
 			);
 		}
 		
+		//writefln("[2] %08X %d, %08X %d", cast(uint)pixels.ptr, pixels.length, cast(uint)tempFullScreen.ptr, tempFullScreen.length);
+		
+		int count1 = 480 * 272;
+		
 		if (mainForm.scale2x) {
 			hq2x_32(tempFullScreen.ptr, tempFullScreenX2.ptr, 480, 272);
-			int count1 = 480 * 272;
 			int count2 = count1 * 2 * 2;
 			
 			(cast(uint[])pixels)[0..count2] = (cast(uint[])tempFullScreenX2)[0..count2];
 			//(cast(uint[])pixels)[0..count1] = (cast(uint[])tempFullScreen)[0..count1];
 		} else {
-			(cast(uint[])pixels)[] = (cast(uint[])tempFullScreen)[];
+			(cast(uint[])pixels)[0..count1] = (cast(uint[])tempFullScreen)[0..count1];
 		}
+		
+		//writefln("[3]");
 
 		/*		
 		for (int n = 0; n < 272; n++) {
@@ -405,7 +417,11 @@ class GuiDfl : GuiBase {
 		mainForm.setScale2xVisibility();
 		drawingArea._invalidate();
 		
+		//writefln("[4]");
+		
 		this.controller.sceCtrlData.DoEmulatedAnalogFrame();
 		this.controller.push();
+		
+		//writefln("[5]");
 	}
 }
