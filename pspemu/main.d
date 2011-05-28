@@ -42,8 +42,11 @@ import pspemu.formats.Pgf;
 import pspemu.formats.iso.Iso;
 import pspemu.formats.iso.IsoFactory;
 import pspemu.formats.DetectFormat;
+import pspemu.core.gpu.GpuState;
+import pspemu.core.gpu.Types;
 
 void executeSandboxTests(string[] args) {
+	/*
 	MountableVirtualFileSystem vfs = new MountableVirtualFileSystem(new VirtualFileSystem());
 	writefln("Format: %s", DetectFormat.detect(args[1]));
 	if (args.length >= 2) {
@@ -59,6 +62,12 @@ void executeSandboxTests(string[] args) {
 	foreach (entry; vfs.dopen("flash0:/font")) {
 		writefln("%s", entry);
 	}
+	*/
+	
+	Command command;
+	command.v = 0xFFFFFFFF;
+	LightModel value = command.extractEnum!(LightModel);
+	writefln("LightModel: %d", value);
 }
 
 void executeIsoListing(string[] args) {
@@ -104,6 +113,10 @@ void init(string[] args) {
 
 
 import pspemu.utils.SvnVersion;
+import pspemu.extra.Cheats;
+
+import pspemu.core.gpu.impl.gl.GpuOpengl;
+import pspemu.core.gpu.Commands;
 
 
 int main(string[] args) {
@@ -148,6 +161,22 @@ int main(string[] args) {
 		Logger.enableLogComponent(component);
 	}
 	
+	void addCheat32(string opt, string component) {
+		globalCheats.addCheatString(component, 32);
+	}
+	
+	void loadgpuDump(string opt, string component) {
+		GpuState gpuState;
+		writefln("emptyGpuState: %s", gpuState);
+		for (int n = 0; ; n++) {
+			string dumpFilename = std.string.format("%s/%d.bin", component, n);
+			if (!std.file.exists(dumpFilename)) break;
+			GpuOpengl.DumpStruct dumpStruct = GpuOpengl.loadDump(cast(ubyte[])std.file.read(dumpFilename));
+			dumpStruct.dump();
+		}
+		std.c.stdlib.exit(0);
+	}
+	
 	getopt(
 		args,
 		"help|h|?", &showHelp,
@@ -159,31 +188,37 @@ int main(string[] args) {
 		"trace", &trace,
 		"log", &log,
 		"nologmod", &disableLogComponent,
-		"enlogmod", &enableLogComponent
+		"enlogmod", &enableLogComponent,
+		"loadgpu", &loadgpuDump,
+		"cheat32", &addCheat32
 	);
 	
 	void displayHelp() {
-		writefln("DPspEmulator 0.3.1.0");
+		writefln("DPspEmulator 0.3.1.0 r%d", SvnVersion.revision);
 		writefln("");
 		writefln("pspemu.exe [<args>] [<file>]");
 		writefln("");
 		writefln("Arguments:");
-		writefln("  --help            - Show this help");
-		writefln("  --sandbox_tests   - Run test sandbox code (only for developers)");
-		writefln("  --unit_tests      - Run unittests (only for developers)");
-		writefln("  --extended_tests  - Run tests on 'tests_ex' folder (only for developers)");
-		writefln("  --trace           - Enables cpu tracing at start");
-		writefln("  --log             - Enables logging");
-		writefln("  --nolog           - Disables logging");
-		writefln("  --nologmod=MOD    - Disables logging of a module");
-		writefln("  --enlogmod=MOD    - Enables logging of a module");
-		writefln("  --isolist         - Allow to list an iso file and (optionally) to extract a single file");
+		writefln("  --help             - Show this help");
+		writefln("  --sandbox_tests    - Run test sandbox code (only for developers)");
+		writefln("  --unit_tests       - Run unittests (only for developers)");
+		writefln("  --extended_tests   - Run tests on 'tests_ex' folder (only for developers)");
+		writefln("  --trace            - Enables cpu tracing at start");
+		writefln("  --log              - Enables logging");
+		writefln("  --nolog            - Disables logging");
+		writefln("  --nologmod=MOD     - Disables logging of a module");
+		writefln("  --enlogmod=MOD     - Enables logging of a module");
+		writefln("  --cheat32=ADDR:VAL - Adds a memory write every frame (addresses are relative to 0x08000000, the memory.dump start).");
+		writefln("  --isolist          - Allow to list an iso file and (optionally) to extract a single file");
+		writefln("  --loadgpu=folder   - Loads a gpu dump and displays it");
 		writefln("");
 		writefln("Examples:");
 		writefln("  pspemu.exe --help");
 		writefln("  pspemu.exe --test");
 		writefln("  pspemu.exe --isolist mygame.iso");
 		writefln("  pspemu.exe --isolist mygame.iso /UMD_DATA.BIN");
+		writefln("  pspemu.exe --cheat32=0xB98320:3");
+		writefln("  pspemu.exe \"isos/My Game.cso\"");
 		writefln("  pspemu.exe game/EBOOT.PBP");
 		writefln("");
 	}

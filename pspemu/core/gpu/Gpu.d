@@ -281,12 +281,12 @@ class Gpu {
 				newWaitAndCheck([displayLists.readAvailableEvent, endedExecutingListsEvent]);
 			}
 			
-			impl.recordFrameAction = false;
+			impl.recordFrameEnd();
 			
 			performBufferOp(BufferOperation.STORE);
 			if (recordFrameStart) {
 				recordFrameStart = false;
-				impl.recordFrameAction = true;
+				impl.recordFrameStart();
 			}
 		}
 	}

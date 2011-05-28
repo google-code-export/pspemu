@@ -22,6 +22,9 @@ template Gpu_Depth() {
 		gpu.markBufferOp(BufferOperation.LOAD, BufferType.DEPTH);
 	}
 
+	// depth (Z) Test Enable (GU_DEPTH_TEST)
+	auto OP_ZTE() { gpu.state.depth.testEnabled = command.bool1; }
+
 	/**
 	 * Select which depth-test function to use
 	 *
@@ -39,8 +42,11 @@ template Gpu_Depth() {
 	 **/
 	// void sceGuDepthFunc(int function); // OP_ZTST
 	auto OP_ZTST() {
-		gpu.state.depthFunc = command.extractEnum!(TestFunction);
+		gpu.state.depth.testFunc = command.extractEnum!(TestFunction);
 	}
+	
+	// Alpha Test Enable (GU_ALPHA_TEST) glAlphaFunc(GL_GREATER, 0.03f);
+	auto OP_ATE() { gpu.state.alphaTest.enabled = command.bool1; /*gpu.state.alphaFunc = 0; gpu.state.alphaFuncValue = 0.03f;*/ }
 
 	/**
 	 * Set the alpha test parameters
@@ -62,11 +68,14 @@ template Gpu_Depth() {
 	// void sceGuAlphaFunc(int func, int value, int mask); // OP_ATST
 	auto OP_ATST() {
 		with (gpu.state) {
-			alphaTestFunc  = command.extractEnum!(TestFunction, 0);
-			alphaTestValue = command.extractFixedFloat!(8, 8);
-			alphaTestMask  = command.extract!(ubyte, 16);
+			alphaTest.func  = command.extractEnum!(TestFunction, 0);
+			alphaTest.value = command.extractFixedFloat!(8, 8);
+			alphaTest.mask  = command.extract!(ubyte, 16);
 		}
 	}
+	
+	// Stencil Test Enable (GL_STENCIL_TEST)
+	auto OP_STE() { gpu.state.stencil.testEnabled = command.bool1; }
 
 	/**
 	 * Set stencil function and reference value for stencil testing
@@ -90,9 +99,9 @@ template Gpu_Depth() {
 	// Stencil Test
 	auto OP_STST() {
 		with (gpu.state) {
-			stencilFuncFunc = command.extractEnum!(TestFunction, 0);
-			stencilFuncRef  = command.extract!(ubyte,  8);
-			stencilFuncMask = command.extract!(ubyte, 16);
+			stencil.funcFunc = command.extractEnum!(TestFunction, 0);
+			stencil.funcRef  = command.extract!(ubyte,  8);
+			stencil.funcMask = command.extract!(ubyte, 16);
 		}
 	}
 
@@ -119,9 +128,9 @@ template Gpu_Depth() {
 	// Stencil OPeration
 	auto OP_SOP() {
 		with (gpu.state) {
-			stencilOperationSfail  = command.extractEnum!(StencilOperations,  0);
-			stencilOperationDpfail = command.extractEnum!(StencilOperations,  8);
-			stencilOperationDppass = command.extractEnum!(StencilOperations, 16);
+			stencil.operationSfail  = command.extractEnum!(StencilOperations,  0);
+			stencil.operationDpfail = command.extractEnum!(StencilOperations,  8);
+			stencil.operationDppass = command.extractEnum!(StencilOperations, 16);
 		}
 	}
 
@@ -133,7 +142,7 @@ template Gpu_Depth() {
 	// void sceGuDepthMask(int mask);
 
 	// glDepthMask
-	auto OP_ZMSK() { gpu.state.depthMask = command.extract!(ushort); }
+	auto OP_ZMSK() { gpu.state.depth.mask = command.extract!(ushort); }
 
 	/**
 	 * Set which range to use for depth calculations.
@@ -150,6 +159,6 @@ template Gpu_Depth() {
 	 **/
 	// void sceGuDepthRange(int near, int far); // OP_NEARZ + OP_FARZ
 	// void sceGuDepthOffset(unsigned int offset);
-	auto OP_NEARZ() { gpu.state.depthRangeNear = command.extractFixedFloat!(0, 16); }
-	auto OP_FARZ () { gpu.state.depthRangeFar  = command.extractFixedFloat!(0, 16); }
+	auto OP_NEARZ() { gpu.state.depth.rangeNear = command.extractFixedFloat!(0, 16); }
+	auto OP_FARZ () { gpu.state.depth.rangeFar  = command.extractFixedFloat!(0, 16); }
 }

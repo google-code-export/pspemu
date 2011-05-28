@@ -27,10 +27,6 @@ template Gpu_Colors() {
 	auto OP_AMC() { gpu.state.ambientModelColor.rgb[] = command.float3[]; }
 	auto OP_AMA() { gpu.state.ambientModelColor.alpha = command.float4[0]; }
 
-	// Ambient Light Color/Alpha
-	auto OP_ALC() { gpu.state.ambientLightColor.rgb[] = command.float3[]; }
-	auto OP_ALA() { gpu.state.ambientLightColor.alpha = command.float4[0]; }
-
 	/**
 	 * Set which color components that the material will receive
 	 *
@@ -56,7 +52,10 @@ template Gpu_Colors() {
 	 **/
 	// void sceGuTexEnvColor(unsigned int color); // OP_TEC
 	// Texture Environment Color
-	auto OP_TEC() { gpu.state.textureEnviromentColor.rgb[] = command.float3[]; }
+	auto OP_TEC() { gpu.state.textureEnviromentColor.rgb[] = command.float3[]; gpu.state.textureEnviromentColor.a = 1.0; }
+
+	// Alpha Blend Enable (GU_BLEND)
+	auto OP_ABE() { gpu.state.blend.enabled = command.bool1; }
 
 	/**
 	 * Set the blending-mode
@@ -68,12 +67,12 @@ template Gpu_Colors() {
 	 *   - Bd - Blend function for destination fragment
 	 *
 	 * Available blending-operations are:
-	 *   - GU_ADD - (Cs*Bs) + (Cd*Bd)
-	 *   - GU_SUBTRACT - (Cs*Bs) - (Cd*Bd)
+	 *   - GU_ADD              - (Cs*Bs) + (Cd*Bd)
+	 *   - GU_SUBTRACT         - (Cs*Bs) - (Cd*Bd)
 	 *   - GU_REVERSE_SUBTRACT - (Cd*Bd) - (Cs*Bs)
-	 *   - GU_MIN - Cs < Cd ? Cs : Cd
-	 *   - GU_MAX - Cs < Cd ? Cd : Cs
-	 *   - GU_ABS - |Cs-Cd|
+	 *   - GU_MIN              - Cs < Cd ? Cs : Cd
+	 *   - GU_MAX              - Cs < Cd ? Cd : Cs
+	 *   - GU_ABS              - |Cs-Cd|
 	 *
 	 * Available blending-functions are:
 	 *   - GU_SRC_COLOR
@@ -97,17 +96,17 @@ template Gpu_Colors() {
 	// Blend Equation and Functions
 	auto OP_ALPHA() {
 		with (gpu.state) {
-			blendFuncSrc  = command.extract!(int, 0, 4);
-			blendFuncDst  = command.extract!(int, 4, 4);
-			blendEquation = command.extract!(int, 8, 2);
+			blend.funcSrc  = command.extractEnum!(BlendingFactor, 0);
+			blend.funcDst  = command.extractEnum!(BlendingFactor, 4);
+			blend.equation = command.extractEnum!(BlendingOp    , 8);
 		}
 	}
 
 	// source fix color
-	auto OP_SFIX() { gpu.state.fixColorSrc.rgb[] = command.float3[]; }
+	auto OP_SFIX() { gpu.state.blend.fixColorSrc.rgb[] = command.float3[]; }
 
 	// destination fix color
-	auto OP_DFIX() { gpu.state.fixColorDst.rgb[] = command.float3[]; }
+	auto OP_DFIX() { gpu.state.blend.fixColorDst.rgb[] = command.float3[]; }
 
 	/**
 	 * Set mask for which bits of the pixels to write

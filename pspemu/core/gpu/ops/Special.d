@@ -133,6 +133,9 @@ template Gpu_Special() {
 	auto OP_SHADE() {
 		gpu.state.shadeModel = command.extractEnum!(ShadingModel);
 	}
+	
+	// Logical Operation Enable (GL_COLOR_LOGIC_OP)
+	auto OP_LOE() { gpu.state.logicalOperation.enabled = command.bool1; }
 
 	/**
 	 * Set color logical operation
@@ -162,7 +165,7 @@ template Gpu_Special() {
 	// void sceGuLogicalOp(int op); // OP_LOP
 	// Logical Operation
 	auto OP_LOP() {
-		gpu.state.logicalOperation = command.extractEnum!(LogicalOperation);
+		gpu.state.logicalOperation.operation = command.extractEnum!(LogicalOperation);
 	}
 
 	/**

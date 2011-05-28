@@ -17,6 +17,8 @@ import pspemu.utils.Event;
 import pspemu.core.RunningState;
 public import pspemu.hle.kd.display.Types;
 
+import pspemu.extra.Cheats;
+
 /*
 http://lan.st/archive/index.php/t-1103.html
 
@@ -114,6 +116,8 @@ class Display {
 			}
 			lastWaitedVblank = VBLANK_COUNT;
 		}
+		
+		globalCheats.executeCheats(memory);
 	}
 
 	protected void run() {
