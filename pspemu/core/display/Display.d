@@ -130,7 +130,7 @@ class Display {
 			ulong second = 1_000_000;
 			
 			if (!enableWaitVblank) {
-				second = 100_000;
+				//second = 100_000;
 			}
 
 			this.drawRow0Condition.notifyAll();

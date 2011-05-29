@@ -230,11 +230,11 @@ class sceUtility : ModuleNative {
 	 * @return 0 on success
 	 */
 	int sceUtilitySavedataInitStart(SceUtilitySavedataParam* params) {
-		unimplemented_notice();
-		
+		const int ERROR_SAVEDATA_SAVE_ACCESS_ERROR = 0x80110385;
+
 		//toStringz(params.saveNameList);
 		
-		logTrace("sceUtilitySavedataInitStart()");
+		logWarning("Not implemented: sceUtilitySavedataInitStart(%s)", to!string(params.mode));
 		
 		std.file.write("lastsceUtilitySavedataInitStart.bin", params[0..1]);
 		
@@ -250,6 +250,7 @@ class sceUtility : ModuleNative {
 			case PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_AUTOSAVE, PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_SAVE, PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_LISTSAVE:
 			{
 				std.file.write(saveFilePath, data[0..params.dataSize]);
+				params.base.result = 0;
 			}
 			break;
 			case PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_AUTOLOAD, PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_LOAD, PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_LISTLOAD:
@@ -258,8 +259,10 @@ class sceUtility : ModuleNative {
 					auto readed = cast(ubyte[])std.file.read(saveFilePath);
 					int minSize = min(readed.length, params.dataBufSize);
 					data[0..minSize] = readed[0..minSize];
+					params.base.result = 0;
 				} catch (Throwable o) {
-					logWarning("%s", o);
+					logWarning("ERROR_SAVEDATA_SAVE_ACCESS_ERROR: %s", o);
+					params.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
 				}
 			} 
 			break;
@@ -269,8 +272,6 @@ class sceUtility : ModuleNative {
 				unimplemented();
 			break;
 		}
-		
-		params.base.result = 0;
 		
 		//currentDialogStep = DialogStep.PROMPT;
 		currentDialogStep = DialogStep.SUCCESS;

@@ -91,6 +91,7 @@ class MainForm : Form, IMessageFilter {
 		string ctext = "";
 		ctext ~= std.string.format("D PSP Emulator r%d", SvnVersion.revision);
 		ctext ~= std.string.format(" - %s", guiDfl.hleEmulatorState.mainModuleName); 
+		ctext ~= std.string.format(" - %s", guiDfl.hleEmulatorState.rootFileSystem.gameID);
 		this.text = ctext; 
 	}
 
@@ -124,6 +125,8 @@ class MainForm : Form, IMessageFilter {
 		menu = createFromMainMenu();
 		controls().add(drawingArea1x = new DrawingArea(480 * 1, 272 * 1));
 		controls().add(drawingArea2x = new DrawingArea(480 * 2, 272 * 2));
+		
+		icon = Application.resources().getIcon(101);
 		//setScale2xVisibility();
 
 		drawingArea1x.dock = DockStyle.FILL;
@@ -186,8 +189,11 @@ class MainForm : Form, IMessageFilter {
 				createMenu("-"),
 				createMenu("Asociate extensions (.cso, .pbp)"),
 			]),
+			createMenu("&Extra", [
+				createMenu("&Indie games (kawagames.com)", { ShellExecuteA(null, "open", "http://kawagames.com/", null, null, SW_SHOWNORMAL); }),
+			]),
 			createMenu("&Help", [
-				createMenu("&Website", { ShellExecuteA(null, "open", "http://pspemu.soywiz.com/", null, null, SW_SHOWNORMAL); }),
+				createMenu("Oficial &Website", { ShellExecuteA(null, "open", "http://pspemu.soywiz.com/", null, null, SW_SHOWNORMAL); }),
 				createMenu("Check for &updates...", {
 					Thread thread = new Thread({
 						int lastestVersion = SvnVersion.getLastOnlineVersion;

@@ -585,14 +585,14 @@ else
 		//EventHandler select;
 		Event!(MenuItem, EventArgs) select; ///
 		
-		
-		protected:
-		
+
 		///
-		final int menuID() // getter
+		public final int menuID() // getter
 		{
 			return mid;
 		}
+		
+		protected:
 		
 		
 		package final int _menuID()
