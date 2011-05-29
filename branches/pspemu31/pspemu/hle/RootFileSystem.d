@@ -26,6 +26,7 @@ class RootFileSystem {
 	IoDevice[string] devices;
 	string fscurdir;
 	bool isUmdGame;
+	string gameID = "*";
 	
 	this(HleEmulatorState hleEmulatorState) {
 		this.hleEmulatorState = hleEmulatorState;
@@ -64,6 +65,13 @@ class RootFileSystem {
 	
 	void setIsoPath(string path) {
 		devices["umd0:"].parentVirtualFileSystem = new IsoFileSystem(IsoFactory.getIsoFromStream(path));
+		try {
+			string umd_data = cast(string)fsroot.readAll("umd0:/UMD_DATA.BIN");
+			string[] parts = std.string.split(umd_data, "|");
+			gameID = parts[0];
+		} catch {
+			
+		}
 	}
 	
 	void setVirtualBoot(string bootpath) {

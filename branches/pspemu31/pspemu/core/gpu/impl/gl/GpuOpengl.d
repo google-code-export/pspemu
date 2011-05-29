@@ -246,6 +246,8 @@ class GpuOpengl : GpuImplAbstract {
 	}
 
 	void draw(ushort[] indexList, VertexState[] vertexList, PrimitiveType type, PrimitiveFlags flags) {
+		//writefln("[1]"); scope (exit) writefln("[2]");
+		
 		if (recordFrame) {
 			string dumpPath = std.string.format("GPU/%s", recordFrameTime);
 			try { std.file.mkdirRecurse(dumpPath); } catch { }
@@ -276,6 +278,15 @@ class GpuOpengl : GpuImplAbstract {
 			
 			recordFrameID++;
 		}
+
+		/*
+		if (flags.hasColor) {
+			flags.hasTexture = false;
+			bool backTextureEnabled = state.texture.enabled;
+			scope (exit) state.texture.enabled = backTextureEnabled; 
+			state.texture.enabled = false;
+		}
+		*/
 		
 		//if (gpu.state.clearingMode) return; // Do not draw in clearmode.
 
@@ -528,9 +539,10 @@ class TextureCachePool {
 		
 		static ubyte[] emptyBuffer;
 		
-		auto textureData = textureState.address ? (cast(ubyte*)gpuOpengl.state.memory.getPointer(textureState.address))[0..textureState.mipmapTotalSize(0)] : emptyBuffer;
+		//auto textureData = textureState.address ? (cast(ubyte*)gpuOpengl.state.memory.getPointer(textureState.address))[0..textureState.mipmapTotalSize(0)] : emptyBuffer;
+		//string hash = textureState.hash ~ clutState.hash ~ cast(string)textureData ~ cast(string)clutState.getRealClutData;
+		string hash = textureState.hash ~ clutState.hash;
 		
-		string hash = textureState.hash ~ clutState.hash ~ cast(string)textureData ~ cast(string)clutState.getRealClutData;
 		if ((hash in textureCache) is null) {
 			texture = new Texture();
 			textureCache[hash] = texture;

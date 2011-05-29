@@ -45,7 +45,8 @@ class Logger {
 	}
 	
 	static void log(T...)(Level level, string component, T args) {
-		if (level == Level.NONE) return;
+		if (currentLogLevel == Level.NONE) return;
+
 		foreach (enabledLogComponent; enabledLogComponents) {
 			if (component == enabledLogComponent) goto display;
 			//writefln("%s, %s", component, enabledLogComponent);

@@ -131,7 +131,7 @@ class EmulatorHelper {
 			registers.pcSet = emulator.hleEmulatorState.moduleLoader.PC; 
 		
 			registers.GP = emulator.hleEmulatorState.moduleLoader.GP;
-			registers.SP = emulator.hleEmulatorState.memoryManager.allocStack(PspPartition.User, "Stack for main thread", 0x4000);
+			registers.SP = emulator.hleEmulatorState.memoryManager.allocStack(PspPartition.User, "Stack for main thread", 0x4000) - 0x10;
 			registers.K0 = registers.SP;
 			registers.RA = CODE_PTR_EXIT_THREAD;
 			registers.A0 = 1;

@@ -261,40 +261,15 @@ int main(string[] args) {
 		return 0;
 	}
 	
-	/*
-	struct OPENFILENAMEW
-{
-    DWORD lStructSize;
-    HWND hwndOwner;
-    HINSTANCE hInstance;
-    LPCWSTR lpstrFilter;
-    LPWSTR lpstrCustomFilter;
-    DWORD nMaxCustFilter;
-    DWORD nFilterIndex;
-    LPWSTR lpstrFile;
-    DWORD nMaxFile;
-    LPWSTR lpstrFileTitle;
-    DWORD nMaxFileTitle;
-    LPCWSTR lpstrInitialDir;
-    LPCWSTR lpstrTitle;
-    DWORD Flags;
-    WORD nFileOffset;
-    WORD nFileExtension;
-    LPCWSTR lpstrDefExt;
-    LPARAM lCustData;
-    LPOFNHOOKPROC lpfnHook;
-    LPCWSTR lpTemplateName;
-}
-*/
-	
-	if (args.length == 1) {
+	/*if (args.length == 1) {
 		OPENFILENAMEW openfl;
 		GetOpenFileNameW(&openfl);
-	}
+	}*/
 	
 	if (args.length > 1) {
 		if (nolog) {
-			Logger.setLevel(Logger.Level.WARNING);
+			//Logger.setLevel(Logger.Level.WARNING);
+			Logger.setLevel(Logger.Level.NONE);
 		} else {
 			if (log) {
 				Logger.setLevel(Logger.Level.TRACE);
@@ -320,3 +295,4 @@ int main(string[] args) {
 	writefln("No specified file to execute");
 	return -1;
 }
+
