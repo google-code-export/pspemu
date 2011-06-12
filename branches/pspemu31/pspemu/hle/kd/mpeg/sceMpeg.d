@@ -1,4 +1,4 @@
-module pspemu.hle.kd.power.sceMpeg;
+module pspemu.hle.kd.mpeg.sceMpeg;
 
 import pspemu.hle.kd.Types;
 

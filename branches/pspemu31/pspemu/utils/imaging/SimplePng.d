@@ -4,6 +4,7 @@ import std.intrinsic;
 import std.stdio;
 import std.stream;
 import std.file;
+import std.zlib;
 import etc.c.zlib;
 import pspemu.utils.StructUtils;
 

@@ -45,6 +45,8 @@ import pspemu.formats.DetectFormat;
 import pspemu.core.gpu.GpuState;
 import pspemu.core.gpu.Types;
 
+import pspemu.hle.kd.all;
+
 void executeSandboxTests(string[] args) {
 	/*
 	MountableVirtualFileSystem vfs = new MountableVirtualFileSystem(new VirtualFileSystem());

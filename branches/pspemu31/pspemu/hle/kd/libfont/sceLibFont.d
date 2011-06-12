@@ -1,4 +1,4 @@
-module pspemu.hle.kd.sceLibFont;
+module pspemu.hle.kd.libfont.sceLibFont;
 
 import pspemu.hle.ModuleNative;
 import pspemu.hle.kd.libfont.Types;
