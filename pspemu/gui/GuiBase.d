@@ -12,7 +12,6 @@ public import pspemu.hle.HleEmulatorState;
 public import pspemu.core.cpu.CpuThreadBase;
 public import pspemu.hle.vfs.devices.MemoryStickDevice;
 
-
 import pspemu.utils.Logger;
 
 abstract class GuiBase {
