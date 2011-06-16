@@ -36,5 +36,6 @@ public import
 	pspemu.hle.kd.usersystemlib.Kernel_Library,
 	pspemu.hle.kd.utility.sceUtility,
 	pspemu.hle.kd.utils.UtilsForKernel,
-	pspemu.hle.kd.videocodec.sceVideocodec
+	pspemu.hle.kd.videocodec.sceVideocodec,
+	pspemu.hle.kd.systemctrl.KUBridge
 ;
