@@ -32,6 +32,10 @@ class EmulatorState {
 	uint                 threadsRunning = 0;
 	bool[CpuThreadBase]  cpuThreads;
 	
+	CpuThreadBase[] getCpuThreadsDup() {
+		return cpuThreads.keys.dup;
+	}
+	
 	this() {
 		this.runningState           = new RunningState();
 		this.threadStartedCondition = new WaitEvent("EmulatorState.threadStartedCondition");

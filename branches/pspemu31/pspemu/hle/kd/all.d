@@ -30,6 +30,7 @@ public import
 	pspemu.hle.kd.stdio.StdioForKernel,
 	pspemu.hle.kd.sysmem.KDebugForKernel,
 	pspemu.hle.kd.sysmem.SysMemForKernel,
+	pspemu.hle.kd.sysmem.sceSuspendForUser,
 	pspemu.hle.kd.systimer.SysTimerForKernel,
 	pspemu.hle.kd.threadman.ThreadManForKernel,
 	pspemu.hle.kd.usersystemlib.Kernel_Library,

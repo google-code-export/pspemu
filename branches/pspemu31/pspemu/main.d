@@ -268,32 +268,33 @@ int main(string[] args) {
 		GetOpenFileNameW(&openfl);
 	}*/
 	
-	if (args.length > 1) {
-		if (nolog) {
-			//Logger.setLevel(Logger.Level.WARNING);
-			Logger.setLevel(Logger.Level.NONE);
+	
+	if (nolog) {
+		//Logger.setLevel(Logger.Level.WARNING);
+		Logger.setLevel(Logger.Level.NONE);
+	} else {
+		if (log) {
+			Logger.setLevel(Logger.Level.TRACE);
 		} else {
-			if (log) {
-				Logger.setLevel(Logger.Level.TRACE);
-			} else {
-				Logger.setLevel(Logger.Level.INFO);
-			}
+			Logger.setLevel(Logger.Level.INFO);
 		}
-		EmulatorHelper emulatorHelper = new EmulatorHelper(new Emulator());
-		if (nolog) {
-			emulatorHelper.emulator.hleEmulatorState.kPrint.outputKprint = true;
-		}
-		emulatorHelper.initComponents();
-		//GuiBase gui = new GuiSdl(emulatorHelper.emulator.hleEmulatorState);
-		GuiBase gui = new GuiDfl(emulatorHelper.emulator.hleEmulatorState);
-		gui.start();
+	}
+	EmulatorHelper emulatorHelper = new EmulatorHelper(new Emulator());
+	if (nolog) {
+		emulatorHelper.emulator.hleEmulatorState.kPrint.outputKprint = true;
+	}
+	emulatorHelper.initComponents();
+	//GuiBase gui = new GuiSdl(emulatorHelper.emulator.hleEmulatorState);
+	GuiBase gui = new GuiDfl(emulatorHelper);
+	gui.start();
+	emulatorHelper.emulator.mainCpuThread.trace = trace;
+	if (args.length > 1) {
 		emulatorHelper.loadModule(args[1]);
-		emulatorHelper.emulator.mainCpuThread.trace = trace;
 		emulatorHelper.start();
 		return 0;
 	}
 	
-	displayHelp();
+	//displayHelp();
 	writefln("No specified file to execute");
 	return -1;
 }

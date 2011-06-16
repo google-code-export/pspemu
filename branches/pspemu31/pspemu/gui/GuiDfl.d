@@ -10,6 +10,8 @@ import core.thread;
 import derelict.sdl.sdl;
 import std.process;
 
+import pspemu.EmulatorHelper;
+
 import pspemu.gui.GuiBase;
 import pspemu.utils.MathUtils;
 
@@ -151,7 +153,7 @@ class MainForm : Form, IMessageFilter {
 	MainMenu createFromMainMenu() {
 		return createMainMenu([
 			createMenu("&File", [
-				createMenu("&Open..."),
+				createMenu("&Open...", { clickOpen(); }),
 				createMenu("-"),
 				createMenu("&Exit", { this.close(); }),
 			]),
@@ -234,6 +236,18 @@ class MainForm : Form, IMessageFilter {
 				}),
 			]),
 		]);
+	}
+	
+	void clickOpen() {
+		OpenFileDialog openFileDialog = new OpenFileDialog();
+		openFileDialog.filter = "All compatible files EBOOT.PBP, ELF and ISO Files|EBOOT.PBP;*.elf;*.iso;*.cso|All files (*.*)|*.*";
+		if (openFileDialog.showDialog() == DialogResult.OK) {
+			(new Thread({
+				guiDfl.emulatorHelper.loadModule(openFileDialog.fileName);
+				guiDfl.emulatorHelper.start();
+			})).start();
+		}
+		//openFileDialog.
 	}
 	
 	void clickToolsMemoryStickToogle() {
@@ -340,6 +354,10 @@ class GuiDfl : GuiBase {
 	MainForm mainForm = null;
 	bool ended;
 	bool started;
+
+	this(EmulatorHelper emulatorHelper) {
+		super(emulatorHelper);
+	}
 	
 	this(HleEmulatorState hleEmulatorState) {
 		super(hleEmulatorState);

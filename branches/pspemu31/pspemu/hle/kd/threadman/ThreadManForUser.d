@@ -29,7 +29,7 @@ import pspemu.hle.kd.sysmem.SysMemUserForUser;
 //debug = DEBUG_THREADS;
 //debug = DEBUG_SYSCALL;
 
-class VariablePool {
+class MemoryPool {
 	MemorySegment memorySegment;
 	
 	public this(MemorySegment memorySegment) {
@@ -38,6 +38,30 @@ class VariablePool {
 	
 	string toString() {
 		return std.string.format("%s", memorySegment);
+	}
+}
+
+class VariablePool : MemoryPool {
+	public this(MemorySegment memorySegment) {
+		super(memorySegment);
+	}
+}
+
+class FixedPool : MemoryPool {
+	int blockSize;
+	int numberOfBlocks;
+	int currentBlock;
+
+	public this(MemorySegment memorySegment, int blockSize, int numberOfBlocks) {
+		this.blockSize = blockSize;
+		this.numberOfBlocks = numberOfBlocks;
+		super(memorySegment);
+	}
+	
+	uint allocate() {
+		scope (exit) currentBlock++;
+		if (currentBlock >= numberOfBlocks) throw(new Exception("Can't allocate more blocks"));
+		return memorySegment.block.low + currentBlock * blockSize;
 	}
 }
 
@@ -84,12 +108,14 @@ class ThreadManForUser : ModuleNative {
 		mixin(registerd!(0xA8E8C846, sceKernelReferMbxStatus));
 
 		mixin(registerd!(0xC8CD158C, sceKernelUSec2SysClockWide));
-		mixin(registerd!(0x39810265, sceKernelReferVplStatus));
+
 		mixin(registerd!(0x56C039B5, sceKernelCreateVpl));
+		mixin(registerd!(0xAF36D708, sceKernelTryAllocateVpl));
+		mixin(registerd!(0x39810265, sceKernelReferVplStatus));
+		mixin(registerd!(0xB736E9FF, sceKernelFreeVpl));
+
 		mixin(registerd!(0x64D4540E, sceKernelReferThreadProfiler));
 		mixin(registerd!(0x8218B4DD, sceKernelReferGlobalProfiler));
-		mixin(registerd!(0xAF36D708, sceKernelTryAllocateVpl));
-		mixin(registerd!(0xB736E9FF, sceKernelFreeVpl));
 		
 		mixin(registerd!(0xC07BB470, sceKernelCreateFpl));
 		mixin(registerd!(0x623AE665, sceKernelTryAllocateFpl));
@@ -103,32 +129,47 @@ class ThreadManForUser : ModuleNative {
 	/**
 	 * Create a fixed pool
 	 *
-	 * @param name - Name of the pool
-	 * @param part - The memory partition ID
-	 * @param attr - Attributes
-	 * @param size - Size of pool block
+	 * @param name   - Name of the pool
+	 * @param part   - The memory partition ID
+	 * @param attr   - Attributes
+	 * @param size   - Size of pool block
 	 * @param blocks - Number of blocks to allocate
-	 * @param opt  - Options (set to NULL)
+	 * @param opt    - Options (set to NULL)
 	 *
 	 * @return The UID of the created pool, < 0 on error.
 	 */
 	//int sceKernelCreateFpl(const char *name, int part, int attr, uint size, uint blocks, SceKernelFplOptParam *opt) {
-	int sceKernelCreateFpl(const char *name, int part, int attr, uint size, uint blocks, void *opt) {
-		unimplemented();
-		return 0;
+	SceUID sceKernelCreateFpl(string name, int part, int attr, uint size, uint blocks, void *opt) {
+		//new MemorySegment
+		logWarning("sceKernelCreateFpl('%s', %d, %d, %d, %d)", name, part, attr, size, blocks);
+		FixedPool fixedPool;
+		fixedPool = new FixedPool(
+			hleEmulatorState.moduleManager.get!SysMemUserForUser()._allocateMemorySegmentLow(part, dupStr(name), size * blocks),
+			size,
+			blocks
+		);
+		logWarning("%s", fixedPool);
+		return hleEmulatorState.uniqueIdFactory.add(fixedPool);
 	}
 	
 	/**
 	 * Try to allocate from the pool 
 	 *
-	 * @param uid - The UID of the pool
+	 * @param uid  - The UID of the pool
 	 * @param data - Receives the address of the allocated data
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
-	int sceKernelTryAllocateFpl(SceUID uid, void **data) {
-		unimplemented();
-		return 0;
+	int sceKernelTryAllocateFpl(SceUID uid, uint **data) {
+		logWarning("sceKernelTryAllocateFpl(%d, %08X)", uid, cast(uint)data);
+		FixedPool fixedPool = hleEmulatorState.uniqueIdFactory.get!FixedPool(uid);
+		try {
+			*data = cast(uint *)fixedPool.allocate();
+			return 0;
+		} catch (Exception e) {
+			return -1;
+		}
+		//return sceKernelTryAllocateVpl(uid, data);
 	}
 
 	/**
@@ -173,10 +214,11 @@ class ThreadManForUser : ModuleNative {
 	 *
 	 * @return The UID of the created pool, < 0 on error.
 	 */
-	SceUID sceKernelCreateVpl(string name, int part, int attr, uint size, SceKernelVplOptParam* opt) {
-	    const PSP_VPL_ATTR_MASK = 0x41FF;            // Anything outside this mask is an illegal attr.
-	    const PSP_VPL_ATTR_ADDR_HIGH = 0x4000;       // Create the vpl in high memory.
-	    const PSP_VPL_ATTR_EXT = 0x8000;             // Extend the vpl memory area (exact purpose is unknown).
+	//SceUID sceKernelCreateVpl(string name, int part, int attr, uint size, SceKernelVplOptParam* opt) {
+	SceUID sceKernelCreateVpl(string name, int part, int attr, uint size, void* opt) {
+	    const PSP_VPL_ATTR_MASK      = 0x41FF;  // Anything outside this mask is an illegal attr.
+	    const PSP_VPL_ATTR_ADDR_HIGH = 0x4000;  // Create the vpl in high memory.
+	    const PSP_VPL_ATTR_EXT       = 0x8000;  // Extend the vpl memory area (exact purpose is unknown).
 		//new MemorySegment
 		logWarning("sceKernelCreateVpl('%s', %d, %d, %d)", name, part, attr, size);
 		VariablePool variablePool;

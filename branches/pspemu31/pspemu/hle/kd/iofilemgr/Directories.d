@@ -34,7 +34,7 @@ template IoFileMgrForKernel_Directories() {
 			hleEmulatorState.rootFileSystem.fscurdir = path;
 			return 0;
 		} catch (Throwable o) {
-			.writefln("sceIoChdir: %s", o);
+			logWarning("sceIoChdir: %s", o);
 			return -1;
 		}
 	}
