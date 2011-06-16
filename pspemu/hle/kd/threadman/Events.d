@@ -19,6 +19,11 @@ class PspWaitEvent {
 		this.bits = bits;		
 	}
 	
+	public void clearBits(uint bits) {
+		this.bits &= bits;
+		//this.waitEvent.signal();
+	}
+	
 	public void setBits(uint bits) {
 		this.bits = bits;
 		this.waitEvent.signal();
@@ -111,8 +116,11 @@ template ThreadManForUser_Events() {
 	 * @return < 0 on Error
 	 */
 	int sceKernelClearEventFlag(SceUID evid, u32 bits) {
-		unimplemented();
-		return -1;
+		unimplemented_notice();
+		PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
+		pspWaitEvent.clearBits(bits);
+		return 0;
+		//return -1;
 	}
 	
 	/** 

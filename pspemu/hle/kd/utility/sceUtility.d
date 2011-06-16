@@ -241,10 +241,15 @@ class sceUtility : ModuleNative {
 		//string saveFilePath = "SAVE_" ~ to!string(params.fileName.ptr);
 		string saveFilePath = "SAVE_" ~ to!string(params.gameName.ptr);
 		//dataBuf
-		void *dataBuf  = hleEmulatorState.emulatorState.memory.getPointer(cast(uint)params.dataBuf);
-		ubyte[] data = (cast(ubyte *)dataBuf)[0..params.dataBufSize];
+		void *dataBuf  = hleEmulatorState.emulatorState.memory.getPointerOrNull(cast(uint)params.dataBuf);
+		ubyte[] data;
+		if (dataBuf !is null) {
+			data = (cast(ubyte *)dataBuf)[0..params.dataBufSize];
+		}
 		
 		logTrace("sceUtilitySavedataInitStart[%08X:%d,%d]", cast(uint)dataBuf, params.dataSize, params.dataBufSize);
+		
+		int result = 0;
 		
 		switch (params.mode) {
 			case PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_AUTOSAVE, PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_SAVE, PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_LISTSAVE:
@@ -263,19 +268,20 @@ class sceUtility : ModuleNative {
 				} catch (Throwable o) {
 					logWarning("ERROR_SAVEDATA_SAVE_ACCESS_ERROR: %s", o);
 					params.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+					result = -1;
 				}
 			} 
 			break;
 			default:
 				logError("sceUtilitySavedataInitStart: %d", params.mode);
 				logError("sceUtilitySavedataInitStart: %d:%s", params.mode, to!string(params.mode));
-				unimplemented();
+				unimplemented_notice();
 			break;
 		}
 		
 		//currentDialogStep = DialogStep.PROMPT;
 		currentDialogStep = DialogStep.SUCCESS;
-		return 0;
+		return result;
 	}
 	
 	/**
@@ -347,8 +353,9 @@ class sceUtility : ModuleNative {
 	 * @return 0 on success, < 0 on error
 	 */
 	int sceUtilityLoadAvModule(int _module) {
-		unimplemented();
-		return -1;
+		unimplemented_notice();
+		//return -1;
+		return 0;
 	}
 
 	/**

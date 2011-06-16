@@ -88,7 +88,7 @@ class EmulatorHelper {
 		//emulator.hleEmulatorState.memoryManager.allocHeap(PspPartition.User, "temp", 0x4000);
 
 		emulator.mainCpuThread.threadState.thid = emulator.hleEmulatorState.uniqueIdFactory.set(0, emulator.mainCpuThread.threadState);
-		writefln("%s", emulator.mainCpuThread.threadState.thid);
+		//writefln("%s", emulator.mainCpuThread.threadState.thid);
 		
 		string fsProgramPath;
 		

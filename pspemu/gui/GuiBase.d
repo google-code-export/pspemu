@@ -4,6 +4,7 @@ import std.stdio;
 import core.thread;
 import pspemu.utils.WaitReady;
 
+public import pspemu.EmulatorHelper;
 public import pspemu.core.Memory;
 public import pspemu.core.controller.Controller;
 public import pspemu.core.display.Display;
@@ -21,6 +22,13 @@ abstract class GuiBase {
 	Controller controller;
 	Thread thread;
 	WaitReady initialized;
+	
+	EmulatorHelper emulatorHelper;
+	
+	this(EmulatorHelper emulatorHelper) {
+		this.emulatorHelper = emulatorHelper;
+		this(emulatorHelper.emulator.hleEmulatorState);
+	}
 	
 	this(HleEmulatorState hleEmulatorState) {
 		this.hleEmulatorState = hleEmulatorState;
@@ -61,8 +69,9 @@ abstract class GuiBase {
 			foreach (thread; Thread.getAll) {
 				writefln("  - Thread: '%s', running:%d, priority:%d", thread.name, thread.isRunning, thread.priority);
 			}
-			writefln("CpuThreads(%d):", emulatorState.cpuThreads.length);
-			foreach (CpuThreadBase cpuThread; emulatorState.cpuThreads.keys.dup) {
+			auto cpuThreadList = emulatorState.getCpuThreadsDup;
+			writefln("CpuThreads(%d):", cpuThreadList.length);
+			foreach (CpuThreadBase cpuThread; cpuThreadList) {
 				writef("  - CpuThread:");
 				try {
 					writef("%s", cpuThread);

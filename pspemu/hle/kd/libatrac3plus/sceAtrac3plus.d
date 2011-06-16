@@ -176,12 +176,36 @@ class sceAtrac3plus : ModuleNative {
 		return 0;
 	}
 		
-	int sceAtracGetSecondBufferInfo(int atracID, u32 *puiPosition, u32 *puiDataByte) { unimplemented(); return 0; }
-	int sceAtracSetSecondBuffer(int atracID, u8 *pucSecondBufferAddr, u32 uiSecondBufferByte) { unimplemented(); return 0; }
-	int sceAtracGetNextDecodePosition(int atracID, u32 *puiSamplePosition) { unimplemented(); return 0; }
-	int sceAtracGetSoundSample(int atracID, int *piEndSample, int *piLoopStartSample, int *piLoopEndSample) { unimplemented(); return 0; }
-	int sceAtracGetBufferInfoForReseting(int atracID, u32 uiSample, PspBufferInfo *pBufferInfo) { unimplemented(); return 0; }
-	int sceAtracResetPlayPosition(int atracID, u32 uiSample, u32 uiWriteByteFirstBuf, u32 uiWriteByteSecondBuf) { unimplemented(); return 0; }
+	int sceAtracGetSecondBufferInfo(int atracID, u32 *puiPosition, u32 *puiDataByte) {
+		unimplemented_notice();
+		return 0;
+	}
+
+	int sceAtracSetSecondBuffer(int atracID, u8 *pucSecondBufferAddr, u32 uiSecondBufferByte) {
+		unimplemented_notice();
+		//unimplemented();
+		return 0;
+	}
+
+	int sceAtracGetNextDecodePosition(int atracID, u32 *puiSamplePosition) {
+		unimplemented_notice();
+		return 0;
+	}
+
+	int sceAtracGetSoundSample(int atracID, int *piEndSample, int *piLoopStartSample, int *piLoopEndSample) {
+		unimplemented_notice();
+		return 0;
+	}
+
+	int sceAtracGetBufferInfoForReseting(int atracID, u32 uiSample, PspBufferInfo *pBufferInfo) {
+		unimplemented_notice();
+		return 0;
+	}
+
+	int sceAtracResetPlayPosition(int atracID, u32 uiSample, u32 uiWriteByteFirstBuf, u32 uiWriteByteSecondBuf) {
+		unimplemented_notice();
+		return 0;
+	}
 }
 
 static this() {
