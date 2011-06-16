@@ -85,6 +85,7 @@ class Gpu {
 		this.emulatorState = emulatorState;
 		this.impl   = impl;
 		this.memory = emulatorState.memory;
+		this.state.reset();
 		this.reset();
 		
 		emulatorState.runningState.onStop += delegate(...) {

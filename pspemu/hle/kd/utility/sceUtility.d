@@ -270,6 +270,7 @@ class sceUtility : ModuleNative {
 					params.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
 					result = -1;
 				}
+				result = -1;
 			} 
 			break;
 			default:

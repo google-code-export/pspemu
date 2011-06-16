@@ -20,9 +20,13 @@ interface GpuImpl {
 	void fastTrxKickToFrameBuffer();
 	void recordFrameStart();
 	void recordFrameEnd();
+	void vertexDecoding();
 }
 
 abstract class GpuImplAbstract : GpuImpl {
 	GpuState *state;
 	void setState(GpuState *state) { this.state = state; }
+	void vertexDecoding() {
+		
+	}
 }

@@ -216,6 +216,21 @@ struct Matrix {
 	const indexesM4x3 = [0, 1, 2,  4, 5, 6,  8, 9, 10,  12, 13, 14];
 	uint index;
 	WriteMode mode;
+	
+	static Matrix opCall() {
+		Matrix matrix;
+		matrix.setIdentity();
+		return matrix;
+	}
+	
+	void setIdentity() {
+		for (int y = 0; y < 4; y++) {
+			for (int x = 0; x < 4; x++) {
+				rows[y][x] = ((y == x) && (x < 3)) ? 1.0 : 0.0;
+			}
+		}
+	}
+	
 	void reset(WriteMode mode = WriteMode.M4x4) {
 		index = 0;
 		this.mode = mode;

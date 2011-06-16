@@ -114,6 +114,21 @@ class GpuOpengl : GpuImplAbstract {
 
 	void recordFrameEnd() {
 		recordFrame = false;
+		
+		int count = 0;
+		string buffer;
+		for (int n = 0; ; n++) {
+			string dumpFilename = std.string.format("GPU/%s/%d.bin", recordFrameTime, n);
+			if (!std.file.exists(dumpFilename)) break;
+			GpuOpengl.DumpStruct dumpStruct = GpuOpengl.loadDump(cast(ubyte[])std.file.read(dumpFilename));
+			buffer ~= dumpStruct.dumpString ~ "\n";
+			count++;
+		}
+		
+		if (count > 0) {
+			std.file.write(std.string.format("GPU/%s/frame.txt", recordFrameTime), buffer);
+		}
+		//std.c.stdlib.exit(0);
 	}
 	
 	void fastTrxKickToFrameBuffer() {
@@ -190,14 +205,20 @@ class GpuOpengl : GpuImplAbstract {
 		PrimitiveType type;
 		PrimitiveFlags flags;
 		
+		string dumpString() {
+			string r;
+			r ~= std.string.format("textureName: '%s'\n", textureName);
+			r ~= std.string.format("primitiveType: %s(%d)\n", to!string(type), type);
+			r ~= std.string.format("flags: %s)\n", flags);
+			r ~= std.string.format("indexList(%d): %s\n", indexList.length, indexList);
+			r ~= std.string.format("vertexList(%d):\n", vertexList.length);
+			foreach (ref vertex; vertexList) r ~= std.string.format("  %s\n", vertex);
+			r ~= std.string.format("gpuState:%s\n", gpuState);
+			return r;
+		}
+		
 		void dump() {
-			writefln("textureName: '%s'", textureName);
-			writefln("primitiveType: %s(%d)", to!string(type), type);
-			writefln("flags: %s)", flags);
-			writefln("indexList(%d): %s", indexList.length, indexList);
-			writefln("vertexList(%d):", vertexList.length);
-			foreach (ref vertex; vertexList) writefln("  %s", vertex);
-			writefln("gpuState:%s", gpuState);
+			writefln("%s", dumpString);
 		}
 	}
 	

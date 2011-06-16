@@ -179,7 +179,7 @@ class MainForm : Form, IMessageFilter {
 				]),
 				createMenu("HQ2X\tF8", { scale2x = !scale2x; }, { return scale2x; }),
 				createMenu("&Take screenshot..."),
-				createMenu("&Dump GPU frame and textures\tF6"),
+				createMenu("&Dump GPU frame and textures\tF6", { clickRecordGpuFrame(); }),
 				createMenu("-"),
 				createMenu("Frame limiting\tF3", {
 					guiDfl.display.enableWaitVblank = !guiDfl.display.enableWaitVblank;
@@ -236,6 +236,10 @@ class MainForm : Form, IMessageFilter {
 				}),
 			]),
 		]);
+	}
+	
+	void clickRecordGpuFrame() {
+		guiDfl.hleEmulatorState.emulatorState.gpu.recordFrame();
 	}
 	
 	void clickOpen() {
@@ -331,7 +335,7 @@ class MainForm : Form, IMessageFilter {
 						return true;
 					} break;
 					case VK_F6: {
-						guiDfl.hleEmulatorState.emulatorState.gpu.recordFrame();
+						clickRecordGpuFrame();
 						return true;
 					} break;
 					case VK_F8: {

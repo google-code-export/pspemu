@@ -260,8 +260,8 @@ struct TextureState {
 		string ret;
 		ret ~= std.string.format("TextureState(enabled:%s", enabled);
 		if (enabled) {
-			ret ~= std.string.format("\n    swizzled: %s", swizzled);
-			ret ~= std.string.format("\n    format: %s", to!string(format));
+			ret ~= std.string.format(", swizzled: %s", swizzled);
+			ret ~= std.string.format(", format: %s", to!string(format));
 		}
 		ret ~= ")";
 		return ret;
@@ -407,6 +407,10 @@ static struct GpuState {
 	ScreenBuffer drawBuffer, depthBuffer;
 	TextureTransfer textureTransfer;
 	
+	void reset() {
+		textureMatrix = Matrix();
+	}
+	
 	union {
 		//PspGeContext RealState;
 		uint[512] RealState;
@@ -487,10 +491,10 @@ static struct GpuState {
 			"    textureEnviromentColor  = %s\n"
 			"    materialColorComponents = %s\n"
 			"    fog                     = %s\n"
-			"    projectionMatrix        = %s\n"
-			"    worldMatrix             = %s\n"
-			"    viewMatrix              = %s\n"
-			"    textureMatrix           = %s\n"
+			"    projectionMatrix        = \n%s\n"
+			"    worldMatrix             = \n%s\n"
+			"    viewMatrix              = \n%s\n"
+			"    textureMatrix           = \n%s\n"
 			"    transformMode           = %s\n"
 			"    texture                 = %s\n"
 			"    uploadedClut            = %s\n"
