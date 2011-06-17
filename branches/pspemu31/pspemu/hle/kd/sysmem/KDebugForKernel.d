@@ -55,6 +55,7 @@ class KDebugForKernel : ModuleNative {
 							}
 							goto endwhile;
 						break;
+						case 'o':
 						case 'd':
 							if (longcount >= 2) {
 								output(std.string.format(format[m..n + 1], readparam!(long)));

@@ -9,6 +9,14 @@ class ProxyVirtualFileSystem : VirtualFileSystem {
 		this.parentVirtualFileSystem = parentVirtualFileSystem;
 	}
 	
+	void init() {
+		this.parentVirtualFileSystem.init();
+	}
+	
+	void exit() {
+		this.parentVirtualFileSystem.exit();
+	}
+	
 	VirtualFileSystem rewriteFileSystemAndPath(VirtualFileSystem virtualFileSystem, ref string path) {
 		path = path;
 		return virtualFileSystem;

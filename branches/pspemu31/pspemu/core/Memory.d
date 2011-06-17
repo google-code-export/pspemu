@@ -250,6 +250,14 @@ class Memory : Stream {
 		if (retval == 0) throw(new Exception(std.string.format("Can't find original pointer of address 0x%08X", cast(uint)_ptr)));
 		return retval;
 	}
+	
+	public T* ptrHostToGuest(T)(T* v) {
+		return cast(T *)getPointerReverseOrNull(v);
+	}
+
+	public T* ptrGuestToHost(T)(T* v) {
+		return cast(T *)getPointerOrNull(v);
+	}
 
 	/**
 	 * Obtains a guest address from a physical memory address.

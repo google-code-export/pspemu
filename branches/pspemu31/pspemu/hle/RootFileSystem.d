@@ -37,6 +37,22 @@ class RootFileSystem {
 		if (name !in devices) throw(new Exception("Can't find device '%s'", name));
 		return cast(T)devices[name];
 	}
+	
+	void addDriver(string name, IoDevice ioDevice) {
+		string name2 = name ~ ":";
+		//writefln("addDriver('%s')", name2);
+		devices[name2] = ioDevice;
+		fsroot.mount(name2, ioDevice);
+	}
+	
+	void delDriver(string name) {
+		string name2 = name ~ ":";
+		//writefln("delDriver('%s')", name2);
+		//writefln("  %s", devices[name2]);
+		devices[name2].exit();
+		devices.remove(name2);
+		fsroot.umount(name2);
+	}
 
 	void init() {
 		//.writefln("[1]");

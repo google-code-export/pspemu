@@ -16,5 +16,13 @@ int main(int argc, char *argv[]) {
 	sceDmacMemcpy(dataDest, dataSource, sizeof(dataSource));
 
 	Kprintf("%s\n", dataDest);
+
+	void *ptr;
+	ptr = memalign(128 , 2048); Kprintf("%d\n", ((int)ptr) % 128);
+	ptr = memalign(1024, 2048); Kprintf("%d\n", ((int)ptr) % 1024);
+	//ptr = memalign(100 , 2048); Kprintf("%d\n", ((int)ptr) % 100);
+
+	//Kprintf("%i bytes available\n", oslGetRamStatus().maxAvailable);
+
 	return 0;
 }
