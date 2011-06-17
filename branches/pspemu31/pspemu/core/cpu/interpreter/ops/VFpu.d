@@ -1874,7 +1874,7 @@ template TemplateCpu_VFPU_Utils() {
 			foreach (i, ref value; dst) {
 				// Constant.
 				if (prefix.constant(i)) {
-					switch (prefix.index(i)) {
+					final switch (prefix.index(i)) {
 						case 0: value = prefix.absolute(i) ? (3.0f       ) : (0.0f); break;
 						case 1: value = prefix.absolute(i) ? (1.0f / 3.0f) : (1.0f); break;
 						case 2: value = prefix.absolute(i) ? (1.0f / 4.0f) : (2.0f); break;

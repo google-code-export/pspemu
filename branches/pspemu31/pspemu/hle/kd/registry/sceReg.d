@@ -270,7 +270,7 @@ class RegistryNode : VFS {
 	}
 
 	uint typeSize() {
-		switch (type) {
+		final switch (type) {
 			case RegKeyTypes.REG_TYPE_DIR: return 0;
 			case RegKeyTypes.REG_TYPE_INT: return 4;
 			case RegKeyTypes.REG_TYPE_STR, RegKeyTypes.REG_TYPE_BIN: return value.length;

@@ -93,7 +93,7 @@ template TemplateCpu_FPU() {
 	void OP_CVT_W_S() {
 		// From: http://code.google.com/p/jpcsp/source/browse/trunk/src/jpcsp/Allegrex.isa
 		// enum Fcsr { Rint = 0, Cast = 1, Ceil = 2, Floor = 3 }
-		switch (registers.FCR31.RM) {
+		final switch (registers.FCR31.RM) {
 			//default:
 			case Registers.Fcr31.Type.Rint : mixin(CE("$Fd = cast(int)rint($fs);"));  break;
 			case Registers.Fcr31.Type.Cast : mixin(CE("$Fd = cast(int)($fs);"));      break;

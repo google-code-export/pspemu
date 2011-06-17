@@ -10,6 +10,8 @@ import std.intrinsic;
 import pspemu.core.exceptions.NotImplementedException;
 import pspemu.utils.MathUtils;
 
+import std.system;
+
 class Iso {
 	const SECTOR_SIZE = 0x800;
 	
@@ -29,6 +31,12 @@ class Iso {
 		u16 l, b; void opAssign(u16 v) { l = v; b = bswap(v) >> 16; }
 		string toString() { return std.string.format("%d", l); }
 
+	    version(LittleEndian) {
+			alias l this;
+		} else {
+			alias b this;
+		}
+
 		T opCast(T = uint)() {
 			return cast(T)l;
 		}
@@ -36,6 +44,12 @@ class Iso {
 	align(1) struct u32b {
 		u32 l, b; void opAssign(u32 v) { l = v; b = bswap(v); }
 		string toString() { return std.string.format("%d", l); }
+
+	    version(LittleEndian) {
+			alias l this;
+		} else {
+			alias b this;
+		}
 		
 		T opCast(T = uint)() {
 			return cast(T)l;

@@ -101,7 +101,7 @@ class GuiSdl : GuiBase {
 
 		int pixelWidth = 4;
 		uint RMASK, GMASK, BMASK, AMASK;
-		switch (this.display.pixelformat) {
+		final switch (this.display.pixelformat) {
 			case PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_565:
 				pixelWidth = 2;
 				RMASK = makebits(0        , 5);

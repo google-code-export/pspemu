@@ -3581,7 +3581,7 @@ class Font // docmain
 		LONG result;
 		HDC hdc;
 		
-		switch(unit)
+		final switch(unit)
 		{
 			case GraphicsUnit.PIXEL:
 				result = cast(LONG)emSize;
@@ -3635,7 +3635,7 @@ class Font // docmain
 		if(lfHeight < 0)
 			lfHeight = -lfHeight;
 		
-		switch(toUnit)
+		final switch(toUnit)
 		{
 			case GraphicsUnit.PIXEL:
 				result = cast(float)lfHeight;

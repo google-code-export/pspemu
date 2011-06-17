@@ -431,7 +431,7 @@ class Memory : Stream {
 			 * @return Current position in the stream.
 			 */
 			ulong seek(long offset, SeekPos whence) {
-				switch (whence) {
+				final switch (whence) {
 					case SeekPos.Current: streamPosition += offset; break;
 					case SeekPos.Set: streamPosition = offset; break;
 					case SeekPos.End: streamPosition = 0x10000000 + offset; break;
