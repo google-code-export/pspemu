@@ -5,6 +5,8 @@ import pspemu.core.cpu.tables.Utils;
 
 import std.stdio, std.traits;
 
+//version = AA_CTFE;
+
 // Here is the magic of the instruction decoding.
 // OLD OLD:   http://pspemu.googlecode.com/svn/branches/old/util/gen/cpu_switch.back.d
 // OLD:       http://pspemu.googlecode.com/svn/branches/old/util/gen/cpu_gen.php
@@ -69,13 +71,24 @@ string genSwitch(const InstructionDefinition[] ilist, string processor = "callFu
 	} if (ilist.length > 1) {
 		InstructionDefinition[512] ci; int ci_len;
 
-		uint[] cvalues;
+		version (AA_CTFE) {
+			bool[uint] cvalues_aa;
+		} else {
+			uint[] cvalues;
+		}
 
 		uint mask = getCommonMask(cast(InstructionDefinition[])ilist, _mask);
 		r ~= indent_level ~ "switch (instruction.v & " ~ getString(mask) ~ ") {\n";
 		foreach (i; ilist) {
 			uint cvalue = i.opcode.value & mask;
-			if (inArray(cvalues, cvalue)) continue;
+			version (AA_CTFE) {
+				if (((cvalue in cvalues_aa) !is null)) {
+					//if (cvalues_aa[cvalue] == true) continue;
+					continue;
+				}
+			} else {
+				if (inArray(cvalues, cvalue)) continue;
+			}
 
 			r ~= indent_level ~ "\tcase " ~ getString(cvalue) ~ ":\n";
 			ci_len = 0;
@@ -85,7 +98,11 @@ string genSwitch(const InstructionDefinition[] ilist, string processor = "callFu
 			r ~= genSwitch(ci[0..ci_len], processor, ~mask, level + 2);
 			r ~= indent_level ~ "\tbreak;\n";
 			
-			cvalues ~= cvalue;
+			version (AA_CTFE) {
+				cvalues_aa[cvalue] = true;
+			} else {
+				cvalues ~= cvalue;
+			}
 		}
 		//r ~= indent_level ~ "\tdefault:{mixin(" ~ processor ~ "(\"unk\"));}\n";
 		//r ~= indent_level ~ "\tdefault:{this.OP_UNK();}\n";
