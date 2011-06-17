@@ -111,6 +111,7 @@ class DPspLibdoc {
 					case "NID" : func.nid  = cast(uint)parseString(node.text); break;
 					case "NAME": func.name = node.text; break;
 					case "COMMENT": func.comment = node.text; break;
+					default: throw(new Exception("Unknown tag name"));
 				}
 			}
 			func.library = library;
@@ -125,6 +126,7 @@ class DPspLibdoc {
 					case "NID" : var.nid  = cast(uint)parseString(node.text); break;
 					case "NAME": var.name = node.text; break;
 					case "COMMENT": var.comment = node.text; break;
+					default: throw(new Exception("Unknown tag name"));
 				}
 			}
 			var.library = library;
@@ -140,6 +142,7 @@ class DPspLibdoc {
 					case "FLAGS"    : library.flags = cast(uint)parseString(node.text); break;
 					case "FUNCTIONS": foreach (snode; node.elements) if (snode.tag.name == "FUNCTION") parseFunction(snode); break;
 					case "VARIABLES": foreach (snode; node.elements) if (snode.tag.name == "VARIABLE") parseVariable(snode); break;
+					default: throw(new Exception("Unknown tag name"));
 				}
 			}
 			library.prx = prx;
@@ -153,6 +156,7 @@ class DPspLibdoc {
 					case "PRX"    : prx.fileName   = node.text; break;
 					case "PRXNAME": prx.moduleName = node.text; break;
 					case "LIBRARIES": foreach (snode; node.elements) if (snode.tag.name == "LIBRARY") parseLibrary(snode); break;
+					default: throw(new Exception("Unknown tag name"));
 				}
 			}
 			foreach (library; prx.libraries) libraries[library.name] = library;

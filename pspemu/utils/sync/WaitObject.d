@@ -16,7 +16,7 @@ abstract class WaitObject {
 	}
 	
 	public WaitObject wait(uint timeoutMilliseconds = uint.max) {
-		switch (WaitForSingleObject(handle, timeoutMilliseconds)) {
+		final switch (WaitForSingleObject(handle, timeoutMilliseconds)) {
 			case WAIT_ABANDONED:
 			break;
 			case WAIT_OBJECT_0:

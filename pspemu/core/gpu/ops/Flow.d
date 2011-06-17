@@ -131,7 +131,7 @@ template Gpu_Flow() {
 		};
 		
 
-		switch (behavior) {
+		final switch (behavior) {
 			case GU_BEHAVIOR.GU_BEHAVIOR_SUSPEND:
 				call();
 			break;
