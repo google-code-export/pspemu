@@ -1,9 +1,11 @@
-module pspemu.utils.ArrayDiff;
+module pspemu.utils.Diff;
+
+import std.string;
+import std.stdio;
 
 /**
  * Port of: http://www.mathertel.de/Diff/default.aspx
  */
-/+
 /// <summary>
 /// This Class implements the Difference Algorithm published in
 /// "An O(ND) Difference Algorithm and its Variations" by Eugene Myers
@@ -22,7 +24,7 @@ module pspemu.utils.ArrayDiff;
 /// I will do some performace tweaking when needed.
 /// 
 /// The algorithm itself is comparing 2 arrays of numbers so when comparing 2 text documents
-/// each line is converted into a (hash) number. See DiffText(). 
+/// each line is converted into a (hash) number. See diffText(). 
 /// 
 /// Some chages to the original algorithm:
 /// The original algorithm was described using a recursive approach and comparing zero indexed arrays.
@@ -54,7 +56,7 @@ module pspemu.utils.ArrayDiff;
 /// Now I undestand a little bit more of the SMS algorithm. 
 /// There have been overlapping boxes; that where analyzed partial differently.
 /// One return-point is enough.
-/// A assertion was added in CreateDiffs when in debug-mode, that counts the number of equal (no modified) lines in both arrays.
+/// A assertion was added in createDiffs when in debug-mode, that counts the number of equal (no modified) lines in both arrays.
 /// They must be identical.
 /// 
 /// 2003.02.07 Out of bounds error in the Up/Down vector arrays in some situations.
@@ -67,24 +69,62 @@ module pspemu.utils.ArrayDiff;
 /// 2006.03.10 using the standard Debug class for self-test now.
 ///            compile with: csc /target:exe /out:diffTest.exe /d:DEBUG /d:TRACE /d:SELFTEST Diff.cs
 /// 2007.01.06 license agreement changed to a BSD style license.
-/// 2007.06.03 added the Optimize method.
+/// 2007.06.03 added the optimize method.
 /// 2007.09.23 UpVector and DownVector optimization by Jan Stoklasa ().
-/// 2008.05.31 Adjusted the testing code that failed because of the Optimize method (not a bug in the diff algorithm).
+/// 2008.05.31 Adjusted the testing code that failed because of the optimize method (not a bug in the diff algorithm).
 /// 2008.10.08 Fixing a test case and adding a new test case.
 /// </summary>
 
 public class Diff {
+	static public struct ProcessedResult {
+		ProcessedItem[] items;
+		
+		void print() {
+			foreach (item; items) item.print();
+		}
+	}
+	
+	static public struct ProcessedItem {
+		enum Action : char {
+			Keep   = ' ',
+			Insert = '+',
+			Delete = '-',
+		}
+		
+		int lineNumber;
+		string line;
+		Action action;
+		
+		void print() {
+			std.stdio.writefln("%s", toString);
+		}
+		
+		string toString() {
+			return std.string.format("%04d: %s%s %s", lineNumber + 1, action, action, line);
+		}
+	}
+	
 	/// <summary>details of one difference.</summary>
-	public struct Item {
+	static public class Item {
 		/// <summary>Start Line number in Data A.</summary>
-		public int StartA;
+		public int startA;
 		/// <summary>Start Line number in Data B.</summary>
-		public int StartB;
+		public int startB;
 		
 		/// <summary>Number of changes in Data A.</summary>
 		public int deletedA;
 		/// <summary>Number of changes in Data B.</summary>
 		public int insertedB;
+		
+		string toString() {
+			return std.string.format(
+				"Diff.Item(start(A(%d), B(%d)), deletedA(%d), insertedB(%d))",
+				startA,
+				startB,
+				deletedA,
+				insertedB
+			);
+		}
 	} // Item
 
     /// <summary>
@@ -93,6 +133,40 @@ public class Diff {
     private struct SMSRD {
 		int x, y;
     }
+    
+    static public ProcessedResult diffTextProcessed(string[] listA, string[] listB) {
+    	ProcessedResult result;
+    	
+    	scope Diff diff = new Diff();
+    	
+		int lastpos = 0;
+		foreach (v; diff.diffText(listA, listB)) {
+			foreach (i; lastpos..v.startA) {
+				//writefln(" %s", listA[i]);
+				result.items ~= ProcessedItem(i, listA[i], ProcessedItem.Action.Keep);
+			}
+	
+			//writefln("lastpos(%d) : %s", lastpos, v);
+	
+			foreach (i; 0..v.deletedA) {
+				//writefln("-%s", listA[v.startA + i]);
+				result.items ~= ProcessedItem(v.startA + i, listA[v.startA + i], ProcessedItem.Action.Delete);
+			}
+			foreach (i; 0..v.insertedB) {
+				//writefln("+%s", listB[v.startB + i]);
+				result.items ~= ProcessedItem(v.startB + i, listB[v.startB + i], ProcessedItem.Action.Insert);
+			}
+			lastpos = v.startA;
+			lastpos += v.deletedA;
+		}
+		
+		foreach (i; lastpos..listA.length) {
+			//writefln(" %s", listA[i]);
+			result.items ~= ProcessedItem(i, listA[i], ProcessedItem.Action.Keep);
+		}
+		
+		return result;
+    }
 
     /// <summary>
     /// Find the difference in 2 texts, comparing by textlines.
@@ -100,9 +174,9 @@ public class Diff {
     /// <param name="TextA">A-version of the text (usualy the old one)</param>
     /// <param name="TextB">B-version of the text (usualy the new one)</param>
     /// <returns>Returns a array of Items that describe the differences.</returns>
-    public Item[] DiffText(string TextA, string TextB) {
-		return (DiffText(TextA, TextB, false, false, false));
-    } // DiffText
+    public Item[] diffText(string[] TextA, string[] TextB) {
+		return (diffText(TextA, TextB, false, false, false));
+    } // diffText
 
 
     /// <summary>
@@ -118,30 +192,31 @@ public class Diff {
     /// <param name="ignoreSpace">When set to true, all whitespace characters are converted to a single space character before the comparation is done.</param>
     /// <param name="ignoreCase">When set to true, all characters are converted to their lowercase equivivalence before the comparation is done.</param>
     /// <returns>Returns a array of Items that describe the differences.</returns>
-    public static Item[] DiffText(string TextA, string TextB, bool trimSpace, bool ignoreSpace, bool ignoreCase) {
+    public static Item[] diffText(string[] TextA, string[] TextB, bool trimSpace, bool ignoreSpace, bool ignoreCase) {
 		// prepare the input-text and convert to comparable numbers.
-		Hashtable h = new Hashtable(TextA.Length + TextB.Length);
+		//Hashtable h = new Hashtable(TextA.length + TextB.length);
+		int[string] h;
 		
 		// The A-Version of the data (original data) to be compared.
-		DiffData DataA = new DiffData(DiffCodes(TextA, h, trimSpace, ignoreSpace, ignoreCase));
+		DiffData DataA = new DiffData(diffCodes(TextA, h, trimSpace, ignoreSpace, ignoreCase));
 		
 		// The B-Version of the data (modified data) to be compared.
-		DiffData DataB = new DiffData(DiffCodes(TextB, h, trimSpace, ignoreSpace, ignoreCase));
+		DiffData DataB = new DiffData(diffCodes(TextB, h, trimSpace, ignoreSpace, ignoreCase));
 		
 		h = null; // free up hashtable memory (maybe)
 		
-		int MAX = DataA.Length + DataB.Length + 1;
+		int MAX = DataA.length + DataB.length + 1;
 		/// vector for the (0,0) to (x,y) search
 		int[] DownVector = new int[2 * MAX + 2];
 		/// vector for the (u,v) to (N,M) search
 		int[] UpVector = new int[2 * MAX + 2];
 		
-		LCS(DataA, 0, DataA.Length, DataB, 0, DataB.Length, DownVector, UpVector);
+		LCS(DataA, 0, DataA.length, DataB, 0, DataB.length, DownVector, UpVector);
 		
-		Optimize(DataA);
-		Optimize(DataB);
-		return CreateDiffs(DataA, DataB);
-    } // DiffText
+		optimize(DataA);
+		optimize(DataB);
+		return createDiffs(DataA, DataB);
+    } // diffText
 
 
     /// <summary>
@@ -151,23 +226,23 @@ public class Diff {
     /// This leads to more readable diff sequences when comparing text files.
     /// </summary>
     /// <param name="Data">A Diff data buffer containing the identified changes.</param>
-    private static void Optimize(DiffData Data) {
+    private static void optimize(DiffData Data) {
 		int StartPos, EndPos;
 		
 		StartPos = 0;
-		while (StartPos < Data.Length) {
-			while ((StartPos < Data.Length) && (Data.modified[StartPos] == false)) StartPos++;
+		while (StartPos < Data.length) {
+			while ((StartPos < Data.length) && (Data.modified[StartPos] == false)) StartPos++;
 			EndPos = StartPos;
-			while ((EndPos < Data.Length) && (Data.modified[EndPos] == true)) EndPos++;
+			while ((EndPos < Data.length) && (Data.modified[EndPos] == true)) EndPos++;
 			
-			if ((EndPos < Data.Length) && (Data.data[StartPos] == Data.data[EndPos])) {
+			if ((EndPos < Data.length) && (Data.data[StartPos] == Data.data[EndPos])) {
 				Data.modified[StartPos] = false;
 				Data.modified[EndPos] = true;
 			} else {
 				StartPos = EndPos;
 			} // if
 		} // while
-    } // Optimize
+    } // optimize
 
 
     /// <summary>
@@ -176,21 +251,21 @@ public class Diff {
     /// <param name="ArrayA">A-version of the numbers (usualy the old one)</param>
     /// <param name="ArrayB">B-version of the numbers (usualy the new one)</param>
     /// <returns>Returns a array of Items that describe the differences.</returns>
-    public static Item[] DiffInt(int[] ArrayA, int[] ArrayB) {
+    public static Item[] diffInt(int[] ArrayA, int[] ArrayB) {
 		// The A-Version of the data (original data) to be compared.
 		DiffData DataA = new DiffData(ArrayA);
 		
 		// The B-Version of the data (modified data) to be compared.
 		DiffData DataB = new DiffData(ArrayB);
 		
-		int MAX = DataA.Length + DataB.Length + 1;
+		int MAX = DataA.length + DataB.length + 1;
 		/// vector for the (0,0) to (x,y) search
 		int[] DownVector = new int[2 * MAX + 2];
 		/// vector for the (u,v) to (N,M) search
 		int[] UpVector = new int[2 * MAX + 2];
 		
-		LCS(DataA, 0, DataA.Length, DataB, 0, DataB.Length, DownVector, UpVector);
-		return CreateDiffs(DataA, DataB);
+		LCS(DataA, 0, DataA.length, DataB, 0, DataB.length, DownVector, UpVector);
+		return createDiffs(DataA, DataB);
     } // Diff
 
 
@@ -202,41 +277,42 @@ public class Diff {
     /// <param name="h">This extern initialized hashtable is used for storing all ever used textlines.</param>
     /// <param name="trimSpace">ignore leading and trailing space characters</param>
     /// <returns>a array of integers.</returns>
-    private static int[] DiffCodes(string aText, Hashtable h, bool trimSpace, bool ignoreSpace, bool ignoreCase) {
+    private static int[] diffCodes(string[] lines, ref int[string] hashes, bool trimSpace, bool ignoreSpace, bool ignoreCase) {
 		// get all codes of the text
-		string[] Lines;
-		int[] Codes;
-		int lastUsedCode = h.Count;
-		object aCode;
-		string s;
+		int[] codes = new int[lines.length];
+		int lastUsedCode = hashes.length;
 		
 		// strip off all cr, only use lf as textline separator.
-		aText = aText.Replace("\r", "");
-		Lines = aText.Split('\n');
+		//aText = aText.Replace("\r", "");
+		//Lines = aText.Split('\n');
 		
-		Codes = new int[Lines.Length];
-		
-		for (int i = 0; i < Lines.Length; ++i) {
-			s = Lines[i];
-			if (trimSpace) s = s.Trim();
-			
-			if (ignoreSpace) {
-				s = Regex.Replace(s, "\\s+", " ");            // TODO: optimization: faster blank removal.
+		foreach (i, line; lines) {
+			if (trimSpace) {
+				line = std.string.strip(line);
 			}
 			
-			if (ignoreCase) s = s.ToLower();
+			if (ignoreSpace) {
+				//line = Regex.Replace(line, "\\s+", " ");            // TODO: optimization: faster blank removal.
+				assert(0);
+			}
 			
-			aCode = h[s];
-			if (aCode == null) {
+			if (ignoreCase) {
+				line = std.string.tolower(line);
+			}
+			
+			if ((line in hashes) is null) {
 				lastUsedCode++;
-				h[s] = lastUsedCode;
-				Codes[i] = lastUsedCode;
+				hashes[line] = lastUsedCode;
+				codes[i] = lastUsedCode;
 			} else {
-				Codes[i] = cast(int)aCode;
+				codes[i] = hashes[line];
 			} // if
 		} // for
-		return (Codes);
-	} // DiffCodes
+		
+		//writefln("Codes: %s: %s", lines, codes);
+		
+		return codes;
+	} // diffCodes
 
 	/// <summary>
 	/// This is the algorithm to find the Shortest Middle Snake (SMS).
@@ -252,7 +328,7 @@ public class Diff {
 	/// <returns>a MiddleSnakeData record containing x,y and u,v</returns>
 	private static SMSRD SMS(DiffData DataA, int LowerA, int UpperA, DiffData DataB, int LowerB, int UpperB, int[] DownVector, int[] UpVector) {
 		SMSRD ret;
-		int MAX = DataA.Length + DataB.Length + 1;
+		int MAX = DataA.length + DataB.length + 1;
 		
 		int DownK = LowerA - LowerB; // the k-line to start the forward search
 		int UpK = UpperA - UpperB; // the k-line to start the reverse search
@@ -345,7 +421,7 @@ public class Diff {
 		
 		} // for D
 		
-		throw new ApplicationException("the algorithm should never come here.");
+		throw new Exception("the algorithm should never come here.");
 	} // SMS
 
 	/// <summary>
@@ -399,53 +475,56 @@ public class Diff {
 	/// producing an edit script in forward order.  
 	/// </summary>
 	/// dynamic array
-	private static Item[] CreateDiffs(DiffData DataA, DiffData DataB) {
-		ArrayList a = new ArrayList();
+	private static Item[] createDiffs(DiffData DataA, DiffData DataB) {
+		//ArrayList a = new ArrayList();
+		Item[] a;
 		Item aItem;
 		Item[] result;
 		
-		int StartA, StartB;
+		int startA, startB;
 		int LineA, LineB;
 		
 		LineA = 0;
 		LineB = 0;
-		while (LineA < DataA.Length || LineB < DataB.Length) {
-			if ((LineA < DataA.Length) && (!DataA.modified[LineA]) && (LineB < DataB.Length) && (!DataB.modified[LineB])) {
+		while (LineA < DataA.length || LineB < DataB.length) {
+			if ((LineA < DataA.length) && (!DataA.modified[LineA]) && (LineB < DataB.length) && (!DataB.modified[LineB])) {
 				// equal lines
 				LineA++;
 				LineB++;
 			
 			} else {
 				// maybe deleted and/or inserted lines
-				StartA = LineA;
-				StartB = LineB;
+				startA = LineA;
+				startB = LineB;
 				
-				while (LineA < DataA.Length && (LineB >= DataB.Length || DataA.modified[LineA])) {
-					// while (LineA < DataA.Length && DataA.modified[LineA])
+				while (LineA < DataA.length && (LineB >= DataB.length || DataA.modified[LineA])) {
+					// while (LineA < DataA.length && DataA.modified[LineA])
 					LineA++;
 				}
 				
-				while (LineB < DataB.Length && (LineA >= DataA.Length || DataB.modified[LineB])) {
-					// while (LineB < DataB.Length && DataB.modified[LineB])
+				while (LineB < DataB.length && (LineA >= DataA.length || DataB.modified[LineB])) {
+					// while (LineB < DataB.length && DataB.modified[LineB])
 					LineB++;
 				}
 				
-				if ((StartA < LineA) || (StartB < LineB)) {
+				if ((startA < LineA) || (startB < LineB)) {
 					// store a new difference-item
 					aItem = new Item();
-					aItem.StartA = StartA;
-					aItem.StartB = StartB;
-					aItem.deletedA = LineA - StartA;
-					aItem.insertedB = LineB - StartB;
-					a.Add(aItem);
+					aItem.startA = startA;
+					aItem.startB = startB;
+					aItem.deletedA = LineA - startA;
+					aItem.insertedB = LineB - startB;
+					//a.Add(aItem);
+					a ~= aItem;
 				} // if
 			} // if
 		} // while
 		
-		result = new Item[a.Count];
-		a.CopyTo(result);
+		//result = new Item[a.Count];
+		//a.CopyTo(result);
 		
-		return (result);
+		//return (result);
+		return a;
 	}
 
 } // class Diff
@@ -454,7 +533,7 @@ public class Diff {
 /// </summary>
 class DiffData {
 	/// <summary>Number of elements (lines).</summary>
-	int Length;
+	int length;
 	
 	/// <summary>Buffer of numbers that will be compared.</summary>
 	int[] data;
@@ -472,9 +551,8 @@ class DiffData {
 	/// <param name="data">reference to the buffer</param>
 	this(int[] initData) {
 		data = initData;
-		Length = initData.Length;
-		modified = new bool[Length + 2];
+		length = initData.length;
+		modified = new bool[length + 2];
 	} // DiffData
 
 } // class DiffData
-+/

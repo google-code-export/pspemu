@@ -35,6 +35,8 @@ import pspemu.formats.DetectFormat;
 import pspemu.hle.vfs.VirtualFileSystem;
 import pspemu.hle.vfs.MountableVirtualFileSystem;
 
+import pspemu.utils.Diff;
+
 class EmulatorHelper {
 	const uint CODE_PTR_EXIT_THREAD = 0x08000000;
 	const uint CODE_PTR_END_CALLBACK = 0x08000004;
@@ -161,10 +163,20 @@ class EmulatorHelper {
 			start();
 			string expected = std.string.strip(cast(string)std.file.read(pspTestExpectedPath));
 			string returned = std.string.strip(emulator.hleEmulatorState.kPrint.outputBuffer);
+			
 			stdout.writefln("%s", (expected == returned) ? "OK" : "FAIL");
 			if (expected != returned) {
+				string[] expectedLines = std.array.split(expected, "\n");
+				string[] returnedLines = std.array.split(returned, "\n");
+				
+				//writefln("%s", expectedLines);
+				//writefln("%s", returnedLines);
+				
+				Diff.diffTextProcessed(returnedLines, expectedLines).print();
+				/*
 				stdout.writefln("    returned:'%s'", std.array.replace(returned, "\n", "|"));
 				stdout.writefln("    expected:'%s'", std.array.replace(expected, "\n", "|"));
+				*/
 			}
 		} else {
 			stdout.writefln("MISSING %s", pspTestElfPath);

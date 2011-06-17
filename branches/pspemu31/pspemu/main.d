@@ -47,6 +47,8 @@ import pspemu.core.gpu.Types;
 
 import pspemu.hle.kd.all;
 
+import pspemu.utils.Diff;
+
 void executeSandboxTests(string[] args) {
 	/*
 	MountableVirtualFileSystem vfs = new MountableVirtualFileSystem(new VirtualFileSystem());
@@ -66,10 +68,44 @@ void executeSandboxTests(string[] args) {
 	}
 	*/
 	
+	/*
 	Command command;
 	command.v = 0xFFFFFFFF;
 	LightModel value = command.extractEnum!(LightModel);
 	writefln("LightModel: %d", value);
+	*/
+	
+	writefln("[");
+	
+	string[] listA = ["a", "b", "c"];
+	string[] listB = ["a", "c", "b"];
+	
+	writefln("%s", listA);
+	writefln("%s", listB);
+	
+	
+	Diff.diffTextProcessed(listA, listB).print();
+
+	/*	
+	auto diff = new Diff();
+	int lastpos = 0;
+	foreach (v; diff.diffText(listA, listB)) {
+		foreach (i; lastpos..v.startA) {
+			writefln(" %s", listA[i]);
+		}
+
+		writefln("lastpos(%d) : %s", lastpos, v);
+
+		foreach (i; 0..v.deletedA) {
+			writefln("-%s", listA[v.startA + i]);
+		}
+		foreach (i; 0..v.insertedB) {
+			writefln("+%s", listB[v.startB + i]);
+		}
+		lastpos = v.startA;
+	}
+	*/
+	writefln("]");
 }
 
 void executeIsoListing(string[] args) {
