@@ -1,639 +1,480 @@
 module pspemu.utils.ArrayDiff;
 
 /**
- * Port of: http://www.codeproject.com/KB/recipes/diffengine.aspx
+ * Port of: http://www.mathertel.de/Diff/default.aspx
  */
 /+
-version = USE_HASH_TABLE;
+/// <summary>
+/// This Class implements the Difference Algorithm published in
+/// "An O(ND) Difference Algorithm and its Variations" by Eugene Myers
+/// Algorithmica Vol. 1 No. 2, 1986, p 251.  
+/// 
+/// There are many C, Java, Lisp implementations public available but they all seem to come
+/// from the same source (diffutils) that is under the (unfree) GNU public License
+/// and cannot be reused as a sourcecode for a commercial application.
+/// There are very old C implementations that use other (worse) algorithms.
+/// Microsoft also published sourcecode of a diff-tool (windiff) that uses some tree data.
+/// Also, a direct transfer from a C source to C# is not easy because there is a lot of pointer
+/// arithmetic in the typical C solutions and i need a managed solution.
+/// These are the reasons why I implemented the original published algorithm from the scratch and
+/// make it avaliable without the GNU license limitations.
+/// I do not need a high performance diff tool because it is used only sometimes.
+/// I will do some performace tweaking when needed.
+/// 
+/// The algorithm itself is comparing 2 arrays of numbers so when comparing 2 text documents
+/// each line is converted into a (hash) number. See DiffText(). 
+/// 
+/// Some chages to the original algorithm:
+/// The original algorithm was described using a recursive approach and comparing zero indexed arrays.
+/// Extracting sub-arrays and rejoining them is very performance and memory intensive so the same
+/// (readonly) data arrays are passed arround together with their lower and upper bounds.
+/// This circumstance makes the LCS and SMS functions more complicate.
+/// I added some code to the LCS function to get a fast response on sub-arrays that are identical,
+/// completely deleted or inserted.
+/// 
+/// The result from a comparisation is stored in 2 arrays that flag for modified (deleted or inserted)
+/// lines in the 2 data arrays. These bits are then analysed to produce a array of Item objects.
+/// 
+/// Further possible optimizations:
+/// (first rule: don't do it; second: don't do it yet)
+/// The arrays DataA and DataB are passed as parameters, but are never changed after the creation
+/// so they can be members of the class to avoid the paramter overhead.
+/// In SMS is a lot of boundary arithmetic in the for-D and for-k loops that can be done by increment
+/// and decrement of local variables.
+/// The DownVector and UpVector arrays are alywas created and destroyed each time the SMS gets called.
+/// It is possible to reuse tehm when transfering them to members of the class.
+/// See TODO: hints.
+/// 
+/// diff.cs: A port of the algorythm to C#
+/// Copyright (c) by Matthias Hertel, http://www.mathertel.de
+/// This work is licensed under a BSD style license. See http://www.mathertel.de/License.aspx
+/// 
+/// Changes:
+/// 2002.09.20 There was a "hang" in some situations.
+/// Now I undestand a little bit more of the SMS algorithm. 
+/// There have been overlapping boxes; that where analyzed partial differently.
+/// One return-point is enough.
+/// A assertion was added in CreateDiffs when in debug-mode, that counts the number of equal (no modified) lines in both arrays.
+/// They must be identical.
+/// 
+/// 2003.02.07 Out of bounds error in the Up/Down vector arrays in some situations.
+/// The two vetors are now accessed using different offsets that are adjusted using the start k-Line. 
+/// A test case is added. 
+/// 
+/// 2006.03.05 Some documentation and a direct Diff entry point.
+/// 
+/// 2006.03.08 Refactored the API to static methods on the Diff class to make usage simpler.
+/// 2006.03.10 using the standard Debug class for self-test now.
+///            compile with: csc /target:exe /out:diffTest.exe /d:DEBUG /d:TRACE /d:SELFTEST Diff.cs
+/// 2007.01.06 license agreement changed to a BSD style license.
+/// 2007.06.03 added the Optimize method.
+/// 2007.09.23 UpVector and DownVector optimization by Jan Stoklasa ().
+/// 2008.05.31 Adjusted the testing code that failed because of the Optimize method (not a bug in the diff algorithm).
+/// 2008.10.08 Fixing a test case and adding a new test case.
+/// </summary>
 
-public interface IDiffList
-{
-	int Count();
-	IComparable GetByIndex(int index);
-}
-
-enum DiffStatus 
-{
-	Matched = 1,
-	NoMatch = -1,
-	Unknown = -2
-}
-
-class DiffState {
-	private const int BAD_INDEX = -1;
-	private int _startIndex;
-	private int _length;
-
-	@property public int StartIndex() { return _startIndex; }
-	@property public int EndIndex() { return ((_startIndex + _length) - 1); }
-	@property public int Length() {
-		int len;
-		if (_length > 0)
-		{
-			len = _length;
-		}
-		else
-		{
-			if (_length == 0)
-			{
-				len = 1;
-			}
-			else
-			{
-				len = 0;
-			}
-		}
-		return len;
-	}
-
-	@property public DiffStatus Status() {
-		DiffStatus stat;
-		if (_length > 0)
-		{
-			stat = DiffStatus.Matched; 
-		}
-		else
-		{
-			switch (_length)
-			{
-				case -1:
-					stat = DiffStatus.NoMatch;
-					break;
-				default:
-					System.Diagnostics.Debug.Assert(_length == -2,"Invalid status: _length < -2");
-					stat = DiffStatus.Unknown;
-					break;
-			}
-		}
-		return stat;
-	}
-
-	public this()
-	{
-		SetToUnkown();
-	}
-
-	protected void SetToUnkown()
-	{
-		_startIndex = BAD_INDEX;
-		_length = cast(int)DiffStatus.Unknown;
-	}
-
-	public void SetMatch(int start, int length)
-	{
-		System.Diagnostics.Debug.Assert(length > 0,"Length must be greater than zero");
-		System.Diagnostics.Debug.Assert(start >= 0,"Start must be greater than or equal to zero");
-		_startIndex = start;
-		_length = length;
-	}
-
-	public void SetNoMatch()
-	{
-		_startIndex = BAD_INDEX;
-		_length = cast(int)DiffStatus.NoMatch;
-	}
-
-
-	public bool HasValidLength(int newStart, int newEnd, int maxPossibleDestLength)
-	{
-		if (_length > 0) //have unlocked match
-			{
-				if ((maxPossibleDestLength < _length)||
-					((_startIndex < newStart)||(EndIndex > newEnd)))
-				{
-					SetToUnkown();
-				}
-			}
-			return (_length != cast(int)DiffStatus.Unknown);
-		}
-	}
-
-	private class DiffStateList
-	{
-		version (USE_HASH_TABLE) {
-			private Hashtable _table;
-		} else {
-			private DiffState[] _array;
-		}
-
-		public this(int destCount)
-		{
-			version (USE_HASH_TABLE) {
-				_table = new Hashtable(Math.Max(9,destCount/10));
-			} else {
-				_array = new DiffState[destCount];
-			}
-		}
-
-		public DiffState GetByIndex(int index)
-		{
-			version (USE_HASH_TABLE) {
-				DiffState retval = cast(DiffState)_table[index];
-				if (retval == null)
-				{
-					retval = new DiffState();
-					_table.Add(index,retval);
-				}
-			} else {
-				DiffState retval = _array[index];
-				if (retval == null)
-				{
-					retval = new DiffState();
-					_array[index] = retval;
-				}
-			}
-			return retval;
-		}
-	}
-
-
-	public enum DiffResultSpanStatus
-	{
-		NoChange,
-		Replace,
-		DeleteSource,
-		AddDestination
-	}
-
-	public class DiffResultSpan : IComparable
-	{
-		private const int BAD_INDEX = -1;
-		private int _destIndex;
-		private int _sourceIndex;
-		private int _length;
-		private DiffResultSpanStatus _status;
-
-		@property public int DestIndex() { return _destIndex; }
-		@property public int SourceIndex() { return _sourceIndex; }
-		@property public int Length() { return _length; }
-		@property public DiffResultSpanStatus Status() { return _status; }
+public class Diff {
+	/// <summary>details of one difference.</summary>
+	public struct Item {
+		/// <summary>Start Line number in Data A.</summary>
+		public int StartA;
+		/// <summary>Start Line number in Data B.</summary>
+		public int StartB;
 		
-		protected this(
-			DiffResultSpanStatus status,
-			int destIndex,
-			int sourceIndex,
-			int length)
-		{
-			_status = status;
-			_destIndex = destIndex;
-			_sourceIndex = sourceIndex;
-			_length = length;
-		}
+		/// <summary>Number of changes in Data A.</summary>
+		public int deletedA;
+		/// <summary>Number of changes in Data B.</summary>
+		public int insertedB;
+	} // Item
 
-		public static DiffResultSpan CreateNoChange(int destIndex, int sourceIndex, int length)
-		{
-			return new DiffResultSpan(DiffResultSpanStatus.NoChange,destIndex,sourceIndex,length); 
-		}
+    /// <summary>
+    /// Shortest Middle Snake Return Data
+    /// </summary>
+    private struct SMSRD {
+		int x, y;
+    }
 
-		public static DiffResultSpan CreateReplace(int destIndex, int sourceIndex, int length)
-		{
-			return new DiffResultSpan(DiffResultSpanStatus.Replace,destIndex,sourceIndex,length); 
-		}
+    /// <summary>
+    /// Find the difference in 2 texts, comparing by textlines.
+    /// </summary>
+    /// <param name="TextA">A-version of the text (usualy the old one)</param>
+    /// <param name="TextB">B-version of the text (usualy the new one)</param>
+    /// <returns>Returns a array of Items that describe the differences.</returns>
+    public Item[] DiffText(string TextA, string TextB) {
+		return (DiffText(TextA, TextB, false, false, false));
+    } // DiffText
 
-		public static DiffResultSpan CreateDeleteSource(int sourceIndex, int length)
-		{
-			return new DiffResultSpan(DiffResultSpanStatus.DeleteSource,BAD_INDEX,sourceIndex,length); 
-		}
 
-		public static DiffResultSpan CreateAddDestination(int destIndex, int length)
-		{
-			return new DiffResultSpan(DiffResultSpanStatus.AddDestination,destIndex,BAD_INDEX,length); 
-		}
-
-		public void AddLength(int i)
-		{
-			_length += i;
-		}
-
-		public override string ToString()
-		{
-			return string.Format("{0} (Dest: {1},Source: {2}) {3}",
-			_status.ToString(),
-			_destIndex.ToString(),
-			_sourceIndex.ToString(),
-			_length.ToString());
-	}
-
-	public int CompareTo(object obj)
-	{
-		return _destIndex.CompareTo((cast(DiffResultSpan)obj)._destIndex);
-	}
-}
-
-public enum DiffEngineLevel {
-	FastImperfect,
-	Medium,
-	SlowPerfect
-}
-
-public class DiffEngine
-{
-	private IDiffList _source;
-	private IDiffList _dest;
-	private ArrayList _matchList;
-
-	private DiffEngineLevel _level;
-
-	private DiffStateList _stateList;
-
-	public this() 
-	{
-		_source = null;
-		_dest = null;
-		_matchList = null;
-		_stateList = null;
-		_level = DiffEngineLevel.FastImperfect;
-	}
-
-	private int GetSourceMatchLength(int destIndex, int sourceIndex, int maxLength)
-	{
-		int matchCount;
-		for (matchCount = 0; matchCount < maxLength; matchCount++)
-		{
-			if ( _dest.GetByIndex(destIndex + matchCount).CompareTo(_source.GetByIndex(sourceIndex + matchCount)) != 0 )
-			{
-				break;
-			}
-		}
-		return matchCount;
-	}
-
-	private void GetLongestSourceMatch(DiffState curItem, int destIndex,int destEnd, int sourceStart,int sourceEnd)
-	{
+    /// <summary>
+    /// Find the difference in 2 text documents, comparing by textlines.
+    /// The algorithm itself is comparing 2 arrays of numbers so when comparing 2 text documents
+    /// each line is converted into a (hash) number. This hash-value is computed by storing all
+    /// textlines into a common hashtable so i can find dublicates in there, and generating a 
+    /// new number each time a new textline is inserted.
+    /// </summary>
+    /// <param name="TextA">A-version of the text (usualy the old one)</param>
+    /// <param name="TextB">B-version of the text (usualy the new one)</param>
+    /// <param name="trimSpace">When set to true, all leading and trailing whitespace characters are stripped out before the comparation is done.</param>
+    /// <param name="ignoreSpace">When set to true, all whitespace characters are converted to a single space character before the comparation is done.</param>
+    /// <param name="ignoreCase">When set to true, all characters are converted to their lowercase equivivalence before the comparation is done.</param>
+    /// <returns>Returns a array of Items that describe the differences.</returns>
+    public static Item[] DiffText(string TextA, string TextB, bool trimSpace, bool ignoreSpace, bool ignoreCase) {
+		// prepare the input-text and convert to comparable numbers.
+		Hashtable h = new Hashtable(TextA.Length + TextB.Length);
 		
-		int maxDestLength = (destEnd - destIndex) + 1;
-		int curLength = 0;
-		int curBestLength = 0;
-		int curBestIndex = -1;
-		int maxLength = 0;
-		for (int sourceIndex = sourceStart; sourceIndex <= sourceEnd; sourceIndex++)
-		{
-			maxLength = Math.Min(maxDestLength,(sourceEnd - sourceIndex) + 1);
-			if (maxLength <= curBestLength)
-			{
-				//No chance to find a longer one any more
-				break;
-			}
-			curLength = GetSourceMatchLength(destIndex,sourceIndex,maxLength);
-			if (curLength > curBestLength)
-			{
-				//This is the best match so far
-				curBestIndex = sourceIndex;
-				curBestLength = curLength;
-			}
-			//jump over the match
-			sourceIndex += curBestLength; 
-		}
-		//DiffState cur = _stateList.GetByIndex(destIndex);
-		if (curBestIndex == -1)
-		{
-			curItem.SetNoMatch();
-		}
-		else
-		{
-			curItem.SetMatch(curBestIndex, curBestLength);
-		}
-	
-	}
+		// The A-Version of the data (original data) to be compared.
+		DiffData DataA = new DiffData(DiffCodes(TextA, h, trimSpace, ignoreSpace, ignoreCase));
+		
+		// The B-Version of the data (modified data) to be compared.
+		DiffData DataB = new DiffData(DiffCodes(TextB, h, trimSpace, ignoreSpace, ignoreCase));
+		
+		h = null; // free up hashtable memory (maybe)
+		
+		int MAX = DataA.Length + DataB.Length + 1;
+		/// vector for the (0,0) to (x,y) search
+		int[] DownVector = new int[2 * MAX + 2];
+		/// vector for the (u,v) to (N,M) search
+		int[] UpVector = new int[2 * MAX + 2];
+		
+		LCS(DataA, 0, DataA.Length, DataB, 0, DataB.Length, DownVector, UpVector);
+		
+		Optimize(DataA);
+		Optimize(DataB);
+		return CreateDiffs(DataA, DataB);
+    } // DiffText
 
-	private void ProcessRange(int destStart, int destEnd, int sourceStart, int sourceEnd)
-	{
-		int curBestIndex = -1;
-		int curBestLength = -1;
-		int maxPossibleDestLength = 0;
-		DiffState curItem = null;
-		DiffState bestItem = null;
-		for (int destIndex = destStart; destIndex <= destEnd; destIndex++)
-		{
-			maxPossibleDestLength = (destEnd - destIndex) + 1;
-			if (maxPossibleDestLength <= curBestLength)
-			{
-				//we won't find a longer one even if we looked
-				break;
-			}
-			curItem = _stateList.GetByIndex(destIndex);
+
+    /// <summary>
+    /// If a sequence of modified lines starts with a line that contains the same content
+    /// as the line that appends the changes, the difference sequence is modified so that the
+    /// appended line and not the starting line is marked as modified.
+    /// This leads to more readable diff sequences when comparing text files.
+    /// </summary>
+    /// <param name="Data">A Diff data buffer containing the identified changes.</param>
+    private static void Optimize(DiffData Data) {
+		int StartPos, EndPos;
+		
+		StartPos = 0;
+		while (StartPos < Data.Length) {
+			while ((StartPos < Data.Length) && (Data.modified[StartPos] == false)) StartPos++;
+			EndPos = StartPos;
+			while ((EndPos < Data.Length) && (Data.modified[EndPos] == true)) EndPos++;
 			
-			if (!curItem.HasValidLength(sourceStart, sourceEnd, maxPossibleDestLength))
-			{
-				//recalc new best length since it isn't valid or has never been done.
-				GetLongestSourceMatch(curItem, destIndex, destEnd, sourceStart, sourceEnd);
-			}
-			if (curItem.Status == DiffStatus.Matched)
-			{
-				switch (_level)
-				{
-					case DiffEngineLevel.FastImperfect:
-						if (curItem.Length > curBestLength)
-						{
-							//this is longest match so far
-							curBestIndex = destIndex;
-							curBestLength = curItem.Length;
-							bestItem = curItem;
-						}
-						//Jump over the match 
-						destIndex += curItem.Length - 1; 
-						break;
-					case DiffEngineLevel.Medium: 
-						if (curItem.Length > curBestLength)
-						{
-							//this is longest match so far
-							curBestIndex = destIndex;
-							curBestLength = curItem.Length;
-							bestItem = curItem;
-							//Jump over the match 
-							destIndex += curItem.Length - 1; 
-						}
-						break;
-					default:
-						if (curItem.Length > curBestLength)
-						{
-							//this is longest match so far
-							curBestIndex = destIndex;
-							curBestLength = curItem.Length;
-							bestItem = curItem;
-						}
-						break;
-				}
-			}
-		}
-		if (curBestIndex < 0)
-		{
-			//we are done - there are no matches in this span
-		}
-		else
-		{
+			if ((EndPos < Data.Length) && (Data.data[StartPos] == Data.data[EndPos])) {
+				Data.modified[StartPos] = false;
+				Data.modified[EndPos] = true;
+			} else {
+				StartPos = EndPos;
+			} // if
+		} // while
+    } // Optimize
 
-			int sourceIndex = bestItem.StartIndex;
-			_matchList.Add(DiffResultSpan.CreateNoChange(curBestIndex,sourceIndex,curBestLength));
-			if (destStart < curBestIndex)
-			{
-				//Still have more lower destination data
-				if (sourceStart < sourceIndex)
-				{
-					//Still have more lower source data
-					// Recursive call to process lower indexes
-					ProcessRange(destStart, curBestIndex -1,sourceStart, sourceIndex -1);
-				}
-			}
-			int upperDestStart = curBestIndex + curBestLength;
-			int upperSourceStart = sourceIndex + curBestLength;
-			if (destEnd > upperDestStart)
-			{
-				//we still have more upper dest data
-				if (sourceEnd > upperSourceStart)
-				{
-					//set still have more upper source data
-					// Recursive call to process upper indexes
-					ProcessRange(upperDestStart,destEnd,upperSourceStart,sourceEnd);
-				}
-			}
-		}
-	}
 
-	public double ProcessDiff(IDiffList source, IDiffList destination,DiffEngineLevel level)
-	{
-		_level = level;
-		return ProcessDiff(source,destination);
-	}
-
-	public double ProcessDiff(IDiffList source, IDiffList destination)
-	{
-		DateTime dt = DateTime.Now;
-		_source = source;
-		_dest = destination;
-		_matchList = new ArrayList();
+    /// <summary>
+    /// Find the difference in 2 arrays of integers.
+    /// </summary>
+    /// <param name="ArrayA">A-version of the numbers (usualy the old one)</param>
+    /// <param name="ArrayB">B-version of the numbers (usualy the new one)</param>
+    /// <returns>Returns a array of Items that describe the differences.</returns>
+    public static Item[] DiffInt(int[] ArrayA, int[] ArrayB) {
+		// The A-Version of the data (original data) to be compared.
+		DiffData DataA = new DiffData(ArrayA);
 		
-		int dcount = _dest.Count();
-		int scount = _source.Count();
+		// The B-Version of the data (modified data) to be compared.
+		DiffData DataB = new DiffData(ArrayB);
 		
+		int MAX = DataA.Length + DataB.Length + 1;
+		/// vector for the (0,0) to (x,y) search
+		int[] DownVector = new int[2 * MAX + 2];
+		/// vector for the (u,v) to (N,M) search
+		int[] UpVector = new int[2 * MAX + 2];
 		
-		if ((dcount > 0)&&(scount > 0))
-		{
-			_stateList = new DiffStateList(dcount);
-			ProcessRange(0,dcount - 1,0, scount - 1);
-		}
-
-		TimeSpan ts = DateTime.Now - dt;
-		return ts.TotalSeconds;
-	}
+		LCS(DataA, 0, DataA.Length, DataB, 0, DataB.Length, DownVector, UpVector);
+		return CreateDiffs(DataA, DataB);
+    } // Diff
 
 
-	private bool AddChanges(
-		ArrayList report, 
-		int curDest,
-		int nextDest,
-		int curSource,
-		int nextSource)
-	{
-		bool retval = false;
-		int diffDest = nextDest - curDest;
-		int diffSource = nextSource - curSource;
-		int minDiff = 0;
-		if (diffDest > 0)
-		{
-			if (diffSource > 0)
-			{
-				minDiff = Math.Min(diffDest,diffSource);
-				report.Add(DiffResultSpan.CreateReplace(curDest,curSource,minDiff));
-				if (diffDest > diffSource)
-				{
-					curDest+=minDiff;
-					report.Add(DiffResultSpan.CreateAddDestination(curDest,diffDest - diffSource)); 
-				}
-				else
-				{
-					if (diffSource > diffDest)
-					{
-						curSource+= minDiff;
-						report.Add(DiffResultSpan.CreateDeleteSource(curSource,diffSource - diffDest));
+    /// <summary>
+    /// This function converts all textlines of the text into unique numbers for every unique textline
+    /// so further work can work only with simple numbers.
+    /// </summary>
+    /// <param name="aText">the input text</param>
+    /// <param name="h">This extern initialized hashtable is used for storing all ever used textlines.</param>
+    /// <param name="trimSpace">ignore leading and trailing space characters</param>
+    /// <returns>a array of integers.</returns>
+    private static int[] DiffCodes(string aText, Hashtable h, bool trimSpace, bool ignoreSpace, bool ignoreCase) {
+		// get all codes of the text
+		string[] Lines;
+		int[] Codes;
+		int lastUsedCode = h.Count;
+		object aCode;
+		string s;
+		
+		// strip off all cr, only use lf as textline separator.
+		aText = aText.Replace("\r", "");
+		Lines = aText.Split('\n');
+		
+		Codes = new int[Lines.Length];
+		
+		for (int i = 0; i < Lines.Length; ++i) {
+			s = Lines[i];
+			if (trimSpace) s = s.Trim();
+			
+			if (ignoreSpace) {
+				s = Regex.Replace(s, "\\s+", " ");            // TODO: optimization: faster blank removal.
+			}
+			
+			if (ignoreCase) s = s.ToLower();
+			
+			aCode = h[s];
+			if (aCode == null) {
+				lastUsedCode++;
+				h[s] = lastUsedCode;
+				Codes[i] = lastUsedCode;
+			} else {
+				Codes[i] = cast(int)aCode;
+			} // if
+		} // for
+		return (Codes);
+	} // DiffCodes
+
+	/// <summary>
+	/// This is the algorithm to find the Shortest Middle Snake (SMS).
+	/// </summary>
+	/// <param name="DataA">sequence A</param>
+	/// <param name="LowerA">lower bound of the actual range in DataA</param>
+	/// <param name="UpperA">upper bound of the actual range in DataA (exclusive)</param>
+	/// <param name="DataB">sequence B</param>
+	/// <param name="LowerB">lower bound of the actual range in DataB</param>
+	/// <param name="UpperB">upper bound of the actual range in DataB (exclusive)</param>
+	/// <param name="DownVector">a vector for the (0,0) to (x,y) search. Passed as a parameter for speed reasons.</param>
+	/// <param name="UpVector">a vector for the (u,v) to (N,M) search. Passed as a parameter for speed reasons.</param>
+	/// <returns>a MiddleSnakeData record containing x,y and u,v</returns>
+	private static SMSRD SMS(DiffData DataA, int LowerA, int UpperA, DiffData DataB, int LowerB, int UpperB, int[] DownVector, int[] UpVector) {
+		SMSRD ret;
+		int MAX = DataA.Length + DataB.Length + 1;
+		
+		int DownK = LowerA - LowerB; // the k-line to start the forward search
+		int UpK = UpperA - UpperB; // the k-line to start the reverse search
+		
+		int Delta = (UpperA - LowerA) - (UpperB - LowerB);
+		bool oddDelta = (Delta & 1) != 0;
+		
+		// The vectors in the publication accepts negative indexes. the vectors implemented here are 0-based
+		// and are access using a specific offset: UpOffset UpVector and DownOffset for DownVektor
+		int DownOffset = MAX - DownK;
+		int UpOffset = MAX - UpK;
+		
+		int MaxD = ((UpperA - LowerA + UpperB - LowerB) / 2) + 1;
+		
+		// Debug.Write(2, "SMS", String.Format("Search the box: A[{0}-{1}] to B[{2}-{3}]", LowerA, UpperA, LowerB, UpperB));
+		
+		// init vectors
+		DownVector[DownOffset + DownK + 1] = LowerA;
+		UpVector[UpOffset + UpK - 1] = UpperA;
+		
+		for (int D = 0; D <= MaxD; D++) {
+			// Extend the forward path.
+			for (int k = DownK - D; k <= DownK + D; k += 2) {
+				// Debug.Write(0, "SMS", "extend forward path " + k.ToString());
+				
+				// find the only or better starting point
+				int x, y;
+				if (k == DownK - D) {
+					x = DownVector[DownOffset + k + 1]; // down
+				} else {
+					x = DownVector[DownOffset + k - 1] + 1; // a step to the right
+					if ((k < DownK + D) && (DownVector[DownOffset + k + 1] >= x)) {
+						x = DownVector[DownOffset + k + 1]; // down
 					}
-				}	
-			}
-			else
-			{
-				report.Add(DiffResultSpan.CreateAddDestination(curDest,diffDest)); 
-			}
-			retval = true;
-		}
-		else
-		{
-			if (diffSource > 0)
-			{
-				report.Add(DiffResultSpan.CreateDeleteSource(curSource,diffSource));  
-				retval = true;
-			}
-		}
-		return retval;
-	}
-
-	public ArrayList DiffReport()
-	{
-		ArrayList retval = new ArrayList();
-		int dcount = _dest.Count();
-		int scount = _source.Count();
-		
-		//Deal with the special case of empty files
-		if (dcount == 0)
-		{
-			if (scount > 0)
-			{
-				retval.Add(DiffResultSpan.CreateDeleteSource(0,scount));
-			}
-			return retval;
-		}
-		else
-		{
-			if (scount == 0)
-			{
-				retval.Add(DiffResultSpan.CreateAddDestination(0,dcount));
-				return retval;
-			}
-		}
-
-
-		_matchList.Sort();
-		int curDest = 0;
-		int curSource = 0;
-		DiffResultSpan last = null;
-
-		//Process each match record
-		foreach (DiffResultSpan drs; _matchList)
-		{
-			if ((!AddChanges(retval,curDest,drs.DestIndex,curSource,drs.SourceIndex))&&
-				(last != null))
-			{
-				last.AddLength(drs.Length);
-			}
-			else
-			{
-				retval.Add(drs);
-			}
-			curDest = drs.DestIndex + drs.Length;
-			curSource = drs.SourceIndex + drs.Length;
-			last = drs;
-		}
-		
-		//Process any tail end data
-		AddChanges(retval,curDest,dcount,curSource,scount);
-
-		return retval;
-	}
-}
-
-public class TextLine : IComparable
-{
-	public string Line;
-	public int _hash;
-
-	public this(string str)
-	{
-		Line = str.Replace("\t","    ");
-		_hash = str.GetHashCode();
-	}
-
-	public int CompareTo(object obj)
-	{
-		return _hash.CompareTo((cast(TextLine)obj)._hash);
-	}
-}
-
-
-public class DiffList_TextFile : IDiffList
-{
-	private const int MaxLineLength = 1024;
-	private ArrayList _lines;
-
-	public this(string fileName)
-	{
-		_lines = new ArrayList();
-		scope StreamReader sr = new StreamReader(fileName); 
-		{
-			String line;
-			// Read and display lines from the file until the end of 
-			// the file is reached.
-			while ((line = sr.ReadLine()) != null) 
-			{
-				if (line.Length > MaxLineLength)
-				{
-					throw new InvalidOperationException(
-						string.Format(
-							"File contains a line greater than {0} characters.",
-							MaxLineLength.ToString()
-						)
-					);
 				}
-				_lines.Add(new TextLine(line));
-			}
+				y = x - k;
+				
+				// find the end of the furthest reaching forward D-path in diagonal k.
+				while ((x < UpperA) && (y < UpperB) && (DataA.data[x] == DataB.data[y])) {
+					x++; y++;
+				}
+				DownVector[DownOffset + k] = x;
+				
+				// overlap ?
+				if (oddDelta && (UpK - D < k) && (k < UpK + D)) {
+					if (UpVector[UpOffset + k] <= DownVector[DownOffset + k]) {
+						ret.x = DownVector[DownOffset + k];
+						ret.y = DownVector[DownOffset + k] - k;
+						// ret.u = UpVector[UpOffset + k];      // 2002.09.20: no need for 2 points 
+						// ret.v = UpVector[UpOffset + k] - k;
+						return (ret);
+					} // if
+				} // if
+			
+			} // for k
+			
+			// Extend the reverse path.
+			for (int k = UpK - D; k <= UpK + D; k += 2) {
+				// Debug.Write(0, "SMS", "extend reverse path " + k.ToString());
+				
+				// find the only or better starting point
+				int x, y;
+				if (k == UpK + D) {
+					x = UpVector[UpOffset + k - 1]; // up
+				} else {
+					x = UpVector[UpOffset + k + 1] - 1; // left
+					if ((k > UpK - D) && (UpVector[UpOffset + k - 1] < x)) {
+						x = UpVector[UpOffset + k - 1]; // up
+					}
+				} // if
+				y = x - k;
+				
+				while ((x > LowerA) && (y > LowerB) && (DataA.data[x - 1] == DataB.data[y - 1])) {
+					x--; y--; // diagonal
+				}
+				UpVector[UpOffset + k] = x;
+				
+				// overlap ?
+				if (!oddDelta && (DownK - D <= k) && (k <= DownK + D)) {
+					if (UpVector[UpOffset + k] <= DownVector[DownOffset + k]) {
+						ret.x = DownVector[DownOffset + k];
+						ret.y = DownVector[DownOffset + k] - k;
+						// ret.u = UpVector[UpOffset + k];     // 2002.09.20: no need for 2 points 
+						// ret.v = UpVector[UpOffset + k] - k;
+						return (ret);
+					} // if
+				} // if
+			
+			} // for k
+		
+		} // for D
+		
+		throw new ApplicationException("the algorithm should never come here.");
+	} // SMS
+
+	/// <summary>
+	/// This is the divide-and-conquer implementation of the longes common-subsequence (LCS) 
+	/// algorithm.
+	/// The published algorithm passes recursively parts of the A and B sequences.
+	/// To avoid copying these arrays the lower and upper bounds are passed while the sequences stay constant.
+	/// </summary>
+	/// <param name="DataA">sequence A</param>
+	/// <param name="LowerA">lower bound of the actual range in DataA</param>
+	/// <param name="UpperA">upper bound of the actual range in DataA (exclusive)</param>
+	/// <param name="DataB">sequence B</param>
+	/// <param name="LowerB">lower bound of the actual range in DataB</param>
+	/// <param name="UpperB">upper bound of the actual range in DataB (exclusive)</param>
+	/// <param name="DownVector">a vector for the (0,0) to (x,y) search. Passed as a parameter for speed reasons.</param>
+	/// <param name="UpVector">a vector for the (u,v) to (N,M) search. Passed as a parameter for speed reasons.</param>
+	private static void LCS(DiffData DataA, int LowerA, int UpperA, DiffData DataB, int LowerB, int UpperB, int[] DownVector, int[] UpVector) {
+		// Debug.Write(2, "LCS", String.Format("Analyse the box: A[{0}-{1}] to B[{2}-{3}]", LowerA, UpperA, LowerB, UpperB));
+		
+		// Fast walkthrough equal lines at the start
+		while (LowerA < UpperA && LowerB < UpperB && DataA.data[LowerA] == DataB.data[LowerB]) {
+			LowerA++; LowerB++;
 		}
-	}
-
-	public int Count()
-	{
-		return _lines.Count;
-	}
-
-	public IComparable GetByIndex(int index)
-	{
-		return cast(TextLine)_lines[index];
-	}
-}
-
-
-public class DiffList_BinaryFile : IDiffList
-{
-	private byte[] _byteList;
-
-	public this(string fileName)
-	{
-		FileStream fs = null;
-		BinaryReader br = null;
-		try
-		{
-			fs = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-			int len = cast(int)fs.Length;
-			br = new BinaryReader(fs);
-			_byteList = br.ReadBytes(len);
+		
+		// Fast walkthrough equal lines at the end
+		while (LowerA < UpperA && LowerB < UpperB && DataA.data[UpperA - 1] == DataB.data[UpperB - 1]) {
+			--UpperA; --UpperB;
 		}
-		catch (Exception ex)
-		{
-			throw ex;
+		
+		if (LowerA == UpperA) {
+			// mark as inserted lines.
+			while (LowerB < UpperB) DataB.modified[LowerB++] = true;
+		} else if (LowerB == UpperB) {
+			
+			// mark as deleted lines.
+			while (LowerA < UpperA) DataA.modified[LowerA++] = true;
+		
+		} else {
+			// Find the middle snakea and length of an optimal path for A and B
+			SMSRD smsrd = SMS(DataA, LowerA, UpperA, DataB, LowerB, UpperB, DownVector, UpVector);
+			// Debug.Write(2, "MiddleSnakeData", String.Format("{0},{1}", smsrd.x, smsrd.y));
+			
+			// The path is from LowerX to (x,y) and (x,y) to UpperX
+			LCS(DataA, LowerA, smsrd.x, DataB, LowerB, smsrd.y, DownVector, UpVector);
+			LCS(DataA, smsrd.x, UpperA, DataB, smsrd.y, UpperB, DownVector, UpVector);  // 2002.09.20: no need for 2 points 
 		}
-		finally
-		{
-			if (br != null) br.Close();
-			if (fs != null) fs.Close();
-		}
-
+	} // LCS()
+	
+	
+	/// <summary>Scan the tables of which lines are inserted and deleted,
+	/// producing an edit script in forward order.  
+	/// </summary>
+	/// dynamic array
+	private static Item[] CreateDiffs(DiffData DataA, DiffData DataB) {
+		ArrayList a = new ArrayList();
+		Item aItem;
+		Item[] result;
+		
+		int StartA, StartB;
+		int LineA, LineB;
+		
+		LineA = 0;
+		LineB = 0;
+		while (LineA < DataA.Length || LineB < DataB.Length) {
+			if ((LineA < DataA.Length) && (!DataA.modified[LineA]) && (LineB < DataB.Length) && (!DataB.modified[LineB])) {
+				// equal lines
+				LineA++;
+				LineB++;
+			
+			} else {
+				// maybe deleted and/or inserted lines
+				StartA = LineA;
+				StartB = LineB;
+				
+				while (LineA < DataA.Length && (LineB >= DataB.Length || DataA.modified[LineA])) {
+					// while (LineA < DataA.Length && DataA.modified[LineA])
+					LineA++;
+				}
+				
+				while (LineB < DataB.Length && (LineA >= DataA.Length || DataB.modified[LineB])) {
+					// while (LineB < DataB.Length && DataB.modified[LineB])
+					LineB++;
+				}
+				
+				if ((StartA < LineA) || (StartB < LineB)) {
+					// store a new difference-item
+					aItem = new Item();
+					aItem.StartA = StartA;
+					aItem.StartB = StartB;
+					aItem.deletedA = LineA - StartA;
+					aItem.insertedB = LineB - StartB;
+					a.Add(aItem);
+				} // if
+			} // if
+		} // while
+		
+		result = new Item[a.Count];
+		a.CopyTo(result);
+		
+		return (result);
 	}
 
-	public int Count()
-	{
-		return _byteList.Length;
-	}
+} // class Diff
 
-	public IComparable GetByIndex(int index)
-	{
-		return _byteList[index];
-	}
-}
+/// <summary>Data on one input file being compared.  
+/// </summary>
+class DiffData {
+	/// <summary>Number of elements (lines).</summary>
+	int Length;
+	
+	/// <summary>Buffer of numbers that will be compared.</summary>
+	int[] data;
+	
+	/// <summary>
+	/// Array of booleans that flag for modified data.
+	/// This is the result of the diff.
+	/// This means deletedA in the first Data or inserted in the second Data.
+	/// </summary>
+	bool[] modified;
+	
+	/// <summary>
+	/// Initialize the Diff-Data buffer.
+	/// </summary>
+	/// <param name="data">reference to the buffer</param>
+	this(int[] initData) {
+		data = initData;
+		Length = initData.Length;
+		modified = new bool[Length + 2];
+	} // DiffData
 
-public class DiffList_CharData : IDiffList
-{
-	private char[] _charList;
-
-	public this(string charData)
-	{
-		_charList = charData.ToCharArray();
-	}
-
-	public int Count()
-	{
-		return _charList.Length;
-	}
-
-	public IComparable GetByIndex(int index)
-	{
-		return _charList[index];
-	}
-}
+} // class DiffData
 +/
