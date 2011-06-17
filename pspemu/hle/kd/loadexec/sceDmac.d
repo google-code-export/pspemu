@@ -5,6 +5,7 @@ import pspemu.hle.ModuleNative;
 class sceDmac : ModuleNative {
 	void initNids() {
 		mixin(registerd!(0x617F3FE6, sceDmacMemcpy));
+		mixin(registerd!(0xD97F94D8, sceDmacTryMemcpy));
 	}
 	
 	/**
@@ -19,6 +20,8 @@ class sceDmac : ModuleNative {
 		//return dest;
 		return 0;
 	}
+	
+	alias sceDmacMemcpy sceDmacTryMemcpy;
 }
 
 static this() {

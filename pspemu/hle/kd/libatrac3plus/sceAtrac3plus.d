@@ -102,7 +102,7 @@ class sceAtrac3plus : ModuleNative {
 	 * @return < 0 on error, otherwise 0
 	 */
 	int sceAtracDecodeData(int atracID, u16 *outSamples, int *outN, int *outEnd, int *outRemainFrame) {
-		logInfo("Not implemented sceAtracDecodeData(%d)", atracID);
+		//logInfo("Not implemented sceAtracDecodeData(%d)", atracID);
 
 		Atrac3Object atrac3Object = hleEmulatorState.uniqueIdFactory.get!Atrac3Object(atracID);
 		*outSamples = 0;
