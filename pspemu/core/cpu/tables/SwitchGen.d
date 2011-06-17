@@ -72,6 +72,7 @@ string genSwitch(const InstructionDefinition[] ilist, string processor = "callFu
 		InstructionDefinition[512] ci; int ci_len;
 
 		version (AA_CTFE) {
+			bool aa_initialized = false;
 			bool[uint] cvalues_aa;
 		} else {
 			uint[] cvalues;
@@ -82,9 +83,11 @@ string genSwitch(const InstructionDefinition[] ilist, string processor = "callFu
 		foreach (i; ilist) {
 			uint cvalue = i.opcode.value & mask;
 			version (AA_CTFE) {
-				if (((cvalue in cvalues_aa) !is null)) {
-					//if (cvalues_aa[cvalue] == true) continue;
-					continue;
+				if (aa_initialized) {
+					if (cast(bool)(cvalue in cvalues_aa)) {
+						//if (cvalues_aa[cvalue] == true) continue;
+						continue;
+					}
 				}
 			} else {
 				if (inArray(cvalues, cvalue)) continue;
@@ -100,6 +103,7 @@ string genSwitch(const InstructionDefinition[] ilist, string processor = "callFu
 			
 			version (AA_CTFE) {
 				cvalues_aa[cvalue] = true;
+				aa_initialized = true;
 			} else {
 				cvalues ~= cvalue;
 			}
