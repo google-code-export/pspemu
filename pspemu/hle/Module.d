@@ -126,6 +126,10 @@ abstract class Module {
 		return currentThreadState.registers;
 	}
 	
+	static public uint executeGuestCode(HleEmulatorState hleEmulatorState, uint pointer, uint[] arguments = null) {
+		return hleEmulatorState.executeGuestCode(currentThreadState, pointer, arguments);
+	}
+	
 	void logLevel(T...)(Logger.Level level, T args) {
 		try {
 			Logger.log(level, this.baseName, "nPC(%08X) :: Thread(%d:%s) :: %s", currentThreadState().registers.RA, currentThreadState().thid, currentThreadState().name, std.string.format(args));

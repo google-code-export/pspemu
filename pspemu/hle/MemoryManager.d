@@ -16,6 +16,10 @@ class MemoryManager {
 		this.sysMemUserForUser = moduleManager.get!(SysMemUserForUser);
 	}
 	
+	public void free(uint ptr) {
+		//return this.sysMemUserForUser.sce
+	}
+	
 	public uint alloc(PspPartition partition, string name, PspSysMemBlockTypes type, uint size, uint addr = 0) {
 		SceUID mem = this.sysMemUserForUser.sceKernelAllocPartitionMemory(partition, name, type, size, addr);
 		return this.sysMemUserForUser.sceKernelGetBlockHeadAddr(mem);

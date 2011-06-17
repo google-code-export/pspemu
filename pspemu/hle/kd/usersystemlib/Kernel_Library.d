@@ -24,7 +24,7 @@ class Kernel_Library : ModuleNative {
 	 * @param flags - The value returned from ::sceKernelCpuSuspendIntr().
 	 */
 	void sceKernelCpuResumeIntr(uint flags) {
-		logInfo("Not implemented :: sceKernelCpuResumeIntr");
+		logInfo("Not implemented :: sceKernelCpuResumeIntr (0b%032b)", flags);
 	}
 }
 
