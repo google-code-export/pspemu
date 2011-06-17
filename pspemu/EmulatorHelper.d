@@ -156,16 +156,18 @@ class EmulatorHelper {
 		auto pspTestBasePath     = std.path.getName(pspTestExpectedPath);
 		auto pspTestElfPath = std.string.format("%s.elf", pspTestBasePath);
 		stdout.writef("%s...", pspTestBasePath); stdout.flush();
-		{
+		if (std.file.exists(pspTestElfPath)) {
 			loadModule(pspTestElfPath);
 			start();
-		}
-		string expected = std.string.strip(cast(string)std.file.read(pspTestExpectedPath));
-		string returned = std.string.strip(emulator.hleEmulatorState.kPrint.outputBuffer);
-		stdout.writefln("%s", (expected == returned) ? "OK" : "FAIL");
-		if (expected != returned) {
-			stdout.writefln("    returned:'%s'", std.array.replace(returned, "\n", "|"));
-			stdout.writefln("    expected:'%s'", std.array.replace(expected, "\n", "|"));
+			string expected = std.string.strip(cast(string)std.file.read(pspTestExpectedPath));
+			string returned = std.string.strip(emulator.hleEmulatorState.kPrint.outputBuffer);
+			stdout.writefln("%s", (expected == returned) ? "OK" : "FAIL");
+			if (expected != returned) {
+				stdout.writefln("    returned:'%s'", std.array.replace(returned, "\n", "|"));
+				stdout.writefln("    expected:'%s'", std.array.replace(expected, "\n", "|"));
+			}
+		} else {
+			stdout.writefln("MISSING %s", pspTestElfPath);
 		}
 	}
 }
