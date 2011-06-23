@@ -39,12 +39,40 @@ class sceAtrac3plus : ModuleNative {
 	    mixin(registerd!(0xA2BBA8BE, sceAtracGetSoundSample));
 	    mixin(registerd!(0xCA3CA3D2, sceAtracGetBufferInfoForReseting));
 	    mixin(registerd!(0x644E5607, sceAtracResetPlayPosition));
+
+		mixin(registerd!(0x0E2A73AB, sceAtracSetData));
+		mixin(registerd!(0xD6A5F2F7, sceAtracGetMaxSample));
+		mixin(registerd!(0xFAA4F89B, sceAtracGetLoopStatus));
+	}
+	
+	int sceAtracSetData(int atracID, u8 *pucBufferAddr, u32 uiBufferByte) {
+		unimplemented();
+		return 0;
 	}
 	
 	/**
+	 * Gets the maximum number of samples of the atrac3 stream.
+	 *
+	 * @param atracID - the atrac ID
+	 * @param outMax  - pointer to a integer that receives the maximum number of samples.
+	 *
+	 * @return < 0 on error, otherwise 0
+	 *
+	 */
+	int sceAtracGetMaxSample(int atracID, int* outMax) {
+		unimplemented();
+		return 0;
+	}
+
+	int sceAtracGetLoopStatus(int atracID, int *piLoopNum, u32 *puiLoopStatus) {
+		unimplemented();
+		return 0;
+	}
+
+	/**
 	 * Creates a new Atrac ID from the specified data
 	 *
-	 * @param buf - the buffer holding the atrac3 data, including the RIFF/WAVE header.
+	 * @param buf     - the buffer holding the atrac3 data, including the RIFF/WAVE header.
 	 * @param bufsize - the size of the buffer pointed by buf
 	 *
 	 * @return the new atrac ID, or < 0 on error 
@@ -61,7 +89,7 @@ class sceAtrac3plus : ModuleNative {
 	 * Sets the number of loops for this atrac ID
 	 *
 	 * @param atracID - the atracID
-	 * @param nloops - the number of loops to set
+	 * @param nloops  - the number of loops to set
 	 *
 	 * @return < 0 on error, otherwise 0
 	 *
@@ -75,9 +103,9 @@ class sceAtrac3plus : ModuleNative {
 	/**
 	 * Gets the remaining (not decoded) number of frames
 	 * 
-	 * @param atracID - the atrac ID
+	 * @param atracID        - the atrac ID
 	 * @param outRemainFrame - pointer to a integer that receives either -1 if all at3 data is already on memory, 
-	 *  or the remaining (not decoded yet) frames at memory if not all at3 data is on memory 
+	 *                         or the remaining (not decoded yet) frames at memory if not all at3 data is on memory 
 	 *
 	 * @return < 0 on error, otherwise 0
 	 *
@@ -133,7 +161,7 @@ class sceAtrac3plus : ModuleNative {
 	 * Gets the number of samples of the next frame to be decoded.
 	 *
 	 * @param atracID - the atrac ID
-	 * @param outN - pointer to receives the number of samples of the next frame.
+	 * @param outN    - pointer to receives the number of samples of the next frame.
 	 *
 	 * @return < 0 on error, otherwise 0
 	 *
@@ -152,10 +180,10 @@ class sceAtrac3plus : ModuleNative {
 	
 	/**
 	 *
-	 * @param atracID - the atrac ID
-	 * @param writePointer - Pointer to where to read the atrac data
+	 * @param atracID        - the atrac ID
+	 * @param writePointer   - Pointer to where to read the atrac data
 	 * @param availableBytes - Number of bytes available at the writePointer location
-	 * @param readOffset - Offset where to seek into the atrac file before reading
+	 * @param readOffset     - Offset where to seek into the atrac file before reading
 	 *
 	 * @return < 0 on error, otherwise 0
 	*/
@@ -166,7 +194,7 @@ class sceAtrac3plus : ModuleNative {
 	
 	/**
 	 *
-	 * @param atracID - the atrac ID
+	 * @param atracID    - the atrac ID
 	 * @param bytesToAdd - Number of bytes read into location given by sceAtracGetStreamDataInfo().
 	 *
 	 * @return < 0 on error, otherwise 0

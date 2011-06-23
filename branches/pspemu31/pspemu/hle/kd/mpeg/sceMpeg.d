@@ -31,11 +31,16 @@ class sceMpeg : ModuleNative {
 	    mixin(registerd!(0xE1CE83A7, sceMpegGetAtracAu));
 	    mixin(registerd!(0xF8DCB679, sceMpegQueryAtracEsSize));
 	    mixin(registerd!(0xFE246728, sceMpegGetAvcAu));
-	    
-	    /*
 		mixin(registerd!(0x0F6C18D7, sceMpegAvcDecodeDetail));
 		mixin(registerd!(0x4571CC64, sceMpegAvcDecodeFlush));
-		*/
+	}
+	
+	void sceMpegAvcDecodeDetail() {
+		unimplemented();
+	}
+	
+	void sceMpegAvcDecodeFlush() {
+		unimplemented();
 	}
 	
 	/**

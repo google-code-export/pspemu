@@ -5,105 +5,105 @@ import std.string;
 import std.conv;
 
 enum Opcode : ubyte { // VideoCommand
-	NOP			, // 0x00 - NOP
+	NOP				, // 0x00 - NOP
 	VADDR			, // 0x01 - Vertex List (BASE)
 	IADDR			, // 0x02 - Index List (BASE)
-	Unknown0x03	, // 0x03 - 
+	Unknown0x03		, // 0x03 - ???
 	PRIM			, // 0x04 - Primitive Kick
-	BEZIER		, // 0x05 - Bezier Patch Kick
-	SPLINE		, // 0x06 - Spline Surface Kick
+	BEZIER			, // 0x05 - Bezier Patch Kick
+	SPLINE			, // 0x06 - Spline Surface Kick
 	BBOX			, // 0x07 - Bounding Box
 	JUMP			, // 0x08 - Jump To New Address (BASE)
 	BJUMP			, // 0x09 - Conditional Jump (BASE)
 	CALL			, // 0x0A - Call Address (BASE)
-	RET			, // 0x0B - Return From Call
-	END			, // 0x0C - Stop Execution
-	Unknown0x0D	, // 0x0D - 
-	SIGNAL		, // 0x0E - Raise Signal Interrupt
-	FINISH		, // 0x0F - Complete Rendering
+	RET				, // 0x0B - Return From Call
+	END				, // 0x0C - Stop Execution
+	Unknown0x0D		, // 0x0D - ???
+	SIGNAL			, // 0x0E - Raise Signal Interrupt
+	FINISH			, // 0x0F - Complete Rendering
 	BASE			, // 0x10 - Base Address Register
-	Unknown0x11	, // 0x11 - 
+	Unknown0x11		, // 0x11 - ???
 	VTYPE			, // 0x12 - Vertex Type
-	OFFSETADDR	, // 0x13 - Offset Address (BASE)
-	ORIGINADDR	, // 0x14 - Origin Address (BASE)
-	REGION1		, // 0x15 - Draw Region Start
-	REGION2		, // 0x16 - Draw Region End
-	LTE			, // 0x17 - Lighting Enable
+	OFFSETADDR		, // 0x13 - Offset Address (BASE)
+	ORIGINADDR		, // 0x14 - Origin Address (BASE)
+	REGION1			, // 0x15 - Draw Region Start
+	REGION2			, // 0x16 - Draw Region End
+	LTE				, // 0x17 - Lighting Enable
 	LTE0			, // 0x18 - Light 0 Enable
 	LTE1			, // 0x19 - Light 1 Enable
 	LTE2			, // 0x1A - Light 2 Enable
 	LTE3			, // 0x1B - Light 3 Enable
-	CPE			, // 0x1C - Clip Plane Enable
-	BCE			, // 0x1D - Backface Culling Enable
-	TME			, // 0x1E - Texture Mapping Enable
-	FGE			, // 0x1F - Fog Enable
-	DTE			, // 0x20 - Dither Enable
-	ABE			, // 0x21 - Alpha Blend Enable
-	ATE			, // 0x22 - Alpha Test Enable
-	ZTE			, // 0x23 - Depth Test Enable
-	STE			, // 0x24 - Stencil Test Enable
-	AAE			, // 0x25 - Anitaliasing Enable
-	PCE			, // 0x26 - Patch Cull Enable
-	CTE			, // 0x27 - Color Test Enable
-	LOE			, // 0x28 - Logical Operation Enable
-	Unknown0x29	, // 0x29 - 
+	CPE				, // 0x1C - Clip Plane Enable
+	BCE				, // 0x1D - Backface Culling Enable
+	TME				, // 0x1E - Texture Mapping Enable
+	FGE				, // 0x1F - Fog Enable
+	DTE				, // 0x20 - Dither Enable
+	ABE				, // 0x21 - Alpha Blend Enable
+	ATE				, // 0x22 - Alpha Test Enable
+	ZTE				, // 0x23 - Depth Test Enable
+	STE				, // 0x24 - Stencil Test Enable
+	AAE				, // 0x25 - Anitaliasing Enable
+	PCE				, // 0x26 - Patch Cull Enable
+	CTE				, // 0x27 - Color Test Enable
+	LOE				, // 0x28 - Logical Operation Enable
+	Unknown0x29		, // 0x29 - ???
 	BOFS			, // 0x2A - Bone Matrix Offset
 	BONE			, // 0x2B - Bone Matrix Upload
-	MW0			, // 0x2C - Morph Weight 0
-	MW1			, // 0x2D - Morph Weight 1
-	MW2			, // 0x2E - Morph Weight 2
-	MW3			, // 0x2F - Morph Weight 3
-	MW4			, // 0x30 - Morph Weight 4
-	MW5			, // 0x31 - Morph Weight 5
-	MW6			, // 0x32 - Morph Weight 6
-	MW7			, // 0x33 - Morph Weight 7
-	Unknown0x34	, // 0x34 - 
-	Unknown0x35	, // 0x35 - 
+	MW0				, // 0x2C - Morph Weight 0
+	MW1				, // 0x2D - Morph Weight 1
+	MW2				, // 0x2E - Morph Weight 2
+	MW3				, // 0x2F - Morph Weight 3
+	MW4				, // 0x30 - Morph Weight 4
+	MW5				, // 0x31 - Morph Weight 5
+	MW6				, // 0x32 - Morph Weight 6
+	MW7				, // 0x33 - Morph Weight 7
+	Unknown0x34		, // 0x34 - ???
+	Unknown0x35		, // 0x35 - ???
 	PSUB			, // 0x36 - Patch Subdivision
 	PPRIM			, // 0x37 - Patch Primitive
 	PFACE			, // 0x38 - Patch Front Face
-	Unknown0x39	, // 0x39 - 
-	WMS			, // 0x3A - World Matrix Select
+	Unknown0x39		, // 0x39 - ???
+	WMS				, // 0x3A - World Matrix Select
 	WORLD			, // 0x3B - World Matrix Upload
-	VMS			, // 0x3C - View Matrix Select
+	VMS				, // 0x3C - View Matrix Select
 	VIEW			, // 0x3D - View Matrix upload
-	PMS			, // 0x3E - Projection matrix Select
+	PMS				, // 0x3E - Projection matrix Select
 	PROJ			, // 0x3F - Projection Matrix upload
-	TMS			, // 0x40 - Texture Matrix Select
-	TMATRIX		, // 0x41 - Texture Matrix Upload
-	XSCALE		, // 0x42 - Viewport Width Scale
-	YSCALE		, // 0x43 - Viewport Height Scale
-	ZSCALE		, // 0x44 - Depth Scale
+	TMS				, // 0x40 - Texture Matrix Select
+	TMATRIX			, // 0x41 - Texture Matrix Upload
+	XSCALE			, // 0x42 - Viewport Width Scale
+	YSCALE			, // 0x43 - Viewport Height Scale
+	ZSCALE			, // 0x44 - Depth Scale
 	XPOS			, // 0x45 - Viewport X Position
 	YPOS			, // 0x46 - Viewport Y Position
 	ZPOS			, // 0x47 - Depth Position
-	USCALE		, // 0x48 - Texture Scale U
-	VSCALE		, // 0x49 - Texture Scale V
-	UOFFSET		, // 0x4A - Texture Offset U
-	VOFFSET		, // 0x4B - Texture Offset V
-	OFFSETX		, // 0x4C - Viewport offset (X)
-	OFFSETY		, // 0x4D - Viewport offset (Y)
-	Unknown0x4E	, // 0x4E - 
-	Unknown0x4F	, // 0x4F - 
+	USCALE			, // 0x48 - Texture Scale U
+	VSCALE			, // 0x49 - Texture Scale V
+	UOFFSET			, // 0x4A - Texture Offset U
+	VOFFSET			, // 0x4B - Texture Offset V
+	OFFSETX			, // 0x4C - Viewport offset (X)
+	OFFSETY			, // 0x4D - Viewport offset (Y)
+	Unknown0x4E		, // 0x4E - ???
+	Unknown0x4F		, // 0x4F - ???
 	SHADE			, // 0x50 - Shade Model
 	RNORM			, // 0x51 - Reverse Face Normals Enable
-	Unknown0x52	, // 0x52 - 
+	Unknown0x52		, // 0x52 - ???
 	CMAT			, // 0x53 - Color Material
-	EMC			, // 0x54 - Emissive Model Color
-	AMC			, // 0x55 - Ambient Model Color
-	DMC			, // 0x56 - Diffuse Model Color
-	SMC			, // 0x57 - Specular Model Color
-	AMA			, // 0x58 - Ambient Model Alpha
-	Unknown0x59	, // 0x59 - 
-	Unknown0x5A	, // 0x5A - 
+	EMC				, // 0x54 - Emissive Model Color
+	AMC				, // 0x55 - Ambient Model Color
+	DMC				, // 0x56 - Diffuse Model Color
+	SMC				, // 0x57 - Specular Model Color
+	AMA				, // 0x58 - Ambient Model Alpha
+	Unknown0x59		, // 0x59 - ???
+	Unknown0x5A		, // 0x5A - ???
 	SPOW			, // 0x5B - Specular Power
-	ALC			, // 0x5C - Ambient Light Color
-	ALA			, // 0x5D - Ambient Light Alpha
+	ALC				, // 0x5C - Ambient Light Color
+	ALA				, // 0x5D - Ambient Light Alpha
 	LMODE			, // 0x5E - Light Model
-	LT0			, // 0x5F - Light Type 0
-	LT1			, // 0x60 - Light Type 1
-	LT2			, // 0x61 - Light Type 2
-	LT3			, // 0x62 - Light Type 3
+	LT0				, // 0x5F - Light Type 0
+	LT1				, // 0x60 - Light Type 1
+	LT2				, // 0x61 - Light Type 2
+	LT3				, // 0x62 - Light Type 3
 	LXP0			, // 0x63 - Light X Position 0
 	LYP0			, // 0x64 - Light Y Position 0
 	LZP0			, // 0x65 - Light Z Position 0
@@ -161,10 +161,10 @@ enum Opcode : ubyte { // VideoCommand
 	DLC3			, // 0x99 - Diffuse Light Color 3
 	SLC3			, // 0x9A - Specular Light Color 3
 	FFACE			, // 0x9B - Front Face Culling Order
-	FBP			, // 0x9C - Frame Buffer Pointer
-	FBW			, // 0x9D - Frame Buffer Width
-	ZBP			, // 0x9E - Depth Buffer Pointer
-	ZBW			, // 0x9F - Depth Buffer Width
+	FBP				, // 0x9C - Frame Buffer Pointer
+	FBW				, // 0x9D - Frame Buffer Width
+	ZBP				, // 0x9E - Depth Buffer Pointer
+	ZBW				, // 0x9F - Depth Buffer Width
 	TBP0			, // 0xA0 - Texture Buffer Pointer 0
 	TBP1			, // 0xA1 - Texture Buffer Pointer 1
 	TBP2			, // 0xA2 - Texture Buffer Pointer 2
@@ -181,22 +181,22 @@ enum Opcode : ubyte { // VideoCommand
 	TBW5			, // 0xAD - Texture Buffer Width 5
 	TBW6			, // 0xAE - Texture Buffer Width 6
 	TBW7			, // 0xAF - Texture Buffer Width 7
-	CBP			, // 0xB0 - CLUT Buffer Pointer
+	CBP				, // 0xB0 - CLUT Buffer Pointer
 	CBPH			, // 0xB1 - CLUT Buffer Pointer H
-	TRXSBP		, // 0xB2 - Transmission Source Buffer Pointer
-	TRXSBW		, // 0xB3 - Transmission Source Buffer Width
-	TRXDBP		, // 0xB4 - Transmission Destination Buffer Pointer
-	TRXDBW		, // 0xB5 - Transmission Destination Buffer Width
-	Unknown0xB6	, // 0xB6 - 
-	Unknown0xB7	, // 0xB7 - 
-	TSIZE0		, // 0xB8 - Texture Size Level 0
-	TSIZE1		, // 0xB9 - Texture Size Level 1
-	TSIZE2		, // 0xBA - Texture Size Level 2
-	TSIZE3		, // 0xBB - Texture Size Level 3
-	TSIZE4		, // 0xBC - Texture Size Level 4
-	TSIZE5		, // 0xBD - Texture Size Level 5
-	TSIZE6		, // 0xBE - Texture Size Level 6
-	TSIZE7		, // 0xBF - Texture Size Level 7
+	TRXSBP			, // 0xB2 - Transmission Source Buffer Pointer
+	TRXSBW			, // 0xB3 - Transmission Source Buffer Width
+	TRXDBP			, // 0xB4 - Transmission Destination Buffer Pointer
+	TRXDBW			, // 0xB5 - Transmission Destination Buffer Width
+	Unknown0xB6		, // 0xB6 - ???
+	Unknown0xB7		, // 0xB7 - ???
+	TSIZE0			, // 0xB8 - Texture Size Level 0
+	TSIZE1			, // 0xB9 - Texture Size Level 1
+	TSIZE2			, // 0xBA - Texture Size Level 2
+	TSIZE3			, // 0xBB - Texture Size Level 3
+	TSIZE4			, // 0xBC - Texture Size Level 4
+	TSIZE5			, // 0xBD - Texture Size Level 5
+	TSIZE6			, // 0xBE - Texture Size Level 6
+	TSIZE7			, // 0xBF - Texture Size Level 7
 	TMAP			, // 0xC0 - Texture Projection Map Mode + Texture Map Mode
 	TEXTURE_ENV_MAP_MATRIX, // 0xC1 - Environment Map Matrix
 	TMODE			, // 0xC2 - Texture Mode
@@ -207,15 +207,15 @@ enum Opcode : ubyte { // VideoCommand
 	TWRAP			, // 0xC7 - Texture Wrapping
 	TBIAS			, // 0xC8 - Texture Level Bias (???)
 	TFUNC			, // 0xC9 - Texture Function
-	TEC			, // 0xCA - Texture Environment Color
-	TFLUSH		, // 0xCB - Texture Flush
+	TEC				, // 0xCA - Texture Environment Color
+	TFLUSH			, // 0xCB - Texture Flush
 	TSYNC			, // 0xCC - Texture Sync
 	FFAR			, // 0xCD - Fog Far (???)
 	FDIST			, // 0xCE - Fog Range
 	FCOL			, // 0xCF - Fog Color
-	TSLOPE		, // 0xD0 - Texture Slope
-	Unknown0xD1	, // 0xD1 - 
-	PSM			, // 0xD2 - Frame Buffer Pixel Storage Mode
+	TSLOPE			, // 0xD0 - Texture Slope
+	Unknown0xD1		, // 0xD1 - ???
+	PSM				, // 0xD2 - Frame Buffer Pixel Storage Mode
 	CLEAR			, // 0xD3 - Clear Flags
 	SCISSOR1		, // 0xD4 - Scissor Region Start
 	SCISSOR2		, // 0xD5 - Scissor Region End
@@ -226,7 +226,7 @@ enum Opcode : ubyte { // VideoCommand
 	CMSK			, // 0xDA - Color Mask
 	ATST			, // 0xDB - Alpha Test
 	STST			, // 0xDC - Stencil Test
-	SOP			, // 0xDD - Stencil Operations
+	SOP				, // 0xDD - Stencil Operations
 	ZTST			, // 0xDE - Depth Test Function
 	ALPHA			, // 0xDF - Alpha Blend
 	SFIX			, // 0xE0 - Source Fix Color
@@ -235,32 +235,32 @@ enum Opcode : ubyte { // VideoCommand
 	DTH1			, // 0xE3 - Dither Matrix Row 1
 	DTH2			, // 0xE4 - Dither Matrix Row 2
 	DTH3			, // 0xE5 - Dither Matrix Row 3
-	LOP			, // 0xE6 - Logical Operation
+	LOP				, // 0xE6 - Logical Operation
 	ZMSK			, // 0xE7 - Depth Mask
 	PMSKC			, // 0xE8 - Pixel Mask Color
 	PMSKA			, // 0xE9 - Pixel Mask Alpha
-	TRXKICK		, // 0xEA - Transmission Kick
-	TRXSPOS		, // 0xEB - Transfer Source Position
-	TRXDPOS		, // 0xEC - Transfer Destination Position
-	Unknown0xED	, // 0xED - 
-	TRXSIZE		, // 0xEE - Transfer Size
-	Unknown0xEF	, // 0xEF - 
-	Unknown0xF0	, // 0xF0 - 
-	Unknown0xF1	, // 0xF1 - 
-	Unknown0xF2	, // 0xF2 - 
-	Unknown0xF3	, // 0xF3 - 
-	Unknown0xF4	, // 0xF4 - 
-	Unknown0xF5	, // 0xF5 - 
-	Unknown0xF6	, // 0xF6 - 
-	Unknown0xF7	, // 0xF7 - 
-	Unknown0xF8	, // 0xF8 - 
-	Unknown0xF9	, // 0xF9 - 
-	Unknown0xFA	, // 0xFA - 
-	Unknown0xFB	, // 0xFB - 
-	Unknown0xFC	, // 0xFC - 
-	Unknown0xFD	, // 0xFD - 
-	Unknown0xFE	, // 0xFE - 
-	Unknown0xFF	  // 0xFF - 
+	TRXKICK			, // 0xEA - Transmission Kick
+	TRXSPOS			, // 0xEB - Transfer Source Position
+	TRXDPOS			, // 0xEC - Transfer Destination Position
+	Unknown0xED		, // 0xED - ???
+	TRXSIZE			, // 0xEE - Transfer Size
+	Unknown0xEF		, // 0xEF - ???
+	VSCX			, // 0xF0 - Vertex Screen Coordinate X
+	VSCY			, // 0xF1 - Vertex Screen Coordinate Y
+	VSCZ			, // 0xF2 - Vertex Screen Coordinate Z
+	VTCS			, // 0xF3 - Vertex Texture Coordinate S
+	VTCT			, // 0xF4 - Vertex Texture Coordinate T
+	VTCQ			, // 0xF5 - Vertex Texture Coordinate Q
+	VCV				, // 0xF6 - Vertex Color Value
+	VAP				, // 0xF7 - Vertex Alpha and Primitive
+	VFC				, // 0xF8 - Vertex Fog Coefficient
+	VSCV			, // 0xF9 - Vertex Secondary Color Value
+	Unknown0xFA		, // 0xFA - ???
+	Unknown0xFB		, // 0xFB - ???
+	Unknown0xFC		, // 0xFC - ???
+	Unknown0xFD		, // 0xFD - ???
+	Unknown0xFE		, // 0xFE - ???
+	DUMMY	 		, // 0xFF - Dummy Command?
 };
 
 struct Command {

@@ -26,12 +26,21 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 		mixin(registerd!(0x773DD3A3, sceDisplayGetCurrentHcount));
 		mixin(registerd!(0xDEA197D4, sceDisplayGetMode));
 		mixin(registerd!(0xDBA6C4C4, sceDisplayGetFramePerSec));
+		mixin(registerd!(0x210EAB3A, sceDisplayGetAccumulatedHcount));
 	}
 
 	// http://forums.ps2dev.org/viewtopic.php?t=9168
 	float sceDisplayGetFramePerSec() {
 		// (pixel_clk_freq * cycles_per_pixel)/(row_pixels * column_pixel)
 		return 9_000_000f * 1 / (525 * 286);
+	}
+
+	/**
+	 * Get accumlated HSYNC count
+	 */
+	int sceDisplayGetAccumulatedHcount() {
+		unimplemented();
+		return 0;
 	}
 
 	void processCallbacks() {
