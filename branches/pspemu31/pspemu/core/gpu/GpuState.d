@@ -272,12 +272,25 @@ struct TextureState {
 	
 	string toString() {
 		string ret;
-		ret ~= std.string.format("TextureState(enabled:%s", enabled);
+		ret ~= std.string.format("TextureState(enabled:%s\n", enabled);
 		if (enabled) {
-			ret ~= std.string.format(", swizzled: %s", swizzled);
-			ret ~= std.string.format(", format: %s", to!string(format));
+			ret ~= std.string.format("        , swizzled: %s\n", swizzled);
+			ret ~= std.string.format("        , format: %s\n", to!string(format));
+			ret ~= std.string.format("        , filterMinMag: %s,%s\n", to!string(filterMin), to!string(filterMag));
+			ret ~= std.string.format("        , wrapUV: %s,%s\n", to!string(wrapU), to!string(wrapV));
+			ret ~= std.string.format("        , scale: %s\n", scale);
+			ret ~= std.string.format("        , offset: %s\n", offset);
+			ret ~= std.string.format("        , mapMode: %s\n", to!string(mapMode));
+			ret ~= std.string.format("        , projMapMode: %s\n", to!string(projMapMode));
+			ret ~= std.string.format("        , texShade: %d,%d\n", texShade[0], texShade[1]);
+			ret ~= std.string.format("        , effect: %s\n", to!string(effect));
+			ret ~= std.string.format("        , colorComponent: %s\n", to!string(colorComponent));
+			ret ~= std.string.format("        , fragment_2x: %s\n", to!string(fragment_2x));
+			ret ~= std.string.format("        , mipmapMaxLevel: %d\n", mipmapMaxLevel);
+			ret ~= std.string.format("        , mipmapShareClut: %s\n", to!string(mipmapShareClut));
+			ret ~= std.string.format("        , mipmaps: ...\n");
 		}
-		ret ~= ")";
+		ret ~= "    )";
 		return ret;
 	}
 }

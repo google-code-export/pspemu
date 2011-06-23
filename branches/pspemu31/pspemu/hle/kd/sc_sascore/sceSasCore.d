@@ -106,6 +106,31 @@ class sceSasCore : ModuleNative {
 	    mixin(registerd!(0xCBCD4F79, __sceSasSetSimpleADSR));
 	    mixin(registerd!(0xD5A229C9, __sceSasRevEVOL));
 	    mixin(registerd!(0xF983B186, __sceSasRevVON));
+	    
+	    mixin(registerd!(0xBD11B7C2, __sceSasGetGrain));
+	    mixin(registerd!(0xD1E0A01E, __sceSasSetGrain));
+	    mixin(registerd!(0xE175EF66, __sceSasGetOutputmode));
+	    mixin(registerd!(0xE855BF76, __sceSasSetOutputmode));
+	}
+
+	int __sceSasGetGrain() {
+		unimplemented_notice();
+		return 0;
+	}
+	
+	int __sceSasSetGrain() {
+		unimplemented_notice();
+		return 0;
+	}
+
+	int __sceSasGetOutputmode() {
+		unimplemented_notice();
+		return 0;
+	}
+
+	int __sceSasSetOutputmode() {
+		unimplemented_notice();
+		return 0;
 	}
 
 	/**
@@ -306,7 +331,8 @@ class sceSasCore : ModuleNative {
     }
     
 	uint __sceSasCore(SasCore* sasCore, void* sasOut) {
-		unimplemented_notice();
+		// Disabled showing notice because being too annoying.
+		//unimplemented_notice();
 		return 0;
     }
 }

@@ -148,26 +148,34 @@ class SysMemUserForUser : ModuleNative {
 	 * @return The UID of the new block, or if less than 0 an error.
 	 */
 	SceUID sceKernelAllocPartitionMemory(SceUID partitionid, string name, PspSysMemBlockTypes type, SceSize size, /* void* */uint addr) {
-		MemorySegment memorySegment;
+		const uint ERROR_KERNEL_ILLEGAL_MEMBLOCK_ALLOC_TYPE = 0x800200d8;
+		const uint ERROR_KERNEL_FAILED_ALLOC_MEMBLOCK       = 0x800200d9;
 
-		Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%s:%d)", partitionid, name, std.conv.to!string(type), size);
-		//Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%d:%d)", partitionid, name, (type), size);
+		try {
+			MemorySegment memorySegment;
+			
+			Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%s:%d)", partitionid, name, std.conv.to!string(type), size);
+			//Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%d:%d)", partitionid, name, (type), size);
+	
+			switch (type) {
+				default: return ERROR_KERNEL_ILLEGAL_MEMBLOCK_ALLOC_TYPE;
+				case PspSysMemBlockTypes.PSP_SMEM_Low : memorySegment = pspMemorySegment[partitionid].allocByLow (size, dupStr(name)); break;
+				case PspSysMemBlockTypes.PSP_SMEM_High: memorySegment = pspMemorySegment[partitionid].allocByHigh(size, dupStr(name)); break;
+				case PspSysMemBlockTypes.PSP_SMEM_Addr: memorySegment = pspMemorySegment[partitionid].allocByAddr(addr, size, dupStr(name)); break;
+			}
+	
+			if (memorySegment is null) return ERROR_KERNEL_FAILED_ALLOC_MEMBLOCK;
+			
+			SceUID sceUid = hleEmulatorState.uniqueIdFactory.add(memorySegment);
+			
+			Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%s:%d) :: (%d) -> %s", partitionid, name, std.conv.to!string(type), size, sceUid, memorySegment.block);
+			//Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%d:%d) :: (%d) -> %s", partitionid, name, (type), size, sceUid, memorySegment.block);
 
-		switch (type) {
-			default:
-			case PspSysMemBlockTypes.PSP_SMEM_Low : memorySegment = pspMemorySegment[partitionid].allocByLow (size, dupStr(name)); break;
-			case PspSysMemBlockTypes.PSP_SMEM_High: memorySegment = pspMemorySegment[partitionid].allocByHigh(size, dupStr(name)); break;
-			case PspSysMemBlockTypes.PSP_SMEM_Addr: memorySegment = pspMemorySegment[partitionid].allocByAddr(addr, size, dupStr(name)); break;
+			return sceUid;
+		} catch (Throwable o) {
+			logWarning("ERROR: %s", o);
+			return ERROR_KERNEL_FAILED_ALLOC_MEMBLOCK;
 		}
-
-		if (memorySegment is null) return -1;
-		
-		SceUID sceUid = hleEmulatorState.uniqueIdFactory.add(memorySegment);
-		
-		Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%s:%d) :: (%d) -> %s", partitionid, name, std.conv.to!string(type), size, sceUid, memorySegment.block);
-		//Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%d:%d) :: (%d) -> %s", partitionid, name, (type), size, sceUid, memorySegment.block);
-
-		return sceUid;
 	}
 
 	/**

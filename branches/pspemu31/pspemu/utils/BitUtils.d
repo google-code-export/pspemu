@@ -12,4 +12,8 @@ class BitUtils {
 	static public T extractNormalized(T = uint, uint start, uint bits, uint maxValue = 255)(T from) {
 		return cast(T)((extract!(T, start, bits)(from) * maxValue) / makeMask!(T, bits));
 	}
+	
+	static public float extractNormalizedFloat(uint start, uint bits, float maxValue = 1.0, T = uint)(T from) {
+		return (cast(float)extractNormalized!(T, start, bits, 255)(from) * maxValue) / 255.0f;
+	}
 }
