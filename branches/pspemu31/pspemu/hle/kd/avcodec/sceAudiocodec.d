@@ -18,28 +18,34 @@ class sceAudiocodec : ModuleNative {
 		mixin(registerd!(0x29681260, sceAudiocodecReleaseEDRAM));
 	}
 	
-	int sceAudiocodecCheckNeedMem(uint *Buffer, int Type) {
-		unimplemented_notice();
+	int sceAudiocodecCheckNeedMem(uint *Buffer, PspAudioCodec Type) {
+		//logInfo("sceAudiocodecCheckNeedMem(%08X, %s)", cast(uint)Buffer, to!string(Type));
+		//unimplemented_notice();
+		//return 0;
+		return 4096;
+	}
+
+	int sceAudiocodecInit(uint *Buffer, PspAudioCodec Type) {
+		//logInfo("sceAudiocodecInit(%08X, %s)", cast(uint)Buffer, to!string(Type));
+		//unimplemented_notice();
 		return 0;
 	}
 
-	int sceAudiocodecInit(uint *Buffer, int Type) {
-		unimplemented_notice();
+	int sceAudiocodecDecode(uint *Buffer, PspAudioCodec Type) {
+		//logInfo("sceAudiocodecDecode(%08X, %s)", cast(uint)Buffer, to!string(Type));
+		//unimplemented_notice();
 		return 0;
 	}
 
-	int sceAudiocodecDecode(uint *Buffer, int Type) {
-		unimplemented_notice();
-		return 0;
-	}
-
-	int sceAudiocodecGetEDRAM(uint *Buffer, int Type) {
-		unimplemented_notice();
-		return 0;
+	int sceAudiocodecGetEDRAM(uint *Buffer, PspAudioCodec Type) {
+		//logInfo("sceAudiocodecGetEDRAM(%08X, %s)", cast(uint)Buffer, to!string(Type));
+		//unimplemented_notice();
+		return 0x_08_00_00_00;
 	}
 
 	int sceAudiocodecReleaseEDRAM(uint *Buffer) {
-		unimplemented_notice();
+		//logInfo("sceAudiocodecReleaseEDRAM(%08X)", cast(uint)Buffer);
+		//unimplemented_notice();
 		return 0;
 	}
 }

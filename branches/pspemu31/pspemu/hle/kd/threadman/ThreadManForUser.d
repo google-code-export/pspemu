@@ -110,6 +110,7 @@ class ThreadManForUser : ModuleNative {
 		mixin(registerd!(0xC8CD158C, sceKernelUSec2SysClockWide));
 
 		mixin(registerd!(0x56C039B5, sceKernelCreateVpl));
+		//mixin(registerd!(0xD979E9BF, sceKernelAllocateVpl));
 		mixin(registerd!(0xAF36D708, sceKernelTryAllocateVpl));
 		mixin(registerd!(0x39810265, sceKernelReferVplStatus));
 		mixin(registerd!(0xB736E9FF, sceKernelFreeVpl));
@@ -153,6 +154,20 @@ class ThreadManForUser : ModuleNative {
 	}
 	
 	/**
+	 * Allocate from the pool
+	 *
+	 * @param uid     - The UID of the pool
+	 * @param data    - Receives the address of the allocated data
+	 * @param timeout - Amount of time to wait for allocation?
+	 *
+	 * @return 0 on success, < 0 on error
+	 */
+	int sceKernelAllocateFpl(SceUID uid, uint** data, uint *timeout) {
+		logWarning("sceKernelAllocateFpl(%d, %08X, %08X) @TODO Not waiting", uid, cast(uint)data, cast(uint)timeout);
+		return sceKernelTryAllocateFpl(uid, data);
+	}
+	
+	/**
 	 * Try to allocate from the pool 
 	 *
 	 * @param uid  - The UID of the pool
@@ -160,7 +175,7 @@ class ThreadManForUser : ModuleNative {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
-	int sceKernelTryAllocateFpl(SceUID uid, uint **data) {
+	int sceKernelTryAllocateFpl(SceUID uid, uint** data) {
 		logWarning("sceKernelTryAllocateFpl(%d, %08X)", uid, cast(uint)data);
 		FixedPool fixedPool = hleEmulatorState.uniqueIdFactory.get!FixedPool(uid);
 		try {
@@ -229,6 +244,21 @@ class ThreadManForUser : ModuleNative {
 		}
 		logWarning("%s", variablePool);
 		return hleEmulatorState.uniqueIdFactory.add(variablePool);
+	}
+	
+	/**
+	 * Allocate from the pool
+	 *
+	 * @param uid     - The UID of the pool
+	 * @param size    - The size to allocate
+	 * @param data    - Receives the address of the allocated data
+	 * @param timeout - Amount of time to wait for allocation?
+	 *
+	 * @return 0 on success, < 0 on error
+	 */
+	int sceKernelAllocateVpl(SceUID uid, uint size, uint** data, uint *timeout) {
+		logWarning("sceKernelAllocateVpl(%d, %d, %08X) @TODO Not waiting", uid, size, cast(uint)data);
+		return sceKernelTryAllocateVpl(uid, size, data);
 	}
 
 	/**

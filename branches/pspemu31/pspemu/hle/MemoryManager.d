@@ -20,6 +20,10 @@ class MemoryManager {
 		//return this.sysMemUserForUser.sce
 	}
 	
+	public uint malloc(uint size) {
+		return alloc(PspPartition.Kernel0, "malloc", PspSysMemBlockTypes.PSP_SMEM_Low, size);
+	}
+	
 	public uint alloc(PspPartition partition, string name, PspSysMemBlockTypes type, uint size, uint addr = 0) {
 		SceUID mem = this.sysMemUserForUser.sceKernelAllocPartitionMemory(partition, name, type, size, addr);
 		return this.sysMemUserForUser.sceKernelGetBlockHeadAddr(mem);

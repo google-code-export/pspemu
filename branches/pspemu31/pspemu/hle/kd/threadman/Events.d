@@ -29,22 +29,31 @@ class PspWaitEvent {
 		this.waitEvent.signal();
 	}
 	
-	public uint waitEventFlag(uint bitsToMatch, PspEventFlagWaitTypes wait, bool callbacks) {
-		PspWaitEvent pspWaitEvent;
-		bool delegate() matches;
-		
+	public uint checkEventFlag(uint bitsToMatch, PspEventFlagWaitTypes wait) {
+		uint result;
 		if (wait & PspEventFlagWaitTypes.PSP_EVENT_WAITOR) {
-			matches = delegate() { return ((pspWaitEvent.bits & bitsToMatch) != 0); };
+			result = (this.bits & bitsToMatch);
 		} else {
-			matches = delegate() { return ((pspWaitEvent.bits & bitsToMatch) == bitsToMatch); };
+			result = (this.bits & bitsToMatch);
+			if (result != bitsToMatch) result = 0;
+		}
+		return result;
+	}
+	
+	public uint waitEventFlag(uint bitsToMatch, PspEventFlagWaitTypes wait, bool callbacks) {
+		uint matchedBits;
+
+		bool matches() {
+			matchedBits = checkEventFlag(bitsToMatch, wait); return (matchedBits != 0);
+			//return checkEventFlag(bitsToMatch, wait) != 0; 
 		}
 		
 		if (callbacks) {
 			Logger.log(Logger.Level.WARNING, "ThreadManForUser", "Not implemented PspWaitEvent.waitEventFlag.callbacks");
 		}
-
-		uint matchedBits = bits;
 		
+		//matchedBits = bits;
+
 		while (!matches) {
 			waitEvent.wait();
 		}
@@ -76,20 +85,21 @@ template ThreadManForUser_Events() {
 	}
 
 	/** 
-	  * Create an event flag.
-	  *
-	  * @param name - The name of the event flag.
-	  * @param attr - Attributes from ::PspEventFlagAttributes
-	  * @param bits - Initial bit pattern.
-	  * @param opt  - Options, set to NULL
-	  * @return < 0 on error. >= 0 event flag id.
-	  *
-	  * @par Example:
-	  * @code
-	  * int evid;
-	  * evid = sceKernelCreateEventFlag("wait_event", 0, 0, 0);
-	  * @endcode
-	  */
+	 * Create an event flag.
+	 *
+	 * @param name - The name of the event flag.
+	 * @param attr - Attributes from ::PspEventFlagAttributes
+	 * @param bits - Initial bit pattern.
+	 * @param opt  - Options, set to NULL
+	 *
+	 * @return < 0 on error. >= 0 event flag id.
+	 *
+	 * @par Example:
+	 * @code
+	 * int evid;
+	 * evid = sceKernelCreateEventFlag("wait_event", 0, 0, 0);
+	 * @endcode
+	 */
 	SceUID sceKernelCreateEventFlag(string name, int attr, int bits, SceKernelEventFlagOptParam *opt) {
 		PspWaitEvent pspWaitEvent = new PspWaitEvent(name, attr, bits);
 		return hleEmulatorState.uniqueIdFactory.add(pspWaitEvent);
@@ -131,9 +141,11 @@ template ThreadManForUser_Events() {
 	 * @param wait    - Wait type, one or more of ::PspEventFlagWaitTypes or'ed together
 	 * @param outBits - The bit pattern that was matched.
 	 * @param timeout - Timeout in microseconds
+	 *
 	 * @return < 0 On error
 	 */
 	int _sceKernelWaitEventFlagCB(int evid, u32 bits, PspEventFlagWaitTypes wait, u32 *outBits, SceUInt *timeout, bool callback) {
+		logInfo("_sceKernelWaitEventFlagCB(%d, %032b, %s, %s, %08X)", evid, bits, to!string(wait), to!string(callback), cast(uint)timeout);
 		PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
 		uint matchedBits = pspWaitEvent.waitEventFlag(bits, wait, callback);
 		if (outBits !is null) *outBits = matchedBits;
@@ -144,11 +156,12 @@ template ThreadManForUser_Events() {
 	/** 
 	 * Wait for an event flag for a given bit pattern.
 	 *
-	 * @param evid - The event id returned by sceKernelCreateEventFlag.
-	 * @param bits - The bit pattern to poll for.
-	 * @param wait - Wait type, one or more of ::PspEventFlagWaitTypes or'ed together
+	 * @param evid    - The event id returned by sceKernelCreateEventFlag.
+	 * @param bits    - The bit pattern to poll for.
+	 * @param wait    - Wait type, one or more of ::PspEventFlagWaitTypes or'ed together
 	 * @param outBits - The bit pattern that was matched.
-	 * @param timeout  - Timeout in microseconds
+	 * @param timeout - Timeout in microseconds
+	 *
 	 * @return < 0 On error
 	 */
 	int sceKernelWaitEventFlag(int evid, u32 bits, PspEventFlagWaitTypes wait, u32 *outBits, SceUInt *timeout) {
@@ -163,6 +176,7 @@ template ThreadManForUser_Events() {
 	 * @param wait    - Wait type, one or more of ::PspEventFlagWaitTypes or'ed together
 	 * @param outBits - The bit pattern that was matched.
 	 * @param timeout - Timeout in microseconds
+	 *
 	 * @return < 0 On error
 	 */
 	int sceKernelWaitEventFlagCB(int evid, u32 bits, PspEventFlagWaitTypes wait, u32 *outBits, SceUInt *timeout) {
@@ -186,15 +200,19 @@ template ThreadManForUser_Events() {
 	/** 
 	  * Poll an event flag for a given bit pattern.
 	  *
-	  * @param evid - The event id returned by sceKernelCreateEventFlag.
-	  * @param bits - The bit pattern to poll for.
-	  * @param wait - Wait type, one or more of ::PspEventFlagWaitTypes or'ed together
+	  * @param evid    - The event id returned by sceKernelCreateEventFlag.
+	  * @param bits    - The bit pattern to poll for.
+	  * @param wait    - Wait type, one or more of ::PspEventFlagWaitTypes or'ed together
 	  * @param outBits - The bit pattern that was matched.
+	  *
 	  * @return < 0 On error
 	  */
-	int sceKernelPollEventFlag(int evid, u32 bits, u32 wait, u32 *outBits) {
-		unimplemented();
-		return -1;
+	int sceKernelPollEventFlag(int evid, u32 bits, PspEventFlagWaitTypes wait, u32 *outBits) {
+		PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
+		if (outBits !is null) {
+			*outBits = pspWaitEvent.checkEventFlag(bits, wait);
+		}
+		return 0;
 	}
 	
 	void sceKernelReferEventFlagStatus() {

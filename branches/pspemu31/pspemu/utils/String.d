@@ -3,6 +3,25 @@ module pspemu.utils.String;
 import std.conv;
 import std.traits;
 import std.ctype;
+import std.c.stdio;
+import std.stdio;
+
+void dumpHex(ubyte[] data, uint ptr = 0) {
+	while (data.length) {
+		printf("%08X ", ptr);
+		for (int n = 0; n < 0x10; n++) writef(" %02X", data[n]);
+		printf("  ");
+		for (int n = 0; n < 0x10; n++) {
+			char c = cast(char)data[n];
+			if (c < 0x20) c = '.';
+			//if (c > 0x7F) c = '.';
+			printf("%c", c);
+		}
+		printf("\n");
+		data = data[0x10..$];
+		ptr += 0x10;
+	}
+}
 
 string toSet(T)(T v) {
 	string r;
