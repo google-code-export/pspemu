@@ -37,6 +37,22 @@ struct Colorf {
 		struct { float r, g, b, a; }
 		struct { float red, green, blue, alpha; }
 	}
+	
+	bool isColorf(float[3] rgb) {
+		return (this.rgb == rgb);
+	}
+
+	bool isColorf(float r, float g, float b) {
+		float[3] c = [r, g, b];
+		return isColorf(c);
+	}
+	
+	Colorf opBinary(string op)(Colorf that) {
+		Colorf ncolor;
+		mixin("ncolor.rgba[] = this.rgba[] " ~ op ~ " that.rgba[];");
+		return ncolor;
+	}
+	
 	float* ptr() { return rgba.ptr; }
 	alias ptr pointer;
 	static assert(this.sizeof == float.sizeof * 4);

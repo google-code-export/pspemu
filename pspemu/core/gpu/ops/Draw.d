@@ -12,6 +12,7 @@ static assert(float.sizeof == 4);
 import std.datetime;
 import std.math;
 import pspemu.utils.MathUtils;
+import pspemu.utils.BitUtils;
 
 template Gpu_Draw() {
 	/**
@@ -267,22 +268,46 @@ template Gpu_Draw() {
 			}
 			vertexPointer += 4;
 		}
-		void extractColor8bits (float[] array) {
+		void extractColorInvalidbits (float[] array) {
 			pad(vertexPointer, 1);
 			// palette?
-			writefln("Unimplemented Gpu.OP_PRIM.extractColor8bits");
+			writefln("Unimplemented Gpu.OP_PRIM.extractColorInvalidbits");
 			//throw(new Exception("Unimplemented Gpu.OP_PRIM.extractColor8bits"));
 			vertexPointer += 1;
 		}
-		void extractColor16bits(float[] array) {
+		void extractColor5650(float[] array) {
 			pad(vertexPointer, 2);
-			writefln("Unimplemented Gpu.OP_PRIM.extractColor16bits");
-			//throw(new Exception("Unimplemented Gpu.OP_PRIM.extractColor16bits"));
+			ushort data = *cast(ushort*)vertexPointer;
+			array[0] = BitUtils.extractNormalizedFloat!( 0, 5)(data);
+			array[1] = BitUtils.extractNormalizedFloat!( 5, 6)(data);
+			array[2] = BitUtils.extractNormalizedFloat!(11, 5)(data);
+			array[3] = 1.0;
+			vertexPointer += 2;
+		}
+
+		void extractColor5551(float[] array) {
+			pad(vertexPointer, 2);
+			ushort data = *cast(ushort*)vertexPointer;
+			array[0] = BitUtils.extractNormalizedFloat!( 0, 5)(data);
+			array[1] = BitUtils.extractNormalizedFloat!( 5, 5)(data);
+			array[2] = BitUtils.extractNormalizedFloat!(10, 5)(data);
+			array[3] = BitUtils.extractNormalizedFloat!(15, 1)(data);
+			vertexPointer += 2;
+		}
+		
+		void extractColor4444(float[] array) {
+			pad(vertexPointer, 2);
+			ushort data = *cast(ushort*)vertexPointer;
+			array[0] = BitUtils.extractNormalizedFloat!( 0, 4)(data);
+			array[1] = BitUtils.extractNormalizedFloat!( 4, 4)(data);
+			array[2] = BitUtils.extractNormalizedFloat!( 8, 4)(data);
+			array[3] = BitUtils.extractNormalizedFloat!(12, 4)(data);
 			vertexPointer += 2;
 		}
 
 		auto extractTable      = [null, &extractArray!(byte), &extractArray!(short), &extractArray!(float)];
-		auto extractColorTable = [null, &extractColor8bits, &extractColor8bits, &extractColor8bits, &extractColor16bits, &extractColor16bits, &extractColor16bits, &extractColor8888];
+		
+		auto extractColorTable = [null, &extractColorInvalidbits, &extractColorInvalidbits, &extractColorInvalidbits, &extractColor5650, &extractColor5551, &extractColor4444, &extractColor8888];
 		auto extractIndexTable = [null, &extractIndexGen!(ubyte), &extractIndexGen!(ushort), &extractIndexGen!(uint)];
 		
 		ubyte[] tableSizes = [0, 1, 2, 4];

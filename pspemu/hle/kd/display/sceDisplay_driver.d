@@ -27,6 +27,12 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 		mixin(registerd!(0xDEA197D4, sceDisplayGetMode));
 		mixin(registerd!(0xDBA6C4C4, sceDisplayGetFramePerSec));
 		mixin(registerd!(0x210EAB3A, sceDisplayGetAccumulatedHcount));
+		mixin(registerd!(0x7ED59BC4, sceDisplaySetHoldMode));
+	}
+	
+	int sceDisplaySetHoldMode() {
+		unimplemented();
+		return 0;
 	}
 
 	// http://forums.ps2dev.org/viewtopic.php?t=9168

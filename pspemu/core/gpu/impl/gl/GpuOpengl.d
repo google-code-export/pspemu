@@ -41,6 +41,8 @@ import pspemu.core.gpu.Types;
 import pspemu.core.gpu.GpuState;
 import pspemu.core.gpu.GpuImpl;
 import pspemu.utils.MathUtils;
+import pspemu.utils.Logger;
+import pspemu.utils.BitUtils;
 
 import derelict.opengl.gl;
 import derelict.opengl.glext;
@@ -285,6 +287,8 @@ class GpuOpengl : GpuImplAbstract {
 					ubyte[] data = texture.getTexturePixels();
 					SimplePng.write(cast(uint[])data, texture.getTextureWidth(), texture.getTextureHeight(), textureFileName);
 				}
+			} else {
+				textureFileName = "";
 			}
 			
 			{
@@ -293,7 +297,7 @@ class GpuOpengl : GpuImplAbstract {
 				dumpStruct.gpuState = *state;
 				dumpStruct.indexList = indexList;
 				dumpStruct.vertexList = vertexList;
-				dumpStruct.textureName = textureFileName;
+				dumpStruct.textureName = cast(string)textureFileName.dup;
 				dumpStruct.type = type;
 				
 				std.file.write(std.string.format("%s/%d.bin", dumpPath, recordFrameID), saveDump(dumpStruct));
@@ -714,10 +718,11 @@ template OpenglUtils() {
 			glMatrixMode(GL_TEXTURE);
 			glLoadIdentity();
 			
-			if (state.vertexType.transform2D && (state.texture.scale.uv == Vector(1.0, 1.0))) {
+			if (state.vertexType.transform2D) {
 			//if (state.vertexType.transform2D) {
 				glScalef(1.0f / cast(float)state.texture.mipmaps[0].width, 1.0f / cast(float)state.texture.mipmaps[0].height, 1);
 			} else {
+				Logger.log(Logger.Level.WARNING, "GPU", "Not implemented! texture for transform3D!");
 				glTranslatef(state.texture.offset.u, state.texture.offset.v, 0);
 				glScalef(state.texture.scale.u, state.texture.scale.v, 1);
 			}
@@ -745,9 +750,32 @@ template OpenglUtils() {
 				version (VERSION_ENABLED_STATE_CORTOCIRCUIT) return;
 			}
 
-			glBlendEquationEXT(BlendEquationTranslate[state.blend.equation]);
-			glBlendFunc(BlendFuncSrcTranslate[state.blend.funcSrc], BlendFuncDstTranslate[state.blend.funcDst]);
+			int getBlendFix(Colorf color) {
+				if (color.isColorf(0, 0, 0)) return GL_ZERO;
+				if (color.isColorf(1, 1, 1)) return GL_ONE;
+				return GL_CONSTANT_COLOR;
+			}
+
+			int glFuncSrc = BlendFuncSrcTranslate[state.blend.funcSrc];
+			int glFuncDst = BlendFuncDstTranslate[state.blend.funcDst];
+			
+			if (state.blend.funcSrc == BlendingFactor.GU_FIX) {
+				glFuncSrc = getBlendFix(state.blend.fixColorSrc);
+			}
+
+			if (state.blend.funcDst == BlendingFactor.GU_FIX) {
+				if ((glFuncSrc == GL_CONSTANT_COLOR) && (state.blend.fixColorSrc + state.blend.fixColorDst).isColorf(1, 1, 1)) {
+					glFuncDst = GL_ONE_MINUS_CONSTANT_COLOR;
+				} else {
+					glFuncDst = getBlendFix(state.blend.fixColorDst);					
+				}
+			}
+			
 			// @CHECK @FIX
+			glBlendEquationEXT(BlendEquationTranslate[state.blend.equation]);
+			glBlendFunc(glFuncSrc, glFuncDst);
+			
+			// @TODO Must mix colors. 
 			glBlendColor(
 				state.blend.fixColorDst.r,
 				state.blend.fixColorDst.g,

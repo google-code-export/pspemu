@@ -15,9 +15,9 @@ static const uint[] PrimitiveTypeTranslate    = [GL_POINTS, GL_LINES, GL_LINE_ST
 static const uint[] TextureEnvModeTranslate   = [GL_MODULATE, GL_DECAL, GL_BLEND, GL_REPLACE, GL_ADD];	
 static const uint[] TestTranslate             = [GL_NEVER, GL_ALWAYS, GL_EQUAL, GL_NOTEQUAL, GL_LESS, GL_LEQUAL, GL_GREATER, GL_GEQUAL];
 static const uint[] StencilOperationTranslate = [GL_KEEP, GL_ZERO, GL_REPLACE, GL_INVERT, GL_INCR, GL_DECR];
-static const uint[] BlendEquationTranslate    = [GL_FUNC_ADD, GL_FUNC_SUBTRACT, GL_FUNC_REVERSE_SUBTRACT, GL_MIN, GL_MAX, GL_FUNC_ADD ];
-static const uint[] BlendFuncSrcTranslate     = [GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_SRC_ALPHA ];
-static const uint[] BlendFuncDstTranslate     = [GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA ];	
+static const uint[] BlendEquationTranslate    = [GL_FUNC_ADD, GL_FUNC_SUBTRACT, GL_FUNC_REVERSE_SUBTRACT, GL_MIN, GL_MAX, GL_FUNC_ADD /* GL_ABS */ ];
+static const uint[] BlendFuncSrcTranslate     = [/* 0 */ GL_SRC_COLOR, /* 1 */ GL_ONE_MINUS_SRC_COLOR, /* 2 */ GL_SRC_ALPHA, /* 3 */ GL_ONE_MINUS_SRC_ALPHA, /* 4 */ GL_DST_ALPHA, /* 5 */ GL_ONE_MINUS_DST_ALPHA, /* 6 */ GL_SRC_ALPHA, /* 7 */ GL_ONE_MINUS_SRC_ALPHA, /* 8 */ GL_DST_ALPHA, /* 9 */ GL_ONE_MINUS_DST_ALPHA, /* 10 */ GL_SRC_ALPHA ];
+static const uint[] BlendFuncDstTranslate     = [/* 0 */ GL_DST_COLOR, /* 1 */ GL_ONE_MINUS_DST_COLOR, /* 2 */ GL_SRC_ALPHA, /* 3 */ GL_ONE_MINUS_SRC_ALPHA, /* 4 */ GL_DST_ALPHA, /* 5 */ GL_ONE_MINUS_DST_ALPHA, /* 6 */ GL_SRC_ALPHA, /* 7 */ GL_ONE_MINUS_SRC_ALPHA, /* 8 */ GL_DST_ALPHA, /* 9 */ GL_ONE_MINUS_DST_ALPHA, /* 10 */ GL_ONE_MINUS_SRC_ALPHA ];	
 static const uint[] LogicalOperationTranslate = [GL_CLEAR, GL_AND, GL_AND_REVERSE, GL_COPY, GL_AND_INVERTED, GL_NOOP, GL_XOR, GL_OR, GL_NOR, GL_EQUIV, GL_INVERT, GL_OR_REVERSE, GL_COPY_INVERTED, GL_OR_INVERTED, GL_NAND, GL_SET];
 
 struct GlPixelFormat {

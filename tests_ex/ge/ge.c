@@ -21,6 +21,11 @@ typedef struct {
 	char x, y, z;
 } VertexType1;
 
+typedef struct {
+	char u, v;
+	char x, y, z;
+} VertexType2;
+
 #define BUILD_COL(COLOR) 0xFF##COLOR
 
 unsigned int clut16[16] = {
@@ -72,6 +77,13 @@ VertexType1 buildVertexType1(unsigned int color, char u, char v, char x, char y,
 	return vt;
 }
 
+VertexType2 buildVertexType2(char u, char v, char x, char y, char z) {
+	VertexType2 vt;
+	vt.u = u; vt.v = v;
+	vt.x = x; vt.y = y; vt.z = z;
+	return vt;
+}
+
 // Every vertex has to be aligned to the maxium size of all of its component.
 /**
  * Checks that engine is considering the vertex alignment.
@@ -87,10 +99,11 @@ void testVertexAlignment() {
 	Kprintf("Struct Size: %d\n", sizeof(VertexType1)); // 12
 
 	sceGuStart(GU_DIRECT,list);
+	sceGuClear(GU_COLOR_BUFFER_BIT | GU_DEPTH_BUFFER_BIT);
 	{
+		sceGuEnable(GU_TEXTURE_2D);
 		sceGuClutMode(GU_PSM_8888, 0, 0xFF, 0); // 32-bit palette
 		sceGuClutLoad((16 / 8), clut16); // upload 32*8 entries (256)
-		
 		sceGuTexMode(GU_PSM_T8, 0, 0, 0); // 8-bit image
 		sceGuTexImage(0, 4, 4, 4, tex4_4);
 		sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
@@ -100,6 +113,50 @@ void testVertexAlignment() {
 		//sceGuAmbientColor(0xffffffff);
 	
 		sceGuDrawArray(GU_SPRITES, GU_TEXTURE_8BIT | GU_COLOR_8888 | GU_VERTEX_8BIT | GU_TRANSFORM_2D, vertexCount, 0, vertices);
+	}
+	sceGuFinish();
+	sceGuSync(0, 0);
+	sceGuSwapBuffers();
+	
+	dumpPixels(0, 0, 4, 4);
+}
+
+void testColorAdd() {
+	int vertexCount = 2;
+	VertexType2* vertices = (VertexType2 *)sceGuGetMemory(vertexCount * sizeof(VertexType2));
+	vertices[0] = buildVertexType2(0, 0, 0, 0, 0);
+	vertices[1] = buildVertexType2(4, 4, 4, 4, 0);
+
+	Kprintf("testColorAdd\n");
+	
+	sceGuStart(GU_DIRECT,list);
+	sceGuClear(GU_COLOR_BUFFER_BIT | GU_DEPTH_BUFFER_BIT);
+	{
+		sceGuDisable(GU_TEXTURE_2D);
+		sceGuColor(0xff0000ff);
+		sceGuDrawArray(GU_SPRITES, GU_TEXTURE_8BIT | GU_VERTEX_8BIT | GU_TRANSFORM_2D, vertexCount, 0, vertices);
+	}
+	sceGuFinish();
+	sceGuSync(0, 0);
+
+	sceGuStart(GU_DIRECT,list);
+	{
+		//sceGuColor(0x00000000);
+
+		sceGuEnable(GU_TEXTURE_2D);
+		sceGuClutMode(GU_PSM_8888, 0, 0xFF, 0); // 32-bit palette
+		sceGuClutLoad((16 / 8), clut16); // upload 32*8 entries (256)
+		sceGuTexMode(GU_PSM_T8, 0, 0, 0); // 8-bit image
+		sceGuTexImage(0, 4, 4, 4, tex4_4);
+		sceGuBlendFunc(GU_ADD, GU_SRC_ALPHA, GU_ONE_MINUS_SRC_ALPHA, 0, 0);
+		sceGuTexFunc(GU_TFX_MODULATE, GU_TCC_RGB);
+		sceGuTexFilter(GU_LINEAR, GU_LINEAR);
+		sceGuTexScale(1.0f, 1.0f);
+		sceGuTexOffset(0.0f, 0.0f);
+		//sceGuAmbientColor(0xffffffff);
+		//sceGuColor(0xffffffff);
+
+		sceGuDrawArray(GU_SPRITES, GU_TEXTURE_8BIT | GU_VERTEX_8BIT | GU_TRANSFORM_2D, vertexCount, 0, vertices);
 	}
 	sceGuFinish();
 	sceGuSync(0, 0);
@@ -130,7 +187,6 @@ void init() {
 	sceGuScissor    (0, 0, SCR_WIDTH, SCR_HEIGHT);
 	sceGuEnable     (GU_SCISSOR_TEST);
 	sceGuFrontFace  (GU_CW);
-	sceGuEnable     (GU_TEXTURE_2D);
 	sceGuClear      (GU_COLOR_BUFFER_BIT | GU_DEPTH_BUFFER_BIT);
 	sceGuFinish     ();
 	sceGuSync       (0, 0);
@@ -142,5 +198,6 @@ void init() {
 int main(int argc, char *argv[]) {
 	init();
 	testVertexAlignment();
+	testColorAdd();
 	return 0;
 }

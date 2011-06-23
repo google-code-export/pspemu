@@ -43,6 +43,28 @@ class sceAtrac3plus : ModuleNative {
 		mixin(registerd!(0x0E2A73AB, sceAtracSetData));
 		mixin(registerd!(0xD6A5F2F7, sceAtracGetMaxSample));
 		mixin(registerd!(0xFAA4F89B, sceAtracGetLoopStatus));
+		
+	    mixin(registerd!(0xA554A158, sceAtracGetBitrate));
+	    mixin(registerd!(0xB3B5D042, sceAtracGetOutputChannel));
+	}
+	
+	int sceAtracGetOutputChannel() {
+		unimplemented();
+		return 0;
+	}
+	
+	/**
+	 * Gets the bitrate.
+	 *
+	 * @param atracID - the atracID
+	 * @param outBitrate - pointer to a integer that receives the bitrate in kbps
+	 *
+	 * @return < 0 on error, otherwise 0
+	 *
+	*/
+	int sceAtracGetBitrate(int atracID, int *outBitrate) {
+		unimplemented();
+		return 0;
 	}
 	
 	int sceAtracSetData(int atracID, u8 *pucBufferAddr, u32 uiBufferByte) {

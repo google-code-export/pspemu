@@ -16,6 +16,7 @@ import pspemu.utils.TaskQueue;
 import pspemu.utils.CircularList;
 import pspemu.utils.Stack;
 import pspemu.utils.MathUtils;
+import pspemu.utils.BitUtils;
 import pspemu.utils.String;
 
 import pspemu.utils.sync.WaitEvent;
@@ -76,8 +77,16 @@ class Gpu {
 	Event signalEvent;
 	Event finishEvent;
 	PspGeCallbackData pspGeCallbackData;
+	bool recordFrameEnd = false;
 	bool recordFrameStart = false;
-	bool recordFrameAction = false;
+	
+	enum RecordFrameStep {
+		doNone,
+		doStart,
+		doEnd
+	}
+	
+	RecordFrameStep recordFrameStep = RecordFrameStep.doNone;
 
 	this(EmulatorState emulatorState, GpuImpl impl) {
 		this.endedExecutingListsEvent = new WaitEvent();
@@ -282,11 +291,14 @@ class Gpu {
 				newWaitAndCheck([displayLists.readAvailableEvent, endedExecutingListsEvent]);
 			}
 			
-			impl.recordFrameEnd();
+			if (recordFrameStep == RecordFrameStep.doEnd) {
+				recordFrameStep = RecordFrameStep.doNone;
+				impl.recordFrameEnd();
+			}
 			
 			performBufferOp(BufferOperation.STORE);
-			if (recordFrameStart) {
-				recordFrameStart = false;
+			if (recordFrameStep == RecordFrameStep.doStart) {
+				recordFrameStep = RecordFrameStep.doEnd;
 				impl.recordFrameStart();
 			}
 		}
@@ -371,7 +383,7 @@ class Gpu {
 	}
 	
 	void recordFrame() {
-		recordFrameStart = true;
+		recordFrameStep = RecordFrameStep.doStart;
 	}
 
 	mixin ExternalInterface;
