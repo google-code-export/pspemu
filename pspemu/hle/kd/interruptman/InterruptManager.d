@@ -84,7 +84,7 @@ class InterruptManager : ModuleNative {
 	 */
 	int sceKernelReleaseSubIntrHandler(PspSubInterrupts intno, int no) {
 		//cpu.interrupts.unregisterCallback(cast(Interrupts.Type)intno, handlers[intno][no]);
-		unimplemented();
+		unimplemented_notice();
 		return 0;
 	}
 	

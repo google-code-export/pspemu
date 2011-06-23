@@ -18,11 +18,12 @@ enum PspSysMemBlockTypes {
 	/** Allocate from the lowest available address. */
 	PSP_SMEM_Low = 0,
 	/** Allocate from the highest available address. */
-	PSP_SMEM_High,
+	PSP_SMEM_High = 1,
 	/** Allocate from the specified address. */
-	PSP_SMEM_Addr,
+	PSP_SMEM_Addr = 2,
 	
-	PSP_SMEM_Unk1
+	PSP_SMEM_Low_Aligned = 3,
+	PSP_SMEM_High_Aligned = 4,
 }
 
 struct PspSysmemPartitionInfo {

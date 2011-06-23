@@ -156,11 +156,18 @@ class SysMemUserForUser : ModuleNative {
 			
 			Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%s:%d)", partitionid, name, std.conv.to!string(type), size);
 			//Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%d:%d)", partitionid, name, (type), size);
+			
+			int alignment = 1;
+			if ((type == PspSysMemBlockTypes.PSP_SMEM_Low_Aligned) || (type == PspSysMemBlockTypes.PSP_SMEM_High_Aligned)) {
+				alignment = addr;
+			}
 	
 			switch (type) {
 				default: return ERROR_KERNEL_ILLEGAL_MEMBLOCK_ALLOC_TYPE;
-				case PspSysMemBlockTypes.PSP_SMEM_Low : memorySegment = pspMemorySegment[partitionid].allocByLow (size, dupStr(name)); break;
-				case PspSysMemBlockTypes.PSP_SMEM_High: memorySegment = pspMemorySegment[partitionid].allocByHigh(size, dupStr(name)); break;
+				case PspSysMemBlockTypes.PSP_SMEM_Low_Aligned:
+				case PspSysMemBlockTypes.PSP_SMEM_Low : memorySegment = pspMemorySegment[partitionid].allocByLow (size, dupStr(name), 0, alignment); break;
+				case PspSysMemBlockTypes.PSP_SMEM_High_Aligned:
+				case PspSysMemBlockTypes.PSP_SMEM_High: memorySegment = pspMemorySegment[partitionid].allocByHigh(size, dupStr(name), alignment); break;
 				case PspSysMemBlockTypes.PSP_SMEM_Addr: memorySegment = pspMemorySegment[partitionid].allocByAddr(addr, size, dupStr(name)); break;
 			}
 	
@@ -173,7 +180,7 @@ class SysMemUserForUser : ModuleNative {
 
 			return sceUid;
 		} catch (Throwable o) {
-			logWarning("ERROR: %s", o);
+			logError("ERROR: %s", o);
 			return ERROR_KERNEL_FAILED_ALLOC_MEMBLOCK;
 		}
 	}
