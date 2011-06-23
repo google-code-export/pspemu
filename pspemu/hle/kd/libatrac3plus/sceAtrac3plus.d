@@ -5,6 +5,7 @@ import pspemu.hle.HleEmulatorState;
 import pspemu.utils.String;
 import pspemu.hle.kd.SystemErrors;
 import std.stream;
+import std.intrinsic;
 import pspemu.utils.StructUtils;
 import pspemu.utils.MathUtils;
 
@@ -12,6 +13,28 @@ enum CodecType {
 	Unknown  = 0,
     AT3      = 1, // "AT3"
     AT3_PLUS = 2, // "AT3PLUS"
+}
+
+static struct OMA {
+	alias be!uint uint_be;
+	alias be!short short_be;
+	
+	uint_be   magic    = uint_be(0x45413301);
+	short_be  capacity = short_be(OMA.sizeof);
+	short_be  unk      = short_be(-1);
+	uint_be   unk1     = uint_be(0x00000000);
+	uint_be   unk2     = uint_be(0x010f5000);
+	uint_be   unk3     = uint_be(0x00040000);
+	uint_be   unk4     = uint_be(0x0000f5ce);
+	uint_be   unk5     = uint_be(0xd2929132);
+	uint_be   unk6     = uint_be(0x2480451c);
+
+	// Must set from AT3.
+	uint   omaInfo;
+	
+	ubyte[60] pad;
+	
+	static assert (OMA.sizeof == 0x60); 
 }
 
 class Atrac3Object {
@@ -24,14 +47,23 @@ class Atrac3Object {
 	uint dataOffset;
 	uint writeBufferSize;
 	uint writeBufferGuestPtr;
+	
+	void writeOma(Stream stream) {
+		OMA oma;
+		oma.omaInfo = format.omaInfo;
+		stream.write(TA(oma));
+		stream.copyFrom(new MemoryStream(buf[dataOffset..$]));
+	}
 
 	static struct Format {
-		ushort compressionCode;
-		ushort atracChannels;
-		uint   atracSampleRate;
-		uint   atracBitrate;
-		ushort atracBytesPerFrame;
-		ushort hiBytesPerSample;
+		ushort  compressionCode;
+		ushort  atracChannels;
+		uint    atracSampleRate;
+		uint    atracBitrate;
+		ushort  atracBytesPerFrame;
+		ushort  hiBytesPerSample;
+		uint[6] unk;
+		uint    omaInfo;
 	}
 	
 	static struct Fact {
@@ -228,7 +260,8 @@ class sceAtrac3plus : ModuleNative {
 	 *
 	 */
 	int sceAtracGetMaxSample(int atracID, int* outMax) {
-		unimplemented();
+		*outMax = 2048;
+		//unimplemented();
 		return 0;
 	}
 
@@ -249,6 +282,10 @@ class sceAtrac3plus : ModuleNative {
 		unimplemented_notice();
 		logWarning("Not implemented sceAtracSetDataAndGetID");
 		Atrac3Object atrac3Object = new Atrac3Object((cast(ubyte*)buf)[0..bufsize]);
+		
+		//scope omaOut = new std.stream.File("temp.oma", FileMode.OutNew);
+		//atrac3Object.writeOma(omaOut);
+		
 		return cast(int)hleEmulatorState.uniqueIdFactory.add(atrac3Object);
 	}
 	

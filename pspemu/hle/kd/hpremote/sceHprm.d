@@ -39,7 +39,7 @@ class sceHprm : ModuleNative {
 	 * @return < 0 on error
 	 */
 	int sceHprmPeekCurrentKey(u32 *key) {
-		logInfo("sceHprmPeekCurrentKey");
+		logTrace("sceHprmPeekCurrentKey");
 		*key = 0;
 		//unimplemented();
 		//return -1;
