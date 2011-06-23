@@ -191,8 +191,17 @@ static struct VertexState {
 	// Aliases
 	alias p position;
 	alias n normal;
-	
-	string toString() {
+
+	string toString(PrimitiveType type, PrimitiveFlags flags) {
+		string ret;
+		ret ~= "VertexState";
+		if (flags.hasTexture ) ret ~= std.string.format("(UV=%f,%f)", u, v);
+		if (flags.hasColor   ) ret ~= std.string.format("(RGBA:%02X%02X%02X%02X)", cast(uint)(r * 255), cast(uint)(g * 255), cast(uint)(b * 255), cast(uint)(a * 255));
+		if (flags.hasNormal  ) ret ~= std.string.format("(NXYZ=%f,%f,%f)", nx, ny, nz);
+		if (flags.hasPosition) ret ~= std.string.format("(PXYZ=%f,%f,%f)", px, py, pz);
+		
+		return ret;
+		/*
 		return std.string.format(
 			"VertexState(UV=%f,%f)(RGBA:%02X%02X%02X%02X)(NXYZ=%f,%f,%f)(PXYZ=%f,%f,%f)",
 			u, v,
@@ -200,6 +209,11 @@ static struct VertexState {
 			nx, ny, nz,
 			px, py, pz
 		);
+		*/
+	}
+	
+	string toString() {
+		return toString(PrimitiveType.GU_POINTS, PrimitiveFlags.all);
 	}
 }
 
@@ -474,85 +488,60 @@ static struct GpuState {
 	static assert (this.RealState.offsetof + this.RealState.sizeof == this.sizeof);
 	
 	string toString() {
-		return std.string.format(
-			"GpuState(\n"
-			"    vertexType              = %s;\n"
-			"    baseAddress             = %08X;\n"
-			"    vertexAddress           = %08X;\n"
-			"    indexAddress            = %08X;\n"
-			"    textureTransfer         = %s\n"
-			"    viewport                = %s\n"
-			"    offset                  = (%d, %d)\n"
-			"    clearFlags              = %s\n"
-			"    ambientModelColor       = %s\n"
-			"    diffuseModelColor       = %s\n"
-			"    specularModelColor      = %s\n"
-			"    emissiveModelColor      = %s\n"
-			"    textureEnviromentColor  = %s\n"
-			"    materialColorComponents = %s\n"
-			"    fog                     = %s\n"
-			"    projectionMatrix        = \n%s\n"
-			"    worldMatrix             = \n%s\n"
-			"    viewMatrix              = \n%s\n"
-			"    textureMatrix           = \n%s\n"
-			"    transformMode           = %s\n"
-			"    texture                 = %s\n"
-			"    uploadedClut            = %s\n"
-			"    clut                    = %s\n"
-			"    scissor                 = %s\n"
-			"    frontFaceDirection      = %s\n"
-			"    shadeModel              = %s\n"
-			"    clipPlaneEnabled        = %s\n"
-			"    backfaceCullingEnabled  = %s\n"
-			"    ditheringEnabled        = %s\n"
-			"    lineSmoothEnabled       = %s\n"
-			"    colorTestEnabled        = %s\n"
-			"    patchCullEnabled        = %s\n"
-			"    lighting                = %s\n"
-			"    blend                   = %s\n"
-			"    depth                   = %s\n"
-			"    alphaTest               = %s\n"
-			"    stencil                 = %s\n"
-			"    logicalOperation        = %s\n"
-			"    colorMask               = %s\n"
-			")"
-			, vertexType
-			, baseAddress
-			, vertexAddress
-			, indexAddress
-			, textureTransfer
-			, viewport
-			, offsetX, offsetY
-			, toSet(clearFlags)
-			, ambientModelColor
-			, diffuseModelColor
-			, specularModelColor
-			, emissiveModelColor
-			, textureEnviromentColor
-			, toSet(materialColorComponents)
-			, fog
-			, projectionMatrix, worldMatrix, viewMatrix, textureMatrix
-			, to!string(transformMode)
-			, texture
-			, uploadedClut
-			, clut
-			, scissor
-			, to!string(frontFaceDirection)
-			, to!string(shadeModel)
-			, clipPlaneEnabled
-			, backfaceCullingEnabled
-			, ditheringEnabled
-			, lineSmoothEnabled
-			, colorTestEnabled
-			, patchCullEnabled
-			, lighting
-			, blend
-			, depth
-			, alphaTest
-			, stencil
-			, logicalOperation
-			, colorMask
-		);
+		return toString(PrimitiveType.GU_POINTS, PrimitiveFlags.all);
+	}
+	
+	string toString(PrimitiveType type, PrimitiveFlags flags) {
+		string ret;
+		
+		alias std.string.format format;
+		
+		ret ~= format("GpuState(\n");
+		ret ~= format("    vertexType              = %s;\n"  , vertexType);
+		ret ~= format("    baseAddress             = %08X;\n", baseAddress);
+		ret ~= format("    vertexAddress           = %08X;\n", vertexAddress);
+		ret ~= format("    indexAddress            = %08X;\n", indexAddress);
+		ret ~= format("    textureTransfer         = %s\n",    textureTransfer);
+		ret ~= format("    viewport                = %s\n",    viewport);
+		ret ~= format("    offset                  = (%d, %d)\n", offsetX, offsetY);
+		ret ~= format("    clearFlags              = %s\n",    toSet(clearFlags));
+		ret ~= format("    ambientModelColor       = %s\n",    ambientModelColor);
+		ret ~= format("    diffuseModelColor       = %s\n",    diffuseModelColor);
+		ret ~= format("    specularModelColor      = %s\n",    specularModelColor);
+		ret ~= format("    emissiveModelColor      = %s\n",    emissiveModelColor);
+		ret ~= format("    textureEnviromentColor  = %s\n",    textureEnviromentColor);
+		ret ~= format("    materialColorComponents = %s\n",    toSet(materialColorComponents));
+		ret ~= format("    fog                     = %s\n",    fog);
+
+		if (!vertexType.transform2D) {
+			ret ~= format("    projectionMatrix        = \n%s\n",  projectionMatrix);
+			ret ~= format("    worldMatrix             = \n%s\n",  worldMatrix);
+			ret ~= format("    viewMatrix              = \n%s\n",  viewMatrix);
+		}
+		
+		ret ~= format("    textureMatrix           = \n%s\n",  textureMatrix);
+		ret ~= format("    transformMode           = %s\n",    to!string(transformMode));
+		ret ~= format("    texture                 = %s\n",    texture);
+		ret ~= format("    uploadedClut            = %s\n",    uploadedClut);
+		ret ~= format("    clut                    = %s\n",    clut);
+		ret ~= format("    scissor                 = %s\n",    scissor);
+		ret ~= format("    frontFaceDirection      = %s\n",    to!string(frontFaceDirection));
+		ret ~= format("    shadeModel              = %s\n",    to!string(shadeModel));
+		ret ~= format("    clipPlaneEnabled        = %s\n",    clipPlaneEnabled);
+		ret ~= format("    backfaceCullingEnabled  = %s\n",    backfaceCullingEnabled);
+		ret ~= format("    ditheringEnabled        = %s\n",    ditheringEnabled);
+		ret ~= format("    lineSmoothEnabled       = %s\n",    lineSmoothEnabled);
+		ret ~= format("    colorTestEnabled        = %s\n",    colorTestEnabled);
+		ret ~= format("    patchCullEnabled        = %s\n",    patchCullEnabled);
+		ret ~= format("    lighting                = %s\n",    lighting);
+		ret ~= format("    blend                   = %s\n",    blend);
+		ret ~= format("    depth                   = %s\n",    depth);
+		ret ~= format("    alphaTest               = %s\n",    alphaTest);
+		ret ~= format("    stencil                 = %s\n",    stencil);
+		ret ~= format("    logicalOperation        = %s\n",    logicalOperation);
+		ret ~= format("    colorMask               = %s\n",    colorMask);
+
+		return ret;
 	}
 }
 
@@ -563,6 +552,21 @@ struct PrimitiveFlags {
 	bool hasNormal;
 	bool hasPosition;
 	int  numWeights;
+	
+	const uint MAX_NUMBER_OF_WEIGHTS = 8;
+	
+	@property static PrimitiveFlags all() {
+		PrimitiveFlags primitiveFlags;
+		with (primitiveFlags) {
+			hasWeights  = true;
+			hasTexture  = true;
+			hasColor    = true;
+			hasNormal   = true;
+			hasPosition = true;
+			numWeights  = MAX_NUMBER_OF_WEIGHTS;
+		}
+		return primitiveFlags;
+	}
 	
 	string toString() {
 		return std.string.format(
