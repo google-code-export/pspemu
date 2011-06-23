@@ -238,7 +238,8 @@ string getModuleMethodDelegate(alias func, uint nid = 0)() {
 	r ~= "delegate void(CpuThreadBase cpuThread) { ";
 	{
 		r ~= "currentExecutingNid = " ~ to!string(nid) ~ ";";
-		r ~= "Logger.log(Logger.Level.TRACE, \"Module\", \"" ~ functionName ~ "\");";
+		//r ~= "Logger.log(Logger.Level.TRACE, \"Module\", std.string.format(\"%s\", \"" ~ functionName ~ "\"));";
+		r ~= "logLevel(Logger.Level.TRACE, std.string.format(\"%s\", \"" ~ functionName ~ "\"));";
 		r ~= "setReturnValue = true;";
 		r ~= "current_vparam = 0;";
 		string parametersString = _parametersString;

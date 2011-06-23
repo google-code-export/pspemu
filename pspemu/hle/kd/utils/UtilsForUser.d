@@ -34,6 +34,7 @@ class UtilsForUser : ModuleNative {
 		mixin(registerd!(0x91E4F6A7, sceKernelLibcClock));
 		mixin(registerd!(0xC8186A58, sceKernelUtilsMd5Digest));
 		mixin(registerd!(0x840259F1, sceKernelUtilsSha1Digest));
+		mixin(registerd!(0x920F104A, sceKernelIcacheInvalidateAll));
 	}
 
 	/** 
@@ -178,6 +179,14 @@ class UtilsForUser : ModuleNative {
 	int sceKernelUtilsSha1Digest(u8* data, u32 size, u8* digest) {
 		unimplemented();
 		return -1;
+	}
+	
+	/** 
+	 * Invalidate the instruction cache
+	 */
+	void sceKernelIcacheInvalidateAll() {
+		// Here dynarec should check functions.
+		unimplemented();
 	}
 }
 

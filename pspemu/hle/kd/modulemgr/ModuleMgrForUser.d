@@ -24,6 +24,24 @@ class ModuleMgrForUser : ModuleNative {
 		mixin(registerd!(0xD8B73127, sceKernelGetModuleIdByAddress));
 		mixin(registerd!(0xF0A26395, sceKernelGetModuleId));
 		mixin(registerd!(0x8F2DF740, sceKernelStopUnloadSelfModuleWithStatus));
+		mixin(registerd!(0x748CBED9, sceKernelQueryModuleInfo));
+	}
+
+	/**
+	 * Query the information about a loaded module from its UID.
+	 * @note This fails on v1.0 firmware (and even it worked has a limited structure)
+	 * so if you want to be compatible with both 1.5 and 1.0 (and you are running in 
+	 * kernel mode) then call this function first then ::pspSdkQueryModuleInfoV1 
+	 * if it fails, or make separate v1 and v1.5+ builds.
+	 *
+	 * @param modid - The UID of the loaded module.
+	 * @param info  - Pointer to a ::SceKernelModuleInfo structure.
+	 * 
+	 * @return 0 on success, otherwise one of ::PspKernelErrorCodes.
+	 */
+	int sceKernelQueryModuleInfo(SceUID modid, SceKernelModuleInfo* info) {
+		unimplemented_notice();
+		return 0;
 	}
 	
 	uint sceKernelGetModuleIdByAddress() {
@@ -31,6 +49,11 @@ class ModuleMgrForUser : ModuleNative {
 		return 0;
 	}
 
+	/**
+	 * Get module ID from the module that called the API. 
+	 *
+	 * @return >= 0 on success
+	 */
 	uint sceKernelGetModuleId() {
 		//unimplemented();
 		unimplemented_notice();
@@ -41,8 +64,8 @@ class ModuleMgrForUser : ModuleNative {
 	}
 
 	uint sceKernelStopUnloadSelfModuleWithStatus() {
+		unimplemented_notice();
 		throw(new HaltException("sceKernelStopUnloadSelfModuleWithStatus"));
-		//unimplemented();
 		return 0;
 	}
 

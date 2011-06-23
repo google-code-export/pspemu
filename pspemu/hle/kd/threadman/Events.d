@@ -116,7 +116,7 @@ template ThreadManForUser_Events() {
 	 * @return < 0 on Error
 	 */
 	int sceKernelClearEventFlag(SceUID evid, u32 bits) {
-		unimplemented_notice();
+		//unimplemented_notice();
 		PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
 		pspWaitEvent.clearBits(bits);
 		return 0;
