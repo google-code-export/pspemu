@@ -10,6 +10,8 @@ static assert(short.sizeof == 2);
 static assert(float.sizeof == 4);
 
 import std.datetime;
+import std.math;
+import pspemu.utils.MathUtils;
 
 template Gpu_Draw() {
 	/**
@@ -282,6 +284,9 @@ template Gpu_Draw() {
 		auto extractTable      = [null, &extractArray!(byte), &extractArray!(short), &extractArray!(float)];
 		auto extractColorTable = [null, &extractColor8bits, &extractColor8bits, &extractColor8bits, &extractColor16bits, &extractColor16bits, &extractColor16bits, &extractColor8888];
 		auto extractIndexTable = [null, &extractIndexGen!(ubyte), &extractIndexGen!(ushort), &extractIndexGen!(uint)];
+		
+		ubyte[] tableSizes = [0, 1, 2, 4];
+		ubyte[] colorSizes = [0, 1, 1, 1, 2, 2, 2, 4];
 
 		auto extractWeights  = extractTable[vertexType.weight  ];
 		auto extractTexture  = extractTable[vertexType.texture ];
@@ -289,10 +294,19 @@ template Gpu_Draw() {
 		auto extractNormal   = extractTable[vertexType.normal  ];
 		auto extractColor    = extractColorTable[vertexType.color];
 		auto extractIndex    = (indexPointer !is null) ? extractIndexTable[vertexType.index] : null;
+		
+		ubyte vertexAlignSize = 0;
+		vertexAlignSize = max(vertexAlignSize, tableSizes[vertexType.weight]);
+		vertexAlignSize = max(vertexAlignSize, tableSizes[vertexType.texture]);
+		vertexAlignSize = max(vertexAlignSize, tableSizes[vertexType.position]);
+		vertexAlignSize = max(vertexAlignSize, tableSizes[vertexType.normal]);
+		vertexAlignSize = max(vertexAlignSize, colorSizes[vertexType.color]);
 
 		void extractVertex(ref VertexState vertex) {
 			//while ((cast(uint)vertexPointer) & 0b11) vertexPointer++;
 			//if ((cast(uint)vertexPointer) & 0b11) writefln("ERROR!");
+			
+			pad(vertexPointer, vertexAlignSize);
 			
 			if (extractWeights) {
 				extractWeights(vertex.weights[0..vertexType.skinningWeightCount]);
@@ -396,13 +410,15 @@ template Gpu_Draw() {
 			auto extractAllVertex(bool doMorph)() {
 				for (int n = 0; n < maxVertexCount; n++) {
 					static if (!doMorph) {
-						extractVertex(vertexListBuffer[n]); vertexListBuffer[n] = performSkin(vertexListBuffer[n]);
+						extractVertex(vertexListBuffer[n]);
+						vertexListBuffer[n] = performSkin(vertexListBuffer[n]);
 					} else {
 						VertexState vertexStateMorphed;
 						VertexState currentVertexState = void;
 						
 						for (int m = 0; m < morphingVertexCount; m++) {
-							extractVertex(currentVertexState); currentVertexState = performSkin(currentVertexState);
+							extractVertex(currentVertexState);
+							currentVertexState = performSkin(currentVertexState);
 							vertexStateMorphed.floatValues[] += currentVertexState.floatValues[] * morphWeights[m];
 						}
 			

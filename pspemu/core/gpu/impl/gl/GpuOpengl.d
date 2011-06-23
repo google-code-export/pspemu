@@ -22,6 +22,7 @@ import std.file;
 import std.datetime;
 import std.path;
 import std.conv;
+import std.math;
 import std.stream;
 import pspemu.utils.StructUtils;
 
@@ -207,13 +208,14 @@ class GpuOpengl : GpuImplAbstract {
 		
 		string dumpString() {
 			string r;
+			r ~= std.string.format("--------------------------------------------------------------------------------------------------------\n");
 			r ~= std.string.format("textureName: '%s'\n", textureName);
 			r ~= std.string.format("primitiveType: %s(%d)\n", to!string(type), type);
 			r ~= std.string.format("flags: %s)\n", flags);
 			r ~= std.string.format("indexList(%d): %s\n", indexList.length, indexList);
 			r ~= std.string.format("vertexList(%d):\n", vertexList.length);
-			foreach (ref vertex; vertexList) r ~= std.string.format("  %s\n", vertex);
-			r ~= std.string.format("gpuState:%s\n", gpuState);
+			foreach (ref vertex; vertexList) r ~= std.string.format("  %s\n", vertex.toString(type, flags));
+			r ~= std.string.format("gpuState:%s\n", gpuState.toString(type, flags));
 			return r;
 		}
 		
