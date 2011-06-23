@@ -111,7 +111,7 @@ template Gpu_Draw() {
 	 *   - GU_TRANSFORM_2D   - Coordinate is passed directly to the rasterizer
 	 *   - GU_TRANSFORM_3D   - Coordinate is transformed before passed to rasterizer
 	 *
-	 * @note Every vertex must align to 32 bits, which means that you HAVE to pad if it does not add up!
+	 * @note Every vertex has to be aligned to the maxium size of all of its component.
 	 *
 	 * Vertex order:
 	 * [for vertices(1-8)]
@@ -306,6 +306,7 @@ template Gpu_Draw() {
 			//while ((cast(uint)vertexPointer) & 0b11) vertexPointer++;
 			//if ((cast(uint)vertexPointer) & 0b11) writefln("ERROR!");
 			
+			// Vertex has to be aligned to the maxium size of any component. 
 			pad(vertexPointer, vertexAlignSize);
 			
 			if (extractWeights) {
