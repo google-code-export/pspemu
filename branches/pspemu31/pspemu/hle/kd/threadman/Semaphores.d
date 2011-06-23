@@ -106,7 +106,7 @@ template ThreadManForUser_Semaphores() {
 	SceUID sceKernelCreateSema(string name, SceUInt attr, int initCount, int maxCount, SceKernelSemaOptParam* option) {
 		auto semaphore = new PspSemaphore(name, attr, initCount, maxCount);
 		uint uid = hleEmulatorState.uniqueIdFactory.add(semaphore);
-		logInfo("sceKernelCreateSema(%d:'%s') :: %s", uid, name, semaphore);
+		logTrace("sceKernelCreateSema(%d:'%s') :: %s", uid, name, semaphore);
 		return uid;
 	}
 	
@@ -126,7 +126,7 @@ template ThreadManForUser_Semaphores() {
 	 */
 	int sceKernelSignalSema(SceUID semaid, int signal) {
 		auto semaphore = hleEmulatorState.uniqueIdFactory.get!PspSemaphore(semaid); 
-		logInfo("sceKernelSignalSema(%d:'%s', %d) :: %s", semaid, semaphore.name, signal, semaphore);
+		logTrace("sceKernelSignalSema(%d:'%s', %d) :: %s", semaid, semaphore.name, signal, semaphore);
 		semaphore.incrementCount(signal);
 		return 0;
 	}
@@ -139,14 +139,14 @@ template ThreadManForUser_Semaphores() {
 	 */
 	int sceKernelDeleteSema(SceUID semaid) {
 		auto semaphore = hleEmulatorState.uniqueIdFactory.get!PspSemaphore(semaid);
-		logInfo("sceKernelDeleteSema(%d:'%s')", semaid, semaphore.name);
+		logTrace("sceKernelDeleteSema(%d:'%s')", semaid, semaphore.name);
 		hleEmulatorState.uniqueIdFactory.remove!PspSemaphore(semaid);
 		return 0;
 	}
 	
 	int _sceKernelWaitSemaCB(SceUID semaid, int signal, SceUInt *timeout, bool callback) {
 		auto semaphore = hleEmulatorState.uniqueIdFactory.get!PspSemaphore(semaid);
-		logInfo("sceKernelWaitSema%s(%d:'%s', %d, %d) :: %s", callback ? "CB" : "", semaid, semaphore.name, signal, (timeout is null) ? 0 : *timeout, semaphore);
+		logTrace("sceKernelWaitSema%s(%d:'%s', %d, %d) :: %s", callback ? "CB" : "", semaid, semaphore.name, signal, (timeout is null) ? 0 : *timeout, semaphore);
 
 		currentCpuThread.threadState.waitingBlock("_sceKernelWaitSemaCB", {
 			semaphore.waitSignal(hleEmulatorState, currentThreadState, signal, (timeout !is null) ? *timeout : 0, callback);

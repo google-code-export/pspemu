@@ -274,7 +274,7 @@ template ThreadManForUser_Threads() {
 	 * @return The thread id of the calling thread.
 	 */
 	SceUID sceKernelGetThreadId() {
-		logInfo("sceKernelGetThreadId()");
+		logTrace("sceKernelGetThreadId()");
 		return currentThreadState().thid;
 	}
 	
