@@ -16,6 +16,7 @@ import pspemu.hle.kd.threadman.Types;
 import pspemu.hle.MemoryManager;
 
 import pspemu.utils.Logger;
+import pspemu.utils.String;
 
 import pspemu.utils.sync.WaitMultipleObjects;
 

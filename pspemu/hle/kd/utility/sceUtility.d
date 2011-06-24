@@ -62,8 +62,8 @@ class sceUtility : ModuleNative {
 	}
 	
 	enum DialogStep {
-		UNK0         = 0,
-		UNK1         = 1,
+		NONE         = 0,
+		INIT         = 1,
 		PROCESSING   = 2,
 		SUCCESS      = 3,
 		SHUTDOWN     = 4,
@@ -301,6 +301,14 @@ class sceUtility : ModuleNative {
 	DialogStep sceUtilitySavedataGetStatus() {
 		//unimplemented_notice();
 		logInfo("sceUtilitySavedataGetStatus(%s:%d)", to!string(currentDialogStep), currentDialogStep);
+		
+		scope (exit) {
+			// After returning SHUTDOWN, start returning NONE.
+			if (currentDialogStep == DialogStep.SHUTDOWN) {
+				currentDialogStep = DialogStep.NONE;
+			}
+		}
+
 		return currentDialogStep;
 	}
 
@@ -312,8 +320,7 @@ class sceUtility : ModuleNative {
 	 */
 	int sceUtilitySavedataShutdownStart() {
 		unimplemented_notice();
-		//currentDialogStep = DialogStep.SHUTDOWN;
-		currentDialogStep = DialogStep.UNK0;
+		currentDialogStep = DialogStep.SHUTDOWN;
 		return 0;
 	}
 

@@ -52,7 +52,8 @@ class EmulatorHelper {
 	public void init() {
 		emulator.hleEmulatorState.memoryManager.allocHeap(PspPartition.Kernel0, "KernelFunctions", 1024);
 		emulator.emulatorState.memory.twrite!uint(CODE_PTR_EXIT_THREAD, 0x0000000C | (0x2071 << 6));
-		emulator.emulatorState.memory.twrite!uint(CODE_PTR_END_CALLBACK, 0x0000000C | (0x1002 << 6));
+		emulator.emulatorState.memory.twrite!uint(CODE_PTR_END_CALLBACK, 0x0000000C | (0x1003 << 6));
+		//emulator.emulatorState.memory.twrite!uint(CODE_PTR_END_CALLBACK, 0x0000000C | (0x1002 << 6));
 		
 		with (emulator.emulatorState) {
 			memory.position = CODE_PTR_ARGUMENTS;

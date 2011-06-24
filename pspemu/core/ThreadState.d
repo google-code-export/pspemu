@@ -12,6 +12,8 @@ import pspemu.hle.kd.Types;
 import pspemu.hle.kd.threadman.Types;
 import pspemu.hle.Module;
 
+import std.c.windows.windows;
+
 class ThreadState {
 	protected __gshared ThreadState[Thread] threadStatePerThread;
 	
@@ -19,11 +21,42 @@ class ThreadState {
 	public bool waiting;
 	public EmulatorState emulatorState;
 	public Registers registers;
-	public Thread nativeThread;
+	protected Thread nativeThread;
+	protected HANDLE nativeThreadHandle;
 	public string name;
 	public SceUID thid;
 	public SceKernelThreadInfo sceKernelThreadInfo;
 	public Module threadModule;
+	public int wakeUpCount;
+	
+	public void nativeThreadSet(void delegate() run, string name = "<unknown thread>") {
+		nativeThread = new Thread(delegate() {
+			nativeThreadHandle = GetCurrentThread();
+			run();
+		});
+		nativeThread.name = name;
+	}
+	
+	public void nativeThreadStart() {
+		nativeThread.start();
+	}
+	
+	public void nativeThreadSuspend() {
+		SuspendThread(nativeThreadHandle);
+	}
+
+	public void nativeThreadWakeup() {
+		ResumeThread(nativeThreadHandle);
+	}
+	
+	@property public bool nativeThreadIsRunning() {
+		return nativeThread.isRunning();
+	}
+	
+	public bool isSleeping() {
+		return !nativeThreadIsRunning;
+		//if (nativeThread.sleep)
+	}
 	
 	static ThreadState getFromThread(Thread thread = null) {
 		if (thread is null) thread = Thread.getThis();
@@ -51,12 +84,13 @@ class ThreadState {
 	public void waitingBlock(string waitType, void delegate() callback) {
 		this.waitType = waitType;
 		this.waiting = true;
-		try {
-			callback();
-		} finally {
+
+		scope (exit) {
 			this.waitType = "";
 			this.waiting = false;
 		}
+
+		callback();
 	}
 	
 	public this(string name, EmulatorState emulatorState, Registers registers) {

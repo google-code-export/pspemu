@@ -5,6 +5,7 @@ import pspemu.utils.sync.WaitEvent;
 import pspemu.hle.kd.threadman.Types;
 
 import pspemu.utils.Logger;
+import pspemu.utils.String;
 
 class PspWaitEvent {
 	WaitEvent waitEvent;
@@ -57,10 +58,13 @@ class PspWaitEvent {
 		while (!matches) {
 			waitEvent.wait();
 		}
-		
-		if (wait & PspEventFlagWaitTypes.PSP_EVENT_WAITCLEAR) {
-			bits = 0;
+
+		if (wait & PspEventFlagWaitTypes.PSP_EVENT_WAITCLEARALL) {
+			this.bits = 0;
+		} else if (wait & PspEventFlagWaitTypes.PSP_EVENT_WAITCLEAR) {
+			this.bits &= ~bitsToMatch;
 		}
+		
 		return matchedBits;
 	}
 }
@@ -209,10 +213,26 @@ template ThreadManForUser_Events() {
 	  */
 	int sceKernelPollEventFlag(int evid, u32 bits, PspEventFlagWaitTypes wait, u32 *outBits) {
 		PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
-		if (outBits !is null) {
-			*outBits = pspWaitEvent.checkEventFlag(bits, wait);
+		
+		if (bits == 0) return SceKernelErrors.ERROR_KERNEL_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
+		
+		uint result = pspWaitEvent.checkEventFlag(bits, wait);
+		
+		scope (exit) {
+			logInfo(
+				"sceKernelPollEventFlag(evid=%d, bits=%032b, wait=%s, outBits=(%08X)%032b)",
+				evid, bits, toSet(wait), cast(uint)cast(void *)outBits, result
+			);
 		}
-		return 0;
+
+		if (result) {
+			if (outBits !is null) {
+				*outBits = result; 
+			}
+			return SceKernelErrors.ERROR_KERNEL_EVENT_FLAG_POLL_FAILED;
+		} else {
+			return 0;
+		}
 	}
 	
 	void sceKernelReferEventFlagStatus() {

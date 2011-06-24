@@ -113,7 +113,7 @@ class Texture {
 			if (refreshAnyway) {
 				refreshAnyway = false;
 				updateActually(textureData, clutData, texture, clut);
-				//writefln("texture updated");
+				//writefln("texture updated (%08X)", cast(uint)cast(void *)textureData.ptr);
 			} else {
 				//writefln("texture reuse");
 			}

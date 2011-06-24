@@ -53,11 +53,22 @@ enum OutputMode : uint {
 
 struct SasVoice {
 	bool playing;
-	int pitch;
+	int  pitch;
 	uint attack;
 	uint decay;
 	uint sustain;
 	uint release;
+	int  leftVolume;
+	int  rightVolume;
+	
+	@property bool paused() {
+		return !playing;
+	}
+
+	@property bool paused(bool set) {
+		playing = !set;
+		return paused;
+	}
 	
 	bool ended() {
 		return !playing;
@@ -113,23 +124,25 @@ class sceSasCore : ModuleNative {
 	    mixin(registerd!(0xE855BF76, __sceSasSetOutputmode));
 	}
 
-	int __sceSasGetGrain() {
+	int __sceSasGetGrain(SasCore* sasCore) {
 		unimplemented_notice();
-		return 0;
+		return sasCore.grainSamples;
 	}
 	
-	int __sceSasSetGrain() {
+	int __sceSasSetGrain(SasCore* sasCore, int grain) {
 		unimplemented_notice();
+		sasCore.grainSamples = grain;
 		return 0;
 	}
 
-	int __sceSasGetOutputmode() {
+	int __sceSasGetOutputmode(SasCore* sasCore) {
 		unimplemented_notice();
-		return 0;
+		return sasCore.outMode;
 	}
 
-	int __sceSasSetOutputmode() {
+	int __sceSasSetOutputmode(SasCore* sasCore, int outMode) {
 		unimplemented_notice();
+		sasCore.outMode = outMode;
 		return 0;
 	}
 
@@ -269,63 +282,100 @@ class sceSasCore : ModuleNative {
 		return 0;
 	}
 
-    int __sceSasSetVolume() {
+	/**
+	 * Sets the stereo volumes for a sasCore.voice.
+	 *
+	 * @param  sasCore     SasCore
+	 * @param  voice       Voice
+	 * @param  leftVolume  Left  Volume 0-0x1000
+	 * @param  rightVolume Right Volume 0-0x1000
+	 *
+	 * @return 0 on success.
+	 */
+    int __sceSasSetVolume(SasCore* sasCore, int voice, int leftVolume, int rightVolume) {
+    	SasVoice* voicePtr = &sasCore.voices[voice];
+    	
+    	voicePtr.leftVolume  = leftVolume;
+    	voicePtr.rightVolume = rightVolume;
+        
     	unimplemented_notice();
     	return 0;
     }
 	
 
-	int __sceSasRevParam() {
+	int __sceSasRevParam(SasCore* sasCore, int delay, int feedback) {
 		unimplemented_notice();
 		return 0;
 	}
 
-    int __sceSasGetPauseFlag() {
+    int __sceSasCoreWithMix(SasCore* sasCore, void* sasInOut, int leftVol, int rightVol) {
     	unimplemented_notice();
     	return 0;
     }
 
-    int __sceSasCoreWithMix() {
+    int __sceSasSetSL(SasCore* sasCore, int voice, int sustainLevel) {
     	unimplemented_notice();
     	return 0;
     }
 
-    int __sceSasSetSL() {
+    int __sceSasGetEnvelopeHeight(SasCore* sasCore, int voice) {
+    	SasVoice* voicePtr = &sasCore.voices[voice];
+    	
+    	unimplemented_notice();
+    	
+    	//return 0;
+    	return -1;
+    }
+
+    int __sceSasSetKeyOn(SasCore* sasCore, int voice) {
+    	SasVoice* voicePtr = &sasCore.voices[voice];
+    	
+    	unimplemented_notice();
+    	
+    	return 0;
+    }
+
+	/**
+	 * Pauses a set of voice channels for that sasCore.
+	 *
+	 * @param  sasCore     SasCore
+	 * @param  voice_bits  Voice Bit Set
+	 *
+	 * @return 0 on success.
+	 */
+    int __sceSasSetPause(SasCore* sasCore, uint voice_bits) {
+    	unimplemented_notice();
+
+    	foreach (uint index, SasVoice voice; sasCore.voices) {
+    		if ((voice_bits >> index) & 1) {
+    			voice.paused = true;
+    		}
+    	}
+
+    	return 0;
+    }
+
+    int __sceSasGetPauseFlag(SasCore* sasCore) {
     	unimplemented_notice();
     	return 0;
     }
 
-    int __sceSasGetEnvelopeHeight() {
+    int __sceSasSetADSRmode(SasCore* sasCore, int voice, uint flags, int attack, int decay, int sustain, int release) {
     	unimplemented_notice();
     	return 0;
     }
 
-    int __sceSasSetKeyOn() {
-    	unimplemented_notice();
-    	return 0;
-    }
-    
-    int __sceSasSetPause() {
+    int __sceSasSetKeyOff(SasCore* sasCore, int voice) {
     	unimplemented_notice();
     	return 0;
     }
 
-    int __sceSasSetADSRmode() {
+    int __sceSasSetNoise(SasCore* sasCore, int voice, int freq) {
     	unimplemented_notice();
     	return 0;
     }
 
-    int __sceSasSetKeyOff() {
-    	unimplemented_notice();
-    	return 0;
-    }
-
-    int __sceSasSetNoise() {
-    	unimplemented_notice();
-    	return 0;
-    }
-
-    int __sceSasSetSimpleADSR() {
+    int __sceSasSetSimpleADSR(SasCore* sasCore, int voice, uint ADSREnv1, uint ADSREnv2) {
     	unimplemented_notice();
     	return 0;
     }
