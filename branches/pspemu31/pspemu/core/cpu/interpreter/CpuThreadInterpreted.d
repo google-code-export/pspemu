@@ -33,6 +33,7 @@ import pspemu.utils.Logger;
 import core.thread;
 
 import pspemu.core.cpu.InstructionHandler;
+import pspemu.extra.Cheats;
 
 //version = VERSION_SHIFT_ASM;
 
@@ -72,37 +73,8 @@ class CpuThreadInterpreted : CpuThreadBase {
 			
 			threadState.setInCurrentThread();
 			
-	    	try {
-				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: START (%s)", Thread.getThis().name);
-				
-				if (threadState.name == "mainCpuThread") {
-					//trace = true;
-					//threadState.registers.dump();
-				}
-				
-				//trace = true;
-	    		
-		    	while (running) {
-			    	instruction.v = memory.tread!(uint)(registers.PC);
-			    	
-			    	if (trace) {
-			    		writefln("%s :: nPC:%08X: INSTRUCTION:%08X : RA:%08X", threadState, registers.nPC, instruction.v, registers.RA);
-			    	}
-			    	
-			    	mixin(genSwitchAll());
-			    	//executedInstructionsCount++;
-			    	registers.EXECUTED_INSTRUCTION_COUNT_THIS_THREAD++;
-			    }
-				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "!running: %s", this);
-		    } catch (HaltException haltException) {
-				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "halted thread: %s", this);
-		    } catch (Exception exception) {
-		    	synchronized {
-			    	.writefln("at 0x%08X : %s", registers.PC, threadState);
-			    	.writefln("THREADSTATE: %s", threadState);
-			    	.writefln("MODULE: %s", threadState.threadModule);
-			    	
-			    	//.,writefln();
+			void dumpCallstack() {
+				synchronized {
 			    	.writefln("CALLSTACK:");
 			    	scope uint[] callStack = registers.RealCallStack.dup;
 			    	callStack ~= registers.PC;
@@ -124,17 +96,81 @@ class CpuThreadInterpreted : CpuThreadBase {
 			    		}
 			    		.writefln("");
 			    	}
+				}
+			}
+			
+			void dumpRegisters() {
+				synchronized {
+			    	//.,writefln();
 			    	.writefln("REGISTERS:");
 			    	foreach (k, value; registers.R) {
 			    		//.writef("   r%2d: %08X", k, value);
 			    		.writef("   %s: %08X", Registers.aliasesInv[k], value);
 			    		if ((k % 4) == 3) .writefln("");
 			    	}
-			    	.writefln("%s", exception);
-			    	.writefln("%s", this);
-			    	
-			    	//cpuThread.threadState.emulatorState.runningState.stop();
 			    }
+			}
+			
+			void dumpHeader() {
+		    	.writefln("at 0x%08X : %s", registers.PC, threadState);
+		    	.writefln("THREADSTATE: %s", threadState);
+		    	.writefln("MODULE: %s", threadState.threadModule);
+			}
+
+			void dumpThreads(Exception exception) {
+		    	dumpHeader();
+		    	dumpCallstack();
+		    	dumpRegisters();
+		    	
+		    	.writefln("%s", exception);
+		    	.writefln("%s", this);
+		    	
+		    	//cpuThread.threadState.emulatorState.runningState.stop();
+			}
+			
+	    	try {
+				//Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: START (%s)", Thread.getThis().name);
+				//Logger.log(Logger.Level.INFO, "CpuThreadBase", "NATIVE_THREAD: START (%s)", Thread.getThis().name);
+				
+				/*
+				if (threadState.name == "mainCpuThread") {
+					//trace = true;
+					//threadState.registers.dump();
+				}
+				*/
+				
+				if (globalCheats.mustTraceThreadName(threadState.name)) trace = true;
+				//if (threadState.name == "BGM thread") trace = true;
+				
+				//trace = true;
+	    		
+		    	while (running) {
+			    	instruction.v = memory.tread!(uint)(registers.PC);
+			    	
+			    	if (trace) {
+			    		writefln("%s :: nPC:%08X: INSTRUCTION:%08X : RA:%08X", threadState, registers.nPC, instruction.v, registers.RA);
+			    	}
+			    	
+			    	mixin(genSwitchAll());
+			    	//executedInstructionsCount++;
+			    	registers.EXECUTED_INSTRUCTION_COUNT_THIS_THREAD++;
+			    }
+				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "!running: %s", this);
+			} catch (TerminateCallbackException terminateCallbackException) {
+				// Do nothing.
+		    } catch (HaltException haltException) {
+				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "halted thread: %s", this);
+				//dumpThreads(haltException);
+				
+		    	dumpHeader();
+		    	dumpCallstack();
+		    	.writefln("%s", haltException);
+		    	
+		    	//.writefln("%s", this);
+		    	//throw(haltException);
+		    	running = false;
+		    } catch (Exception exception) {
+		    	dumpThreads(exception);
 		    } finally {
 				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: END (%s)", Thread.getThis().name);
 		    }

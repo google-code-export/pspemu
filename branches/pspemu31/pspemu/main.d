@@ -203,6 +203,10 @@ int main(string[] args) {
 		globalCheats.addCheatString(component, 32);
 	}
 	
+	void addTraceThread(string opt, string name) {
+		globalCheats.addTraceThread(name);
+	}
+	
 	void loadgpuDump(string opt, string component) {
 		//GpuState gpuState; writefln("emptyGpuState: %s", gpuState);
 		for (int n = 0; ; n++) {
@@ -227,7 +231,8 @@ int main(string[] args) {
 		"nologmod", &disableLogComponent,
 		"enlogmod", &enableLogComponent,
 		"loadgpu", &loadgpuDump,
-		"cheat32", &addCheat32
+		"cheat32", &addCheat32,
+		"trace_thread", &addTraceThread
 	);
 	
 	void displayHelp() {
@@ -236,18 +241,19 @@ int main(string[] args) {
 		writefln("pspemu.exe [<args>] [<file>]");
 		writefln("");
 		writefln("Arguments:");
-		writefln("  --help             - Show this help");
-		writefln("  --sandbox_tests    - Run test sandbox code (only for developers)");
-		writefln("  --unit_tests       - Run unittests (only for developers)");
-		writefln("  --extended_tests   - Run tests on 'tests_ex' folder (only for developers)");
-		writefln("  --trace            - Enables cpu tracing at start");
-		writefln("  --log              - Enables logging");
-		writefln("  --nolog            - Disables logging");
-		writefln("  --nologmod=MOD     - Disables logging of a module");
-		writefln("  --enlogmod=MOD     - Enables logging of a module");
-		writefln("  --cheat32=ADDR:VAL - Adds a memory write every frame (addresses are relative to 0x08000000, the memory.dump start).");
-		writefln("  --isolist          - Allow to list an iso file and (optionally) to extract a single file");
-		writefln("  --loadgpu=folder   - Loads a gpu dump and displays it");
+		writefln("  --help              - Show this help");
+		writefln("  --sandbox_tests     - Run test sandbox code (only for developers)");
+		writefln("  --unit_tests        - Run unittests (only for developers)");
+		writefln("  --extended_tests    - Run tests on 'tests_ex' folder (only for developers)");
+		writefln("  --trace             - Enables cpu tracing at start");
+		writefln("  --log               - Enables logging");
+		writefln("  --nolog             - Disables logging");
+		writefln("  --nologmod=MOD      - Disables logging of a module");
+		writefln("  --enlogmod=MOD      - Enables logging of a module");
+		writefln("  --trace_thread=NAME - Starts tracing a thread by name");
+		writefln("  --cheat32=ADDR:VAL  - Adds a memory write every frame (addresses are relative to 0x08000000, the memory.dump start).");
+		writefln("  --isolist           - Allow to list an iso file and (optionally) to extract a single file");
+		writefln("  --loadgpu=folder    - Loads a gpu dump and displays it");
 		writefln("");
 		writefln("Examples:");
 		writefln("  pspemu.exe --help");
@@ -255,6 +261,7 @@ int main(string[] args) {
 		writefln("  pspemu.exe --isolist mygame.iso");
 		writefln("  pspemu.exe --isolist mygame.iso /UMD_DATA.BIN");
 		writefln("  pspemu.exe --cheat32=0xB98320:3");
+		writefln("  pspemu.exe --trace_thread=\"BGM thread\"");
 		writefln("  pspemu.exe \"isos/My Game.cso\"");
 		writefln("  pspemu.exe game/EBOOT.PBP");
 		writefln("");

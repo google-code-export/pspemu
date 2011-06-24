@@ -23,6 +23,16 @@ struct CheatEntry {
 
 class Cheats {
 	CheatEntry[] entries;
+	string[] traceThreadNames;
+	
+	void addTraceThread(string threadName) {
+		traceThreadNames ~= threadName;
+	}
+	
+	bool mustTraceThreadName(string threadNameToCheck) {
+		foreach (threadName; traceThreadNames) if (threadName == threadNameToCheck) return true;
+		return false;
+	}
 	
 	void addCheatString(string component, uint size) {
 		string[] parts = std.string.split(component, ":");

@@ -103,12 +103,23 @@ class sceAudio_driver : ModuleNative {
 				logWarning("sceAudioOutputPannedBlocking.invalidChannel!");
 				return -1;
 			}
-			
-			auto cchannel = channels[channel];
+
+			Channel cchannel = channels[channel];
 			bool playing = true;
-	
-			logTrace("sceAudioOutputPannedBlocking(channel=%d, leftvol=%d, rightvol=%d, buf_length=%d)", channel, leftvol, rightvol, cchannel.dataCount);
-	
+
+			logTrace(
+				"sceAudioOutputPannedBlocking(channel=%d, channel.format=%s, channel.samplecount=%d, channel.freq=%d, leftvol=%d, rightvol=%d, buf=%08X, buf_length=%d)",
+				channel, to!string(cchannel.format), cchannel.samplecount, cchannel.freq, leftvol, rightvol, cast(uint)cast(void *)buf, cchannel.dataCount
+			);
+			
+			// Invalid source.
+			if (buf is null) {
+				logError("--------------------------------------------------------------------------");
+				logWarning("sceAudioOutputPannedBlocking.invalidBuffer(Channel=%d) == NULL", channel);
+				logError("--------------------------------------------------------------------------");
+				return 0;
+			}
+			
 			//float toFloat(short sample) { return cast(float)sample / cast(float)(0x8000 - 1); }
 			
 			auto samples_short = (cast(short*)buf)[0..cchannel.dataCount];

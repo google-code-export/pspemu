@@ -128,6 +128,11 @@ class Syscall : ISyscall {
 				throw(new HaltException("halt"));
 			} break;
 
+			// Special syscalls for this emulator:
+			case 0x1003: { // _pspemuHLECall3
+				throw(new TerminateCallbackException("TerminateCallbackException"));
+			} break;
+
 			case 0x206d: callLibrary("ThreadManForUser", "sceKernelCreateThread"); break;
 			case 0x206f: callLibrary("ThreadManForUser", "sceKernelStartThread"); break;
 			case 0x2071: callLibrary("ThreadManForUser", "sceKernelExitThread"); break;

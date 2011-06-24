@@ -24,8 +24,11 @@ int main(int argc, char *argv[]) {
 	int result;
 	int channel;
 	
-	//file = fopen("bgm01.at3", "rb");
-	file = fopen("bgm_001_64.at3", "rb");
+	u32 puiPosition;
+	u32 puiDataByte;
+	
+	file = fopen("bgm01.at3", "rb");
+	//file = fopen("bgm_001_64.at3", "rb");
 	fseek(file, 0, SEEK_END);
 	at3_size = ftell(file);
 	
@@ -59,6 +62,9 @@ int main(int argc, char *argv[]) {
 	
 	channel = sceAudioChReserve(0, maxSamples, PSP_AUDIO_FORMAT_STEREO);
 	
+	result = sceAtracGetSecondBufferInfo(atracID, &puiPosition, &puiDataByte);
+	pspDebugScreenPrintf("sceAtracGetSecondBufferInfo: %08X, %d, %d\n", result, puiPosition, puiDataByte);
+	
 	int end = 0;
 	int steps = 0;
 	while (!end) {
@@ -66,22 +72,32 @@ int main(int argc, char *argv[]) {
 		int remainFrame = 0;
 		//int decodeBufferPosition = 0;
 		int samples = 0;
+		int nextSample = 0;
+		u32 nextPosition = 0;
+		
+		if (steps < 4) {
+			result = sceAtracGetNextSample(atracID, &nextSample);
+			pspDebugScreenPrintf("sceAtracGetNextSample(%d): %d\n", result, nextSample);
+			result = sceAtracGetNextDecodePosition(atracID, &nextPosition);
+			pspDebugScreenPrintf("sceAtracGetNextDecodePosition(%d): %d\n", result, nextPosition);
+		}
 
 		result = sceAtracDecodeData(atracID, (u16 *)decode_data, &samples, &end, &remainFrame);
+		
+		if (steps < 4) {
+			
+		}
 		
 		sceAudioSetChannelDataLen(channel, samples);
 		sceAudioOutputBlocking(channel, 0x8000, decode_data);
 		
 		result = sceAtracGetRemainFrame(atracID, &remainFrame);
 
-		if (steps == 0) {
-			pspDebugScreenPrintf("sceAtracDecodeData: %08X\n", result);
-			pspDebugScreenPrintf("at3_size: %d\n", at3_size);
-			pspDebugScreenPrintf("decode_size: %d\n", decode_size);
-			pspDebugScreenPrintf("samples: %d\n", samples);
-			pspDebugScreenPrintf("end: %d\n", end);
-			pspDebugScreenPrintf("remainFrame: %d\n", remainFrame);
-			for (n = 0; n < 100; n++) pspDebugScreenPrintf("%04X ", decode_data[n]);
+		if (steps < 4) {
+			pspDebugScreenPrintf("sceAtracDecodeData: %08X, at3_size: %d, decode_size: %d, samples: %d, end: %d, remainFrame: %d\n\n", result, at3_size, decode_size, samples, end, remainFrame);
+			if (steps == 1) {
+				for (n = 0; n < 32; n++) pspDebugScreenPrintf("%04X ", (u16)decode_data[n]);
+			}
 			pspDebugScreenPrintf("sceAtracGetRemainFrame: %08X\n", result);
 		}
 

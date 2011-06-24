@@ -182,7 +182,7 @@ template ThreadManForUser_Threads() {
 	int _sceKernelDelayThread(SceUInt delayInMicroseconds, bool handleCallbacks) {
 		scope waitMultipleObjects = _getWaitMultipleObjects(handleCallbacks);
 		
-		currentCpuThread.threadState.waitingBlock(std.string.format("_sceKernelDelayThread(%d)", delayInMicroseconds), {
+		currentCpuThread.threadState.waitingBlock(std.string.format("_sceKernelDelayThread%s(%d)", handleCallbacks ? "CB" : "", delayInMicroseconds), {
 			scope StopWatch stopWatch;
 			
 			stopWatch.start();
@@ -435,8 +435,12 @@ template ThreadManForUser_Threads() {
 	 * @return Success if >= 0, an error if < 0.
 	 */
 	int sceKernelWakeupThread(SceUID thid) {
-		unimplemented();
-		return -1;
+		logInfo("sceKernelWakeupThread(thid=%d)", thid);
+		ThreadState threadState = hleEmulatorState.uniqueIdFactory.get!(ThreadState)(thid);
+		threadState.nativeThreadWakeup();
+		threadState.wakeUpCount++;
+		//return -1;
+		return 0;
 	}
 
 	/**

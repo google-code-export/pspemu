@@ -39,8 +39,7 @@ abstract class CpuThreadBase : InstructionHandler {
 		this.threadState = threadState;
 		this.memory = this.threadState.emulatorState.memory;
 		this.registers = this.threadState.registers;
-		this.threadState.nativeThread = new Thread(&run);
-		this.threadState.nativeThread.name = std.string.format("PspCpuThread#%d('%s')", lastThreadId++, threadState.name);
+		this.threadState.nativeThreadSet(&run, std.string.format("PspCpuThread#%d('%s')", lastThreadId++, threadState.name));
 		
 		threadState.emulatorState.runningState.onStop += delegate(...) {
 			running = false;
@@ -48,7 +47,7 @@ abstract class CpuThreadBase : InstructionHandler {
 	}
 
 	public void start() {
-		this.threadState.nativeThread.start();
+		this.threadState.nativeThreadStart();
 	}
 	
 	public void delegate() executeBefore;
@@ -76,7 +75,7 @@ abstract class CpuThreadBase : InstructionHandler {
 		while (true) {
 			Thread.yield();
 			// Not running.
-			if (!this.threadState.nativeThread.isRunning) break;
+			if (!this.threadState.nativeThreadIsRunning) break;
 			
 			if (this.threadState.waiting) break;
 			

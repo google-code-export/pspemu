@@ -103,10 +103,12 @@ struct SceKernelSemaOptParam {
 /** Event flag wait types */
 enum PspEventFlagWaitTypes
 {
-	/** Wait for all bits in the pattern to be set */
+	/// Wait for all bits in the pattern to be set
 	PSP_EVENT_WAITAND = 0,
-	/** Wait for one or more bits in the pattern to be set */
+	/// Wait for one or more bits in the pattern to be set
 	PSP_EVENT_WAITOR  = 1,
-	/** Clear the wait pattern when it matches */
-	PSP_EVENT_WAITCLEAR = 0x20
+	/// Clear all the wait pattern when it matches
+	PSP_EVENT_WAITCLEARALL = 0x10,
+	/// Clear the wait pattern when it matches
+	PSP_EVENT_WAITCLEAR = 0x20,
 };
