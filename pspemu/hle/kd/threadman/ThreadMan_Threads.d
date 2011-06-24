@@ -1,8 +1,8 @@
-module pspemu.hle.kd.threadman.Threads;
+module pspemu.hle.kd.threadman.ThreadMan_Threads;
 
 import std.datetime;
 
-import pspemu.hle.kd.sysmem.SysMemUserForUser;
+import pspemu.hle.kd.sysmem.SysMem;
 
 import pspemu.hle.kd.threadman.Types;
 import pspemu.core.ThreadState;

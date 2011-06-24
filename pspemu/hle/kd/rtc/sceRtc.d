@@ -1,11 +1,8 @@
 module pspemu.hle.kd.rtc.sceRtc; // kd/rtc.prx (sceRTC_Service)
 
 import std.stdio;
-
 import pspemu.hle.ModuleNative;
-
 import std.datetime;
-
 import pspemu.hle.kd.rtc.Types;
 
 // http://pspemu.googlecode.com/svn-history/r166/trunk/extra/psp-gdc/pspsdk/psprtc.d
@@ -170,6 +167,11 @@ class sceRtc : ModuleNative {
 	}
 }
 
+
+class sceRtc_driver : sceRtc {
+}
+
 static this() {
 	mixin(ModuleNative.registerModule("sceRtc"));
+	mixin(ModuleNative.registerModule("sceRtc_driver"));
 }

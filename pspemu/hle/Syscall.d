@@ -26,7 +26,7 @@ import pspemu.hle.Syscall;
 
 import pspemu.core.cpu.CpuThreadBase;
 
-//import pspemu.hle.kd.sysmem.KDebugForKernel;
+//import pspemu.hle.kd.sysmem.KDebug;
 
 import pspemu.hle.HleEmulatorState;
 

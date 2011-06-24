@@ -1,4 +1,4 @@
-module pspemu.hle.kd.utility.Sysparam;
+module pspemu.hle.kd.utility.sceUtility_Sysparam;
 
 import std.process;
 

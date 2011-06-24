@@ -20,7 +20,7 @@ public import pspemu.core.ThreadState;
 public import pspemu.core.EmulatorState;
 public import pspemu.hle.HleEmulatorState;
 
-public import pspemu.hle.kd.SystemErrors;
+public import pspemu.hle.kd.SceKernelErrors;
 
 /**
  * Thread Local Storage (TLS) variable. Each thread using it will have it's own value.

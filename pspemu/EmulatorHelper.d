@@ -27,7 +27,7 @@ import pspemu.hle.ModulePsp;
 import pspemu.gui.GuiBase;
 
 import pspemu.hle.kd.iofilemgr.IoFileMgr;
-import pspemu.hle.kd.sysmem.KDebugForKernel; 
+import pspemu.hle.kd.sysmem.KDebug; 
 
 import pspemu.hle.MemoryManager;
 import pspemu.formats.DetectFormat;

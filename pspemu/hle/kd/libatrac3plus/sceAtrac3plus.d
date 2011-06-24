@@ -3,7 +3,6 @@ module pspemu.hle.kd.libatrac3plus.sceAtrac3plus;
 import pspemu.hle.ModuleNative;
 import pspemu.hle.HleEmulatorState;
 import pspemu.utils.String;
-import pspemu.hle.kd.SystemErrors;
 import std.stream;
 import std.intrinsic;
 import pspemu.utils.StructUtils;

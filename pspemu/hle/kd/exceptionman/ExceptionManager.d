@@ -1,4 +1,4 @@
-module pspemu.hle.kd.exceptionman.ExceptionManagerForKernel; // kd/exceptionman.prx (sceExceptionManager):
+module pspemu.hle.kd.exceptionman.ExceptionManager; // kd/exceptionman.prx (sceExceptionManager):
 
 import pspemu.hle.ModuleNative;
 

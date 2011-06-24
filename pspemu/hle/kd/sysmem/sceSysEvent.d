@@ -1,4 +1,4 @@
-module pspemu.hle.kd.sysmem.sceSysEventForKernel; // kd/sysmem.prx (sceSystemMemoryManager)
+module pspemu.hle.kd.sysmem.sceSysEvent; // kd/sysmem.prx (sceSystemMemoryManager)
 
 import pspemu.hle.ModuleNative;
 import pspemu.core.exceptions.NotImplementedException;

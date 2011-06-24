@@ -1,7 +1,4 @@
-module pspemu.hle.kd.sysmem.SysMemUserForUser; // kd/sysmem.prx (sceSystemMemoryManager)
-
-//debug = DEBUG_SYSCALL;
-//debug = DEBUG_MEMORY_ALLOCS;
+module pspemu.hle.kd.sysmem.SysMem; // kd/sysmem.prx (sceSystemMemoryManager)
 
 import pspemu.hle.ModuleNative;
 
@@ -198,6 +195,10 @@ class SysMemUserForUser : ModuleNative {
 	}
 }
 
+class SysMemForKernel : ModuleNative {
+}
+
 static this() {
+	mixin(ModuleNative.registerModule("SysMemForKernel"));
 	mixin(ModuleNative.registerModule("SysMemUserForUser"));
 }
