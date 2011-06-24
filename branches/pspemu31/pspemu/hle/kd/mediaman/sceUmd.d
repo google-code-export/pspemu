@@ -1,4 +1,4 @@
-module pspemu.hle.kd.mediaman.sceUmdUser;
+module pspemu.hle.kd.mediaman.sceUmd;
 
 import std.file;
 import pspemu.hle.ModuleNative;

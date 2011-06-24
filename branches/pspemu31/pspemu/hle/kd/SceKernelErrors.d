@@ -1,4 +1,4 @@
-module pspemu.hle.kd.SystemErrors;
+module pspemu.hle.kd.SceKernelErrors;
 
 enum SceKernelErrors {
 	/*

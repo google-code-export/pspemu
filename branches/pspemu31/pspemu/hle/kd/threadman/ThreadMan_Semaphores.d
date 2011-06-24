@@ -1,4 +1,4 @@
-module pspemu.hle.kd.threadman.Semaphores;
+module pspemu.hle.kd.threadman.ThreadMan_Semaphores;
 
 //import pspemu.hle.kd.threadman_common;
 

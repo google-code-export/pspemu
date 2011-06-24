@@ -1,4 +1,6 @@
-module pspemu.hle.kd.threadman.ThreadManForUser; // kd/threadman.prx (sceThreadManager)
+module pspemu.hle.kd.threadman.ThreadMan; // kd/threadman.prx (sceThreadManager)
+
+import pspemu.hle.ModuleNative;
 
 import pspemu.hle.ModuleNative;
 import pspemu.hle.HleEmulatorState;
@@ -8,10 +10,10 @@ import core.thread;
 import std.stdio;
 import std.math;
 
-import pspemu.hle.kd.threadman.Threads;
-import pspemu.hle.kd.threadman.Semaphores;
-import pspemu.hle.kd.threadman.Events;
-import pspemu.hle.kd.threadman.Callbacks;
+import pspemu.hle.kd.threadman.ThreadMan_Threads;
+import pspemu.hle.kd.threadman.ThreadMan_Semaphores;
+import pspemu.hle.kd.threadman.ThreadMan_Events;
+import pspemu.hle.kd.threadman.ThreadMan_Callbacks;
 import pspemu.hle.kd.threadman.Types;
 import pspemu.hle.MemoryManager;
 
@@ -25,7 +27,7 @@ import pspemu.hle.Callbacks;
 import std.datetime;
 
 import pspemu.hle.kd.rtc.Types;
-import pspemu.hle.kd.sysmem.SysMemUserForUser;
+import pspemu.hle.kd.sysmem.SysMem;
 
 //debug = DEBUG_THREADS;
 //debug = DEBUG_SYSCALL;
@@ -617,6 +619,13 @@ struct SceKernelVplInfo {
 	int      numWaitThreads;
 }
 
+/**
+ * Library imports for the kernel threading library.
+ */
+class ThreadManForKernel : ThreadManForUser {
+}
+
 static this() {
+	mixin(ModuleNative.registerModule("ThreadManForKernel"));
 	mixin(ModuleNative.registerModule("ThreadManForUser"));
 }

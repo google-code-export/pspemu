@@ -1,4 +1,4 @@
-module pspemu.hle.kd.lowio.sceSysreg_driver;
+module pspemu.hle.kd.lowio.sceSysreg;
 
 import pspemu.hle.ModuleNative;
 

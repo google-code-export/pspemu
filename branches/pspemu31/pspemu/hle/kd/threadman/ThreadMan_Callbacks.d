@@ -1,4 +1,4 @@
-module pspemu.hle.kd.threadman.Callbacks;
+module pspemu.hle.kd.threadman.ThreadMan_Callbacks;
 
 import pspemu.hle.kd.threadman.Types;
 

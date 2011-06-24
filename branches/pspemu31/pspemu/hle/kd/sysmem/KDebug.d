@@ -1,4 +1,4 @@
-module pspemu.hle.kd.sysmem.KDebugForKernel; // kd/sysmem.prx (sceSystemMemoryManager)
+module pspemu.hle.kd.sysmem.KDebug; // kd/sysmem.prx (sceSystemMemoryManager)
 
 import std.stdio;
 

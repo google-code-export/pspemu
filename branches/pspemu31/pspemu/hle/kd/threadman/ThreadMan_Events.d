@@ -1,4 +1,4 @@
-module pspemu.hle.kd.threadman.Events;
+module pspemu.hle.kd.threadman.ThreadMan_Events;
 
 import pspemu.utils.sync.WaitEvent;
 

@@ -1,4 +1,4 @@
-module pspemu.hle.kd.sysmem.sceSuspendForKernel; // kd/sysmem.prx (sceSystemMemoryManager)
+module pspemu.hle.kd.sysmem.sceSuspend; // kd/sysmem.prx (sceSystemMemoryManager)
 
 import pspemu.hle.ModuleNative;
 
@@ -27,6 +27,10 @@ class sceSuspendForKernel : ModuleNative {
 	}
 }
 
+class sceSuspendForUser : sceSuspendForKernel {
+}
+
 static this() {
+	mixin(ModuleNative.registerModule("sceSuspendForUser"));
 	mixin(ModuleNative.registerModule("sceSuspendForKernel"));
 }

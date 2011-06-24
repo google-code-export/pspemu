@@ -31,7 +31,7 @@ import pspemu.gui.GuiDfl;
 
 import pspemu.utils.Logger;
 
-import pspemu.hle.kd.sysmem.KDebugForKernel;
+import pspemu.hle.kd.sysmem.KDebug;
 
 import pspemu.hle.vfs.VirtualFileSystem;
 import pspemu.hle.vfs.MountableVirtualFileSystem;

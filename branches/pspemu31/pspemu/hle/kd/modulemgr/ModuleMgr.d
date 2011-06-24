@@ -12,7 +12,7 @@ import pspemu.hle.kd.iofilemgr.Types;
 
 //debug = DEBUG_SYSCALL;
 
-import pspemu.hle.kd.threadman.ThreadManForUser; 
+import pspemu.hle.kd.threadman.ThreadMan; 
 import pspemu.hle.kd.iofilemgr.IoFileMgr;
 
 class ModuleMgrForUser : ModuleNative {

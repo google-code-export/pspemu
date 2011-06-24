@@ -9,7 +9,7 @@ import std.c.windows.windows;
 import pspemu.hle.ModuleNative;
 import pspemu.hle.HleEmulatorState;
 
-import pspemu.hle.kd.utility.Sysparam;
+import pspemu.hle.kd.utility.sceUtility_Sysparam;
 
 import pspemu.hle.kd.utility.Types;
 

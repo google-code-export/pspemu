@@ -1,4 +1,4 @@
-module pspemu.hle.kd.loadcore.LoadCoreForKernel; // kd/loadcore.prx (sceLoaderCore):
+module pspemu.hle.kd.loadcore.LoadCore; // kd/loadcore.prx (sceLoaderCore):
 
 import std.stdio;
 
