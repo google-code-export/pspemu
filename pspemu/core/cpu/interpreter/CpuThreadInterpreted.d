@@ -57,7 +57,7 @@ class CpuThreadInterpreted : CpuThreadBase {
     		ThreadState threadState = this.threadState;
     		Registers registers = this.registers;
     		Memory memory = this.memory;
-	    		
+    		
 			void OP_UNK() {
 				registers.pcAdvance(4);
 				Logger.log(Logger.Level.CRITICAL, "CpuThreadInterpreted", "Thread(%d): OP_UNK", threadState.thid);
@@ -162,13 +162,15 @@ class CpuThreadInterpreted : CpuThreadBase {
 				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "halted thread: %s", this);
 				//dumpThreads(haltException);
 				
-		    	dumpHeader();
-		    	dumpCallstack();
-		    	.writefln("%s", haltException);
+				if (!threadState.emulatorState.unittesting) {
+			    	dumpHeader();
+			    	dumpCallstack();
+			    	.writefln("%s", haltException);
+			    }
 		    	
 		    	//.writefln("%s", this);
 		    	//throw(haltException);
-		    	running = false;
+		    	//running = false;
 		    } catch (Exception exception) {
 		    	dumpThreads(exception);
 		    } finally {

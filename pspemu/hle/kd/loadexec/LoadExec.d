@@ -1,4 +1,6 @@
-module pspemu.hle.kd.loadexec.LoadExecForUser; // kd/loadexec.prx (sceLoadExec)
+module pspemu.hle.kd.loadexec.LoadExec; // kd/loadexec.prx (sceLoadExec)
+
+import pspemu.hle.ModuleNative;
 
 //debug = DEBUG_SYSCALL;
 
@@ -65,6 +67,10 @@ class LoadExecForUser : ModuleNative {
 	}
 }
 
+class LoadExecForKernel : LoadExecForUser {
+}
+
 static this() {
+	mixin(ModuleNative.registerModule("LoadExecForKernel"));
 	mixin(ModuleNative.registerModule("LoadExecForUser"));
 }

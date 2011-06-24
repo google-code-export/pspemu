@@ -1,4 +1,8 @@
-module pspemu.hle.kd.ge.sceGe_driver; // kd/ge.prx (sceGE_Manager)
+module pspemu.hle.kd.ge.sceGe; // kd/ge.prx (sceGE_Manager)
+
+import pspemu.core.gpu.Gpu;
+import pspemu.core.gpu.DisplayList;
+import pspemu.hle.ModuleNative;
 
 //debug = DEBUG_SYSCALL;
 
@@ -261,6 +265,10 @@ class sceGe_driver : ModuleNative {
 	}
 }
 
+class sceGe_user : sceGe_driver {
+}
+
 static this() {
+	mixin(ModuleNative.registerModule("sceGe_user"));
 	mixin(ModuleNative.registerModule("sceGe_driver"));
 }

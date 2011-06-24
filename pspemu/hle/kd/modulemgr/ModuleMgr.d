@@ -1,4 +1,6 @@
-module pspemu.hle.kd.modulemgr.ModuleMgrForUser; // kd/modulemgr.prx (sceModuleManager)
+module pspemu.hle.kd.modulemgr.ModuleMgr; // kd/modulemgr.prx (sceModuleManager)
+
+import pspemu.hle.ModuleNative;
 
 import std.stream;
 import std.stdio;
@@ -11,7 +13,7 @@ import pspemu.hle.kd.iofilemgr.Types;
 //debug = DEBUG_SYSCALL;
 
 import pspemu.hle.kd.threadman.ThreadManForUser; 
-import pspemu.hle.kd.iofilemgr.IoFileMgrForKernel;
+import pspemu.hle.kd.iofilemgr.IoFileMgr;
 
 class ModuleMgrForUser : ModuleNative {
 	void initNids() {
@@ -196,6 +198,10 @@ class ModuleMgrForUser : ModuleNative {
 	}
 }
 
+class ModuleMgrForKernel : ModuleMgrForUser {
+}
+
 static this() {
+	mixin(ModuleNative.registerModule("ModuleMgrForKernel"));
 	mixin(ModuleNative.registerModule("ModuleMgrForUser"));
 }

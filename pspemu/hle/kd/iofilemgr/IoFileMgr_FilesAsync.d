@@ -1,4 +1,4 @@
-module pspemu.hle.kd.iofilemgr.FilesAsync;
+module pspemu.hle.kd.iofilemgr.IoFileMgr_FilesAsync;
 
 import std.stream;
 

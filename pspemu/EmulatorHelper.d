@@ -26,7 +26,7 @@ import pspemu.hle.ModulePsp;
 
 import pspemu.gui.GuiBase;
 
-import pspemu.hle.kd.iofilemgr.IoFileMgrForUser;
+import pspemu.hle.kd.iofilemgr.IoFileMgr;
 import pspemu.hle.kd.sysmem.KDebugForKernel; 
 
 import pspemu.hle.MemoryManager;
@@ -158,6 +158,9 @@ class EmulatorHelper {
 	public void loadAndRunTest(string pspTestExpectedPath) {
 		auto pspTestBasePath     = std.path.getName(pspTestExpectedPath);
 		auto pspTestElfPath = std.string.format("%s.elf", pspTestBasePath);
+		
+		emulator.emulatorState.unittesting = true;
+		
 		stdout.writef("%s...", pspTestBasePath); stdout.flush();
 		if (std.file.exists(pspTestElfPath)) {
 			loadModule(pspTestElfPath);
