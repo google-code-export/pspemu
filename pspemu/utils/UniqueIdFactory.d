@@ -51,7 +51,7 @@ class UniqueIdTypeFactory {
 	}
 
 	public T get(T)(UID uid) {
-		if (uid !in values) throw(new Exception(std.string.format("Can't find %s:%d", type, uid)));
+		if (uid !in values) throw(new Exception(std.string.format("Can't find %s:%d(%08X)", type, uid, uid)));
 		return cast(T)values[uid];
 	}
 	

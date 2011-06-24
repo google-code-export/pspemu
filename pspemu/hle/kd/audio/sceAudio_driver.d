@@ -97,39 +97,45 @@ class sceAudio_driver : ModuleNative {
 	}
 
 	int _sceAudioOutputPannedBlocking(int channel, int leftvol, int rightvol, void *buf, bool blocking) {
-		// Invalid channel.
-		if (!validChannelIndex(channel)) {
-			Logger.log(Logger.Level.WARNING, "sceAudio_driver", "sceAudioOutputPannedBlocking.invalidChannel!");
+		try {
+			// Invalid channel.
+			if (!validChannelIndex(channel)) {
+				logWarning("sceAudioOutputPannedBlocking.invalidChannel!");
+				return -1;
+			}
+			
+			auto cchannel = channels[channel];
+			bool playing = true;
+	
+			logTrace("sceAudioOutputPannedBlocking(channel=%d, leftvol=%d, rightvol=%d, buf_length=%d)", channel, leftvol, rightvol, cchannel.dataCount);
+	
+			//float toFloat(short sample) { return cast(float)sample / cast(float)(0x8000 - 1); }
+			
+			auto samples_short = (cast(short*)buf)[0..cchannel.dataCount];
+			//bool error = false;
+			
+			auto writeDelegate = delegate() {
+				try {
+					audio.writeWait(channel, cchannel.numchannels, samples_short, volumef(leftvol), volumef(rightvol));
+				} catch (Throwable o) {
+					Logger.log(Logger.Level.ERROR, "sceAudio_driver", "_sceAudioOutputPannedBlocking: %s", o);
+				}
+				playing = false;
+			};
+	
+			if (blocking) {
+				currentThreadState().waitingBlock("_sceAudioOutputPannedBlocking", writeDelegate);
+			} else {
+				Thread audioNonBlockingThread = new Thread(writeDelegate);
+				audioNonBlockingThread.name = "audioNonBlockingThread";
+				audioNonBlockingThread.start();
+			}
+			
+			return 0;
+		} catch (Throwable o) {
+			writefln("_sceAudioOutputPannedBlocking.ERROR: %s", o);
 			return -1;
 		}
-		
-		auto cchannel = channels[channel];
-		bool playing = true;
-
-		logTrace("sceAudioOutputPannedBlocking(channel=%d, leftvol=%d, rightvol=%d, buf_length=%d)", channel, leftvol, rightvol, cchannel.dataCount);
-
-		float toFloat(short sample) { return cast(float)sample / cast(float)(0x8000 - 1); }
-		
-		auto samples_short = (cast(short*)buf)[0..cchannel.dataCount];
-		
-		auto writeDelegate = delegate() {
-			try {
-				audio.writeWait(channel, cchannel.numchannels, samples_short, volumef(leftvol), volumef(rightvol));
-			} catch (Throwable o) {
-				Logger.log(Logger.Level.ERROR, "sceAudio_driver", "sceAudioOutputPannedBlocking: %s", o);
-			}
-			playing = false;
-		};
-
-		if (blocking) {
-			currentThreadState().waitingBlock("_sceAudioOutputPannedBlocking", writeDelegate);
-		} else {
-			Thread audioNonBlockingThread = new Thread(writeDelegate);
-			audioNonBlockingThread.name = "audioNonBlockingThread";
-			audioNonBlockingThread.start();
-		}
-		
-		return 0;
 	}
 
 	/**

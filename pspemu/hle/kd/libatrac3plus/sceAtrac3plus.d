@@ -47,13 +47,22 @@ class Atrac3Object {
 	uint writeBufferSize;
 	uint writeBufferGuestPtr;
 	
-	uint    samplesOffset;
+	int     samplesOffset;
 	short[] samples;
 	
 	Atrac3Processor processor;
 	
-	int getMaxNumberOfSamples() {
+	@property int numberOfChannels() {
+		return 2;
+	}
+	
+	int getMaxNumberOfSamplesPerChannel() {
 		return 8192;
+		//return 4096;
+	}
+	
+	int getMaxNumberOfSamples() {
+		return getMaxNumberOfSamplesPerChannel() * numberOfChannels;
 	}
 	
 	void writeOma(string filePath) {
@@ -74,15 +83,23 @@ class Atrac3Object {
 		string omaFile = ApplicationPaths.exe ~ r"\temp.oma";
 		string wavFile = ApplicationPaths.exe ~ r"\temp.wav";
 		
-		this.writeOma(omaFile);
-		convertOmaToWav(omaFile, wavFile);
-		
-		WaveProcessor waveProcessor = new WaveProcessor();
-		waveProcessor.process(new BufferedFile(wavFile));
-		auto stream = waveProcessor.chunksByType["data"].getStream();
-		samples.length = cast(uint)(stream.size / short.sizeof);
-		stream.read(cast(ubyte[])samples);
-		//writefln("%s", samples);
+		try {
+			this.writeOma(omaFile);
+			convertOmaToWav(omaFile, wavFile);
+			
+			if (std.file.exists(wavFile)) {
+				WaveProcessor waveProcessor = new WaveProcessor();
+				waveProcessor.process(new BufferedFile(wavFile));
+				auto stream = waveProcessor.chunksByType["data"].getStream();
+				samples.length = cast(uint)(stream.size / short.sizeof);
+				stream.read(cast(ubyte[])samples);
+				//writefln("%s", samples);
+			} else {
+				samples.length = 0;
+			}
+		} catch (Throwable o) {
+			writefln("ERROR: Atrac3Object.getWave: %s", o);
+		}
 	}
 	
 	static class Atrac3Processor : WaveProcessor {
@@ -257,6 +274,7 @@ class sceAtrac3plus : ModuleNative {
 		Atrac3Object atrac3Object = getAtrac3ObjectById(atracID);
 		*outMax = atrac3Object.getMaxNumberOfSamples();
 		//unimplemented();
+		logInfo("sceAtracGetMaxSample(atracID=%d, outMax=%d)", atracID, *outMax);
 		return 0;
 	}
 
@@ -294,6 +312,7 @@ class sceAtrac3plus : ModuleNative {
 		unimplemented_notice();
 		Atrac3Object atrac3Object = getAtrac3ObjectById(atracID);
 		atrac3Object.nloops = nloops;
+		logInfo("sceAtracSetLoopNum(atracID=%d, nloops=%d)", atracID, nloops);
 		return 0;
 	}
 	
@@ -311,7 +330,7 @@ class sceAtrac3plus : ModuleNative {
 		unimplemented_notice();
 		Atrac3Object atrac3Object = getAtrac3ObjectById(atracID);
 		logWarning("Not implemented sceAtracGetRemainFrame(%d, %s)", atracID, outRemainFrame);
-		*outRemainFrame = 0;
+		*outRemainFrame = -1;
 		return 0;
 	}
 	
@@ -333,19 +352,29 @@ class sceAtrac3plus : ModuleNative {
 	 */
 	int sceAtracDecodeData(int atracID, u16 *outSamples, int *outN, int *outEnd, int *outRemainFrame) {
 		//logInfo("Not implemented sceAtracDecodeData(%d)", atracID);
-		unimplemented_notice();
+		//unimplemented_notice();
 		
 		Atrac3Object atrac3Object = getAtrac3ObjectById(atracID);
 		
 		int numSamples = atrac3Object.getMaxNumberOfSamples();
-		int numSamplesPerChannel = atrac3Object.getMaxNumberOfSamples() / 2;
+		int numSamplesPerChannel = atrac3Object.getMaxNumberOfSamplesPerChannel();
 		
-		outSamples[0..numSamples] = cast(u16[])atrac3Object.samples[atrac3Object.samplesOffset..atrac3Object.samplesOffset + numSamples]; 
-		atrac3Object.samplesOffset += numSamples;
-
-		*outN = numSamplesPerChannel;
-		*outEnd = 0;
+		if ((atrac3Object.samplesOffset + numSamples) >= atrac3Object.samples.length) {
+			*outEnd = 1;			
+		} else {
+			*outEnd = 0;
+		}
+		
+		int numReadedSamples = min(cast(int)(atrac3Object.samples.length - atrac3Object.samplesOffset), numSamples);
+		
+		outSamples[0..numReadedSamples] = cast(u16[])atrac3Object.samples[atrac3Object.samplesOffset..atrac3Object.samplesOffset + numReadedSamples]; 
+		atrac3Object.samplesOffset += numReadedSamples;
+		
+		*outN = numReadedSamples / 2;
 		*outRemainFrame = -1;
+		
+		logInfo("sceAtracDecodeData(atracID=%d, outN=%d, outEnd=%d, outRemainFrame=%d)", atracID, *outN, *outEnd, *outRemainFrame);
+
 		return 0;
 	}
 	
@@ -379,7 +408,7 @@ class sceAtrac3plus : ModuleNative {
 	int sceAtracGetNextSample(int atracID, int *outN) {
 		*outN = 0;
 		unimplemented_notice();
-		logTrace("Not implemented sceAtracGetNextSample");
+		logInfo("Not implemented sceAtracGetNextSample");
 		return 0;
 	}
 
@@ -404,6 +433,11 @@ class sceAtrac3plus : ModuleNative {
 		*writePointer   = cast(u8*)atrac3Object.writeBufferGuestPtr; // @FIXME!!
 		*availableBytes = cast(u32)atrac3Object.writeBufferSize;
 		*readOffset     = atrac3Object.processor.dataOffset;
+		
+		logInfo(
+			"sceAtracGetStreamDataInfo(atracID=%d, writePointer=%08X, availableBytes=%d, readOffset=%d)",
+			atracID, cast(uint)*writePointer, *availableBytes, *readOffset
+		);
 
 		return 0;
 	}
@@ -428,6 +462,9 @@ class sceAtrac3plus : ModuleNative {
 	int sceAtracGetSecondBufferInfo(int atracID, u32 *puiPosition, u32 *puiDataByte) {
 		Atrac3Object atrac3Object = getAtrac3ObjectById(atracID);
 		
+		unimplemented_notice();
+		//logInfo("sceAtracGetSecondBufferInfo(atracID=%d, puiSamplePosition=%d)", atracID, *puiSamplePosition);
+		
 		return SceKernelErrors.ERROR_ATRAC_SECOND_BUFFER_NOT_NEEDED;
 	}
 
@@ -438,13 +475,19 @@ class sceAtrac3plus : ModuleNative {
 	}
 
 	int sceAtracGetNextDecodePosition(int atracID, u32 *puiSamplePosition) {
-		unimplemented_notice();
+		Atrac3Object atrac3Object = getAtrac3ObjectById(atracID);
+		
+		//unimplemented_notice();
+		//*puiSamplePosition = atrac3Object.samplesOffset / 2;
+		*puiSamplePosition = atrac3Object.samplesOffset * 2;
+		logInfo("sceAtracGetNextDecodePosition(atracID=%d, puiSamplePosition=%d)", atracID, *puiSamplePosition);
+		 
 		return 0;
 	}
 
 	int sceAtracGetSoundSample(int atracID, int *piEndSample, int *piLoopStartSample, int *piLoopEndSample) {
 		Atrac3Object atrac3Object = getAtrac3ObjectById(atracID);
-		atrac3Object.writeBufferSize = 4096;
+		atrac3Object.writeBufferSize = atrac3Object.getMaxNumberOfSamples();
 		atrac3Object.writeBufferGuestPtr = hleEmulatorState.memoryManager.malloc(atrac3Object.writeBufferSize);
 		*piEndSample = atrac3Object.processor.fact.atracEndSample;
 		if (atrac3Object.processor.loops.length > 0) {
@@ -454,6 +497,8 @@ class sceAtrac3plus : ModuleNative {
 			*piLoopStartSample = -1;
 			*piLoopEndSample   = -1;
 		}
+		
+		logInfo("sceAtracGetSoundSample(atracID=%d, piEndSample=%d, piLoopStartSample=%d, piLoopEndSample=%d)", atracID, *piEndSample, *piLoopStartSample, *piLoopEndSample);
 		
 		//unimplemented_notice();
 		return 0;
