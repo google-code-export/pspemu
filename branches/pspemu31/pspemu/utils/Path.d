@@ -12,24 +12,24 @@ class ApplicationPaths {
 	__gshared string executablePath;
 	__gshared string startupPath;
 	
-	static void initialize(string[] args) {
+	@property static void initialize(string[] args) {
 		ApplicationPaths.executablePath = args[0];
 		ApplicationPaths.startupPath = current();
 	}
 	
-	static string exe() {
+	@property static string exe() {
 		return std.path.rel2abs(cast(string)std.path.dirname(executablePath));
 	}
 
-	static string current() {
+	@property static string current() {
 		return cast(string)std.path.curdir;
 	}
 
-	static string startup() {
+	@property static string startup() {
 		return startupPath;
 	}
 
-	/*static string userAppData() {
+	/*@property static string userAppData() {
 		return cast(string)Application.userAppDataBasePath;
 	}*/
 }

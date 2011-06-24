@@ -194,7 +194,9 @@ class sceAudio_driver : ModuleNative {
 	 * @return 0 on success, an error if less than 0.
 	 */
 	int sceAudioSetChannelDataLen(int channel, int samplecount) {
-		logWarning("Not implemented sceAudioSetChannelDataLen(%d, %d)", channel, samplecount);
+		//logWarning("Not implemented sceAudioSetChannelDataLen(%d, %d)", channel, samplecount);
+		if (samplecount < 0) return -1;
+		channels[channel].samplecount = samplecount;
 		return 0;
 	}
 

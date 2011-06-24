@@ -1,6 +1,7 @@
 #include <pspsdk.h>
 #include <pspkernel.h>
 #include <pspatrac3.h>
+#include <pspaudio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,6 +22,7 @@ int main(int argc, char *argv[]) {
 	int atracID;
 	int maxSamples = 0;
 	int result;
+	int channel;
 	
 	//file = fopen("bgm01.at3", "rb");
 	file = fopen("bgm_001_64.at3", "rb");
@@ -55,28 +57,38 @@ int main(int argc, char *argv[]) {
 	result = sceAtracGetMaxSample(atracID, &maxSamples);
 	pspDebugScreenPrintf("sceAtracGetMaxSample: %08X, %d\n", result, maxSamples);
 	
-	{
-		int end = 0;
+	channel = sceAudioChReserve(0, maxSamples, PSP_AUDIO_FORMAT_STEREO);
+	
+	int end = 0;
+	int steps = 0;
+	while (!end) {
 		//int remainFrame = -1;
 		int remainFrame = 0;
 		//int decodeBufferPosition = 0;
 		int samples = 0;
 
 		result = sceAtracDecodeData(atracID, (u16 *)decode_data, &samples, &end, &remainFrame);
-		pspDebugScreenPrintf("sceAtracDecodeData: %08X\n", result);
-		pspDebugScreenPrintf("at3_size: %d\n", at3_size);
-		pspDebugScreenPrintf("decode_size: %d\n", decode_size);
-		pspDebugScreenPrintf("samples: %d\n", samples);
-		pspDebugScreenPrintf("end: %d\n", end);
-		pspDebugScreenPrintf("remainFrame: %d\n", remainFrame);
-		for (n = 0; n < 100; n++) {
-			pspDebugScreenPrintf("%04X ", decode_data[n]);
-		}
+		
+		sceAudioSetChannelDataLen(channel, samples);
+		sceAudioOutputBlocking(channel, 0x8000, decode_data);
 		
 		result = sceAtracGetRemainFrame(atracID, &remainFrame);
-		pspDebugScreenPrintf("sceAtracGetRemainFrame: %08X\n", result);
+
+		if (steps == 0) {
+			pspDebugScreenPrintf("sceAtracDecodeData: %08X\n", result);
+			pspDebugScreenPrintf("at3_size: %d\n", at3_size);
+			pspDebugScreenPrintf("decode_size: %d\n", decode_size);
+			pspDebugScreenPrintf("samples: %d\n", samples);
+			pspDebugScreenPrintf("end: %d\n", end);
+			pspDebugScreenPrintf("remainFrame: %d\n", remainFrame);
+			for (n = 0; n < 100; n++) pspDebugScreenPrintf("%04X ", decode_data[n]);
+			pspDebugScreenPrintf("sceAtracGetRemainFrame: %08X\n", result);
+		}
+
+		steps++;
 	}
 	
+	sceAudioChRelease(channel);
 	result = sceAtracReleaseAtracID(atracID);
 	pspDebugScreenPrintf("sceAtracGetRemainFrame: %08X\n", result);
 
