@@ -62,8 +62,8 @@ class sceUtility : ModuleNative {
 	}
 	
 	enum DialogStep {
-		UNK1         = 0,
-		UNK2         = 1,
+		UNK0         = 0,
+		UNK1         = 1,
 		PROCESSING   = 2,
 		SUCCESS      = 3,
 		SHUTDOWN     = 4,
@@ -261,16 +261,20 @@ class sceUtility : ModuleNative {
 			case PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_AUTOLOAD, PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_LOAD, PspUtilitySavedataMode.PSP_UTILITY_SAVEDATA_LISTLOAD:
 			{
 				try {
-					auto readed = cast(ubyte[])std.file.read(saveFilePath);
-					int minSize = min(readed.length, params.dataBufSize);
-					data[0..minSize] = readed[0..minSize];
-					params.base.result = 0;
+					if (std.file.exists(saveFilePath)) {
+						auto readed = cast(ubyte[])std.file.read(saveFilePath);
+						int minSize = min(readed.length, params.dataBufSize);
+						data[0..minSize] = readed[0..minSize];
+						params.base.result = 0;
+					} else {
+						params.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
+					}
 				} catch (Throwable o) {
 					logWarning("ERROR_SAVEDATA_SAVE_ACCESS_ERROR: %s", o);
-					params.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+					params.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_ACCESS_ERROR;
 					result = -1;
 				}
-				result = -1;
+				//result = -1;
 			} 
 			break;
 			default:
@@ -291,10 +295,12 @@ class sceUtility : ModuleNative {
 	 * before calling this call also sceUtilitySavedataUpdate
 	 *
 	 * @return 2 if the process is still being processed.
-	 * 3 on save/load success, then you can call sceUtilitySavedataShutdownStart.
-	 * 4 on complete shutdown.
+	 *         3 on save/load success, then you can call sceUtilitySavedataShutdownStart.
+	 *         4 on complete shutdown.
 	 */
 	DialogStep sceUtilitySavedataGetStatus() {
+		//unimplemented_notice();
+		logInfo("sceUtilitySavedataGetStatus(%s:%d)", to!string(currentDialogStep), currentDialogStep);
 		return currentDialogStep;
 	}
 
@@ -305,7 +311,9 @@ class sceUtility : ModuleNative {
 	 * @return 0 on success
 	 */
 	int sceUtilitySavedataShutdownStart() {
-		currentDialogStep = DialogStep.SHUTDOWN;
+		unimplemented_notice();
+		//currentDialogStep = DialogStep.SHUTDOWN;
+		currentDialogStep = DialogStep.UNK0;
 		return 0;
 	}
 
@@ -370,6 +378,7 @@ class sceUtility : ModuleNative {
 	 */
 	int sceUtilityLoadNetModule(int _module) {
 		//unimplemented();
+		unimplemented_notice();
 		Logger.log(Logger.Level.WARNING, "sceUtility", "sceUtilityLoadNetModule not implemented!");
 		return -1;
 	}
@@ -387,6 +396,7 @@ class sceUtility : ModuleNative {
 	}
 	
 	int sceUtilityLoadModule(int _module) {
+		unimplemented_notice();
 		//unimplemented();
 		return -1;
 	}

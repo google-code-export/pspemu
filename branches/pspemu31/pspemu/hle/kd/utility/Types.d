@@ -28,9 +28,8 @@ enum {
 	PSP_AV_MODULE_G729       = 7,
 }
 
-/** Save data utility modes */
-enum PspUtilitySavedataMode : uint
-{
+/// Save data utility modes
+enum PspUtilitySavedataMode : uint {
 	PSP_UTILITY_SAVEDATA_AUTOLOAD   = 0,
 	PSP_UTILITY_SAVEDATA_AUTOSAVE   = 1,
 	PSP_UTILITY_SAVEDATA_LOAD       = 2,
@@ -43,41 +42,40 @@ enum PspUtilitySavedataMode : uint
 }
 
 enum pspUtilityMsgDialogMode {
-	PSP_UTILITY_MSGDIALOG_MODE_ERROR = 0, /* Error message */
-	PSP_UTILITY_MSGDIALOG_MODE_TEXT /* String message */
+	PSP_UTILITY_MSGDIALOG_MODE_ERROR = 0, // Error message
+	PSP_UTILITY_MSGDIALOG_MODE_TEXT  = 1, // String message
 }
 
 enum pspUtilityMsgDialogOption {
-	PSP_UTILITY_MSGDIALOG_OPTION_ERROR = 0, /* Error message (why two flags?) */
-	PSP_UTILITY_MSGDIALOG_OPTION_TEXT = 0x00000001, /* Text message (why two flags?) */
-	PSP_UTILITY_MSGDIALOG_OPTION_YESNO_BUTTONS = 0x00000010,	/* Yes/No buttons instead of 'Cancel' */
-	PSP_UTILITY_MSGDIALOG_OPTION_DEFAULT_NO  = 0x00000100	/* Default position 'No', if not set will default to 'Yes' */
+	PSP_UTILITY_MSGDIALOG_OPTION_ERROR         = 0x00000000, // Error message (why two flags?)
+	PSP_UTILITY_MSGDIALOG_OPTION_TEXT          = 0x00000001, // Text message (why two flags?)
+	PSP_UTILITY_MSGDIALOG_OPTION_YESNO_BUTTONS = 0x00000010, // Yes/No buttons instead of 'Cancel'
+	PSP_UTILITY_MSGDIALOG_OPTION_DEFAULT_NO    = 0x00000100, // Default position 'No', if not set will default to 'Yes'
 }
 
 enum pspUtilityMsgDialogPressed {
 	PSP_UTILITY_MSGDIALOG_RESULT_UNKNOWN1 = 0,
-	PSP_UTILITY_MSGDIALOG_RESULT_YES,
-	PSP_UTILITY_MSGDIALOG_RESULT_NO,
-	PSP_UTILITY_MSGDIALOG_RESULT_BACK
+	PSP_UTILITY_MSGDIALOG_RESULT_YES      = 1,
+	PSP_UTILITY_MSGDIALOG_RESULT_NO       = 2,
+	PSP_UTILITY_MSGDIALOG_RESULT_BACK     = 3,
 }
 
 enum PspUtilitySavedataFocus {
-	PSP_UTILITY_SAVEDATA_FOCUS_UNKNOWN = 0,
-	PSP_UTILITY_SAVEDATA_FOCUS_FIRSTLIST,	/* First in list */
-	PSP_UTILITY_SAVEDATA_FOCUS_LASTLIST,	/* Last in list */
-	PSP_UTILITY_SAVEDATA_FOCUS_LATEST,	/* Most recent date */
-	PSP_UTILITY_SAVEDATA_FOCUS_OLDEST,	/* Oldest date */
-	PSP_UTILITY_SAVEDATA_FOCUS_UNKNOWN2,
-	PSP_UTILITY_SAVEDATA_FOCUS_UNKNOWN3,
-	PSP_UTILITY_SAVEDATA_FOCUS_FIRSTEMPTY, /* First empty slot */
-	PSP_UTILITY_SAVEDATA_FOCUS_LASTEMPTY,	/*Last empty slot */
+	PSP_UTILITY_SAVEDATA_FOCUS_UNKNOWN    = 0, // 
+	PSP_UTILITY_SAVEDATA_FOCUS_FIRSTLIST  = 1, // First in list
+	PSP_UTILITY_SAVEDATA_FOCUS_LASTLIST   = 2, // Last in list
+	PSP_UTILITY_SAVEDATA_FOCUS_LATEST     = 3, //  Most recent date
+	PSP_UTILITY_SAVEDATA_FOCUS_OLDEST     = 4, // Oldest date
+	PSP_UTILITY_SAVEDATA_FOCUS_UNKNOWN2   = 5, //
+	PSP_UTILITY_SAVEDATA_FOCUS_UNKNOWN3   = 6, //
+	PSP_UTILITY_SAVEDATA_FOCUS_FIRSTEMPTY = 7, // First empty slot
+	PSP_UTILITY_SAVEDATA_FOCUS_LASTEMPTY  = 8, // Last empty slot
 }
 
-struct PspUtilitySavedataSFOParam
-{
-	char title[0x80];
-	char savedataTitle[0x80];
-	char detail[0x400];
+struct PspUtilitySavedataSFOParam {
+	char  title[0x80];
+	char  savedataTitle[0x80];
+	char  detail[0x400];
 	ubyte parentalLevel;
 	ubyte unknown[3];
 }
@@ -89,8 +87,7 @@ struct PspUtilitySavedataFileData {
 	int unknown;
 }
 
-struct PspUtilitySavedataListSaveNewData
-{
+struct PspUtilitySavedataListSaveNewData {
 	PspUtilitySavedataFileData icon0;
 	char *title;
 }
@@ -104,22 +101,22 @@ struct pspUtilityMsgDialogParams {
     int unknown;
 	pspUtilityMsgDialogMode mode;
 	uint errorValue;
-    /** The message to display (may contain embedded linefeeds) */
+    ///The message to display (may contain embedded linefeeds)
     char message[512];
 	pspUtilityMsgDialogOption options;
 	pspUtilityMsgDialogPressed buttonPressed;
 }
 
 struct pspUtilityDialogCommon {
-	uint size;	        /** Size of the structure */
-	int  language;		/** Language */
-	int  buttonSwap;	/** Set to 1 for X/O button swap */
-	int  graphicsThread;/** Graphics thread priority */
-	int  accessThread;	/** Access/fileio thread priority (SceJobThread) */
-	int  fontThread;	/** Font thread priority (ScePafThread) */
-	int  soundThread;	/** Sound thread priority */
-	int  result;		/** Result */
-	int  reserved[4];	/** Set to 0 */
+	uint size;	        /// Size of the structure
+	int  language;		/// Language
+	int  buttonSwap;	/// Set to 1 for X/O button swap
+	int  graphicsThread;/// Graphics thread priority
+	int  accessThread;	/// Access/fileio thread priority (SceJobThread)
+	int  fontThread;	/// Font thread priority (ScePafThread)
+	int  soundThread;	/// Sound thread priority
+	int  result;		/// Result
+	int  reserved[4];	/// Set to 0
 }
 
 align(1) struct SceUtilitySavedataParam {
@@ -293,9 +290,9 @@ struct SceUtilityOskData {
  * OSK parameters
  */
 struct SceUtilityOskParams {
-	pspUtilityDialogCommon base;
-	int datacount;           /// Number of input fields
-	SceUtilityOskData* data; /// Pointer to the start of the data for the input fields
-	int state;               /// The local OSK state, one of ::SceUtilityOskState
-	int unk_60;              /// Unknown. Pass 0	
+	pspUtilityDialogCommon base;      ///
+	int                    datacount; /// Number of input fields
+	SceUtilityOskData*     data;      /// Pointer to the start of the data for the input fields
+	int                    state;     /// The local OSK state, one of ::SceUtilityOskState
+	int                    unk_60;    /// Unknown. Pass 0	
 }
