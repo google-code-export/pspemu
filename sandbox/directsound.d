@@ -31,18 +31,6 @@ static const GUID CLSID_File_writer           = { 0x8596E5F0, 0x0DA5, 0x11D0, [ 
 static const GUID CLSID_AudioRender           = { 0xe30629d1, 0x27e5, 0x11ce, [ 0x87, 0x5d, 0x00, 0x60, 0x8c, 0xb7, 0x80, 0x66 ] };
 static const GUID CLSID_SonyWavWriter         = { 0x6D6533F6, 0x5968, 0x4FB7, [ 0x8C, 0x00, 0x90, 0x5E, 0x71, 0x57, 0x3D, 0xC4 ] };
 
-
-
-
-
-/*
-_DATA:00000000 _IID_IUnknown   dd 0
-_DATA:00000004                 dd 0
-_DATA:00000008                 dd 0C0h
-_DATA:0000000C                 dd 46000000h
-
-*/
-
 alias void* IReferenceClock;
 alias void* IEnumMediaTypes;
 alias void* IEnumFilters;
@@ -206,8 +194,9 @@ alias void* LPLPDIRECTSOUNDBUFFER;
 alias void* LPDIRECTSOUNDBUFFER;
 alias void* LPDSCAPS;
 alias GUID* LPGUID;
-alias IDirectSound LPDIRECTSOUND;
 alias IUnknown     LPUNKNOWN;
+/+
+alias IDirectSound LPDIRECTSOUND;
 
 extern (System) {
 	static const GUID CLSID_DSoundRender = {0x79376820, 0x07D0, 0x11CF, [0xA2, 0x4D, 0x0, 0x20, 0xAF, 0xD7, 0x97, 0x67]};
@@ -223,271 +212,80 @@ extern (System) {
 	    HRESULT Initialize           (LPGUID);
 	}
 }
-
++/
 
 static const GUID CLSID_FilterGraph = { 0xe436ebb3, 0x524f, 0x11ce, [ 0x9f, 0x53, 0x00, 0x20, 0xaf, 0x0b, 0xa7, 0x70 ] };
-
-IMediaControl mediaControl;
-IMediaEvent   mediaEvent;
-IGraphBuilder graphBuilder;
-IBaseFilter sourceFilter;
-IBaseFilter omgTransform;
-IBaseFilter waveDest;
-IBaseFilter fileWriter;
-//IBaseFilter waveOut;
-//IBaseFilter sonyWavWriter;
-
-/*
-extern (C) {
-    extern IID IID_IBaseFilter;
-}
-*/
 
 T enforce(T)(T v, string file = __FILE__, int line = __LINE__) {
 	if (FAILED(v)) throw(new Exception(std.string.format("Failed at '%s':%d", file, line)));
 	return v;
 }
 
-int main(string[] args) {
-	/*
-	OpenMG OmgSource Filter
-	File name: c:\program files\common files\sony shared\openmg\omgsrc.ax
-	CLSID: {855FBD04-8AD5-40B2-AA34-A6581E59831C}
-	Merit: 00600000 = MERIT_NORMAL
-	*/
-	
-	enforce(CoInitializeEx(null, COINIT_MULTITHREADED));
-	enforce(CoCreateInstance(&CLSID_FilterGraph, null, CLSCTX_INPROC_SERVER, &IID_IGraphBuilder, cast(void*)&graphBuilder));
-	enforce(graphBuilder.QueryInterface(&IID_IMediaControl, cast(void**)&mediaControl));
-	enforce(graphBuilder.QueryInterface(&IID_IMediaEvent, cast(void**)&mediaEvent));
-	enforce(CoCreateInstance(&CLSID_OpenMGOmgSourceFilter, null, CLSCTX_INPROC_SERVER, &IID_IBaseFilter, cast(void*)&sourceFilter));
-	enforce(CoCreateInstance(&CLSID_OMG_TRANSFORM, null, CLSCTX_INPROC_SERVER, &IID_IBaseFilter, cast(void*)&omgTransform));
-	// enforce(CoCreateInstance(&CLSID_SonyWavWriter, null, CLSCTX_INPROC_SERVER, &IID_IBaseFilter, cast(void*)&sonyWavWriter));
-	enforce(CoCreateInstance(&CLSID_WavDest, null, CLSCTX_INPROC_SERVER, &IID_IBaseFilter, cast(void*)&waveDest));
-	enforce(CoCreateInstance(&CLSID_File_writer, null, CLSCTX_INPROC_SERVER, &IID_IBaseFilter, cast(void*)&fileWriter));
-	//enforce(CoCreateInstance(&CLSID_AudioRender, null, CLSCTX_INPROC_SERVER, &IID_IBaseFilter, cast(void*)&waveOut));
-	
-	//CreateFileA(in char* lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, SECURITY_ATTRIBUTES* lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
-	//HANDLE LogFile = CreateFileA(cast(const char *)"graph.log\0", GENERIC_WRITE, 0, null, CREATE_ALWAYS, 0, null);
-	//HANDLE LogFile = GetStdHandle(-11);
-	//graphBuilder.SetLogFile(LogFile);
+void convertOmaToWav(wstring source, wstring destination) {
+	IMediaControl mediaControl;
+	IMediaEvent   mediaEvent;
+	IGraphBuilder graphBuilder;
+	IBaseFilter sourceFilter;
+	IBaseFilter omgTransform;
+	IBaseFilter waveDest;
+	IBaseFilter fileWriter;
 
-	//FlushFileBuffers(LogFile);
-	printf("----- 0 ---------------------------------------\n");
-	
-	IFileSourceFilter fileSourceFilter;
-	enforce(sourceFilter.QueryInterface(&IID_IFileSourceFilter, cast(void**)&fileSourceFilter));
-	enforce(fileSourceFilter.Load(cast(wchar *)(("C:\\projects\\pspemu31\\sandbox\\1.oma\0"w).ptr), null));
-	//wchar* test; fileSourceFilter.GetCurFile(&test, null); writefln("**%s", test[0..34]);
-
-	IFileSinkFilter fileSinkFilter;
-	
-	//if (FAILED(sonyWavWriter.QueryInterface(&IID_IFileSinkFilter, cast(void**)&fileSinkFilter))) {
-	enforce(fileWriter.QueryInterface(&IID_IFileSinkFilter, cast(void**)&fileSinkFilter));
-	enforce(fileSinkFilter.SetFileName(cast(wchar *)(("C:\\projects\\pspemu31\\sandbox\\1.wav\0"w).ptr), null));
-	
-	/*
-	IFileSinkFilter fileSinkFilter;
-	enforce(fileWriter.QueryInterface(&IID_IFileSinkFilter, cast(void**)&fileSinkFilter));
-	enforce(fileSinkFilter.SetFileName(cast(wchar *)(("C:\\projects\\pspemu31\\sandbox\\1.wav\0"w).ptr), null));
-	*/
-
-	enforce(graphBuilder.AddFilter(sourceFilter, "CLSID_OpenMGOmgSourceFilter"));
-	enforce(graphBuilder.AddFilter(omgTransform, "CLSID_OMG_TRANSFORM"));
-	// enforce(graphBuilder.AddFilter(sonyWavWriter, "CLSID_SonyWavWriter"));
-
-	enforce(graphBuilder.AddFilter(waveDest, "CLSID_WavDest"));
-	enforce(graphBuilder.AddFilter(fileWriter, "CLSID_File_writer"));
-	
-	//graphBuilder.AddFilter(waveOut, "CLSID_AudioRender");
-	
-	//graphBuilder.AddSourceFilter
-	
-	
-	//IEnumPins enumPins;
-	IPin      SourceOutPin;
-	//IPin      OmgTransformInPin;
-	//IPin      OmgTransformOutPin;
-	//IPin      WavDestInPin;
-	//IPin      WavDestOutPin;
-	IPin      FileWriterInPin;
-	//IPin      SonyWavWriterInPin;
-	
-	PIN_INFO pinInfo;
-	
-	
-	
-	//writefln("%s", (cast(wchar *)(("C:\\projects\\pspemu31\\sandbox\\1.oma\0"w).ptr))[0..10]);
-
-	/*
-	if (FAILED(sourceFilter.FindPin("Output", &SourceOutPin))) {
-		writefln("Failed sourceFilter.FindPin");
-		return -1;
-	}
-	//omgTransform.FindPin("Input", &OmgTransformInPin);
-	//omgTransform.FindPin("Output", &OmgTransformOutPin);
-	if (FAILED(sonyWavWriter.FindPin("Input", &SonyWavWriterInPin))) {
-		writefln("Failed sonyWavWriter.FindPin");
-		return -1;
-	}
-
-	SourceOutPin.Connect(SonyWavWriterInPin, null);
-	*/
-	//graphBuilder.Connect(SourceOutPin, SonyWavWriterInPin);
-	
-
-	//ULONG     fetched;
-	//sourceFilter.EnumPins(&enumPins);
-	
-	sourceFilter.FindPin("Output", &SourceOutPin);
-	fileWriter.FindPin("in", &FileWriterInPin);
-	graphBuilder.Connect(SourceOutPin, FileWriterInPin);
-
-	/+
-	printf("----- 1 ---------------------------------------\n"); stdout.flush();
-	if (FAILED(sourceFilter.FindPin("Output", &SourceOutPin))) {
-		writefln("Failed sourceFilter.FindPin");
-		return -1;
-	}
-	if (FAILED(omgTransform.FindPin("Input", &OmgTransformInPin))) {
-		writefln("Failed omgTransform.FindPin");
-		return -1;
-	}
-
-	SourceOutPin.QueryPinInfo(&pinInfo); writefln("SourceOutPin: %08X - %s", cast(uint)cast(void*)SourceOutPin, pinInfo);
-	OmgTransformInPin.QueryPinInfo(&pinInfo); writefln("OmgTransformInPin: %08X - %s", cast(uint)cast(void*)OmgTransformInPin, pinInfo);
-
-	SourceOutPin.Connect(OmgTransformInPin, null);
-	//graphBuilder.Connect(SourceOutPin, OmgTransformInPin);
-
-	omgTransform.FindPin("Output", &OmgTransformOutPin);
-	//sonyWavWriter.FindPin("Input", &SonyWavWriterInPin);
-	fileWriter.FindPin("in", &SonyWavWriterInPin);
-
-	OmgTransformOutPin.QueryPinInfo(&pinInfo); writefln("OmgTransformOutPin: %08X - %s", cast(uint)cast(void*)OmgTransformOutPin, pinInfo);
-	SonyWavWriterInPin.QueryPinInfo(&pinInfo);  writefln("SonyWavWriterInPin: %08X - %s", cast(uint)cast(void*)SonyWavWriterInPin, pinInfo);
-
-	//graphBuilder.Connect(OmgTransformOutPin, WavDestInPin);
-	OmgTransformOutPin.Connect(SonyWavWriterInPin, null);
-
-	/*
-	printf("----- 2 ---------------------------------------\n"); stdout.flush();
-	omgTransform.FindPin("Output", &OmgTransformOutPin);
-	waveDest.FindPin("In", &WavDestInPin);
-
-	OmgTransformOutPin.QueryPinInfo(&pinInfo); writefln("OmgTransformOutPin: %08X - %s", cast(uint)cast(void*)OmgTransformOutPin, pinInfo);
-	WavDestInPin.QueryPinInfo(&pinInfo);  writefln("WavDestInPin: %08X - %s", cast(uint)cast(void*)WavDestInPin, pinInfo);
-
-	//graphBuilder.Connect(OmgTransformOutPin, WavDestInPin);
-	OmgTransformOutPin.Connect(WavDestInPin, null);
-
-	printf("----- 3 ---------------------------------------\n"); stdout.flush();
-	waveDest.FindPin("Out", &WavDestOutPin);
-	fileWriter.FindPin("in", &FileWriterInPin);
-
-	WavDestOutPin.QueryPinInfo(&pinInfo); writefln("WavDestOutPin: %08X - %s", cast(uint)cast(void*)WavDestOutPin, pinInfo);
-	FileWriterInPin.QueryPinInfo(&pinInfo);  writefln("FileWriterInPin: %08X - %s", cast(uint)cast(void*)FileWriterInPin, pinInfo);
-
-	//graphBuilder.Connect(WavDestOutPin, FileWriterInPin);
-	WavDestOutPin.Connect(FileWriterInPin, null);
-	
-	writefln("----- 4 ---------------------------------------"); stdout.flush();
-	*/
-	+/	
-
-	graphBuilder.Render(SourceOutPin);
-	//graphBuilder.RenderFile(cast(wchar *)(("C:\\projects\\pspemu31\\sandbox\\2.wav\0"w).ptr), null);
-	
-	//OAFilterState filterStatw;
-	mediaControl.Run();
-	int evCode;
-	while (mediaEvent.WaitForCompletion(INFINITE, &evCode) != 0) {
+	enforce(CoInitialize(null));
+	{
+		enforce(CoCreateInstance(&CLSID_FilterGraph, null, CLSCTX_INPROC_SERVER, &IID_IGraphBuilder, cast(void*)&graphBuilder));
+		enforce(graphBuilder.QueryInterface(&IID_IMediaControl, cast(void**)&mediaControl));
+		enforce(graphBuilder.QueryInterface(&IID_IMediaEvent, cast(void**)&mediaEvent));
+		enforce(CoCreateInstance(&CLSID_OpenMGOmgSourceFilter, null, CLSCTX_INPROC_SERVER, &IID_IBaseFilter, cast(void*)&sourceFilter));
+		enforce(CoCreateInstance(&CLSID_OMG_TRANSFORM, null, CLSCTX_INPROC_SERVER, &IID_IBaseFilter, cast(void*)&omgTransform));
+		enforce(CoCreateInstance(&CLSID_WavDest, null, CLSCTX_INPROC_SERVER, &IID_IBaseFilter, cast(void*)&waveDest));
+		enforce(CoCreateInstance(&CLSID_File_writer, null, CLSCTX_INPROC_SERVER, &IID_IBaseFilter, cast(void*)&fileWriter));
 		
+		IFileSourceFilter fileSourceFilter;
+		enforce(sourceFilter.QueryInterface(&IID_IFileSourceFilter, cast(void**)&fileSourceFilter));
+		
+		enforce(fileSourceFilter.Load(cast(wchar *)(source ~ 0).ptr, null));
+	
+		IFileSinkFilter fileSinkFilter;
+		enforce(fileWriter.QueryInterface(&IID_IFileSinkFilter, cast(void**)&fileSinkFilter));
+		enforce(fileSinkFilter.SetFileName(cast(wchar *)(destination ~ 0).ptr, null));
+	
+		enforce(graphBuilder.AddFilter(sourceFilter, "CLSID_OpenMGOmgSourceFilter"));
+		enforce(graphBuilder.AddFilter(omgTransform, "CLSID_OMG_TRANSFORM"));
+		enforce(graphBuilder.AddFilter(waveDest    , "CLSID_WavDest"));
+		enforce(graphBuilder.AddFilter(fileWriter  , "CLSID_File_writer"));
+		
+		IPin      SourceOutPin;
+		IPin      FileWriterInPin;
+	
+		sourceFilter.FindPin("Output", &SourceOutPin);
+		fileWriter.FindPin("in", &FileWriterInPin);
+		graphBuilder.Connect(SourceOutPin, FileWriterInPin);
+	
+		graphBuilder.Render(SourceOutPin);
+	
+		mediaControl.Run();
+		int evCode; mediaEvent.WaitForCompletion(INFINITE, &evCode);
+		
+		sourceFilter.Release();
+		omgTransform.Release();
+		waveDest.Release();
+		SourceOutPin.Release();
+		FileWriterInPin.Release();
+		mediaControl.Release();
+		mediaEvent.Release();
+		fileWriter.Release();
+		fileSinkFilter.Release();
+		graphBuilder.Release();
 	}
-	
-	enforce(CoCreateInstance(&CLSID_WavDest, null, CLSCTX_INPROC_SERVER, &IID_IBaseFilter, cast(void*)&waveDest));
-	enforce(CoCreateInstance(&CLSID_File_writer, null, CLSCTX_INPROC_SERVER, &IID_IBaseFilter, cast(void*)&fileWriter));
-	
-	sourceFilter.Release();
-	omgTransform.Release();
-	waveDest.Release();
-	
-	
-	SourceOutPin.Release();
-	FileWriterInPin.Release();
-	mediaControl.Release();
-	mediaEvent.Release();
-	fileWriter.Release();
-	fileSinkFilter.Release();
-	graphBuilder.Release();
 
-	/*	
-	scope file = new BufferedFile(r"C:\projects\pspemu31\sandbox\1.wav", FileMode.OutNew);
-	//file.write((cast(ubyte[])std.file.read("1.wav.tmp"))[0..4]);
-	file.write(cast(ubyte[])std.file.read(r"C:\projects\pspemu31\sandbox\1.wav.tmp"));
-	file.close();
-	*/
-	
-	//graphBuilder.ren
-	//graphBuilder.Render();
-	
-	//FindPin
-	
-	//enumPins.Reset();
-	//enumPins.Next(1, &OutPin, &fetched);
-	//enumPins.Release();
-
-	return 0;
+	CoUninitialize();
 }
-
-/+
-
-
-
-
-//LPDIRECTSOUND directSound;
-
 
 int main(string[] args) {
-	if (FAILED(CoInitializeEx(null, COINIT_MULTITHREADED))) {
-		writefln("Error CoInitializeEx");
-		return -1;
-	}
-	
-	LPUNKNOWN dsoundRender;
-	
-	if (FAILED(CoCreateInstance(&CLSID_DSoundRender, null, 1u, &IID_IUnknown, cast(void *)&dsoundRender))) {
-		writefln("Error DSoundRender");
-		return -1;
-	}
-	
-	dsoundRender.AddRef();
-	dsoundRender.QueryInterface(null, null);
-	dsoundRender.Release();
-	
-	//writefln("%08X", cast(uint)cast(void *)&dsoundRender.AddRef);
-	//writefln("%08X", cast(uint)cast(void *)&dsoundRender.QueryInterface);
-	
-	/*
-	auto lib = LoadLibraryA("dsound.dll");
-	DirectSoundCreate = cast(typeof(DirectSoundCreate))GetProcAddress(lib, "DirectSoundCreate");
-	//writefln("%08X, %08X", cast(uint)lib, cast(uint)DirectSoundCreate);
-	
-	CLSID_DSoundRender
-	
-	if (FAILED(DirectSoundCreate(null, &directSound, null))) {
-		writefln("Error DirectSoundCreate");
-		return -1;
-	}
-	
-	//ulong v;
-	
-	//directSound.GetCaps(&v);
-	writefln("%08X", cast(uint)cast(void *)&(directSound.GetCaps));
-	writefln("%08X", cast(uint)cast(void *)&(directSound.AddRef));
-	writefln("%08X", cast(uint)cast(void *)&(directSound.Release));
-	*/
-	
+	convertOmaToWav(
+		r"C:\projects\pspemu31\sandbox\1.oma",
+		r"C:\projects\pspemu31\sandbox\1.wav"
+	);
+
 	return 0;
 }
-+/
