@@ -1,4 +1,4 @@
-module pspemu.hle.kd.iofilemgr.Directories;
+module pspemu.hle.kd.iofilemgr.IoFileMgr_Directories;
 
 import pspemu.hle.kd.iofilemgr.Types;
 

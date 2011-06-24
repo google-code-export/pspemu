@@ -31,6 +31,7 @@ class EmulatorState {
 	WaitEvent            threadEndedCondition;
 	uint                 threadsRunning = 0;
 	bool[CpuThreadBase]  cpuThreads;
+	bool                 unittesting = false;
 	
 	CpuThreadBase[] getCpuThreadsDup() {
 		return cpuThreads.keys.dup;

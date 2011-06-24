@@ -124,6 +124,7 @@ class Display {
 		StopWatch stopWatch;
 		
 		// @TODO: use stopWatch to allow frameskipping
+		uint drawAdd = 0;
 		while (this.runningState.running) {
 			CURRENT_HCOUNT = 0;
 			
@@ -131,16 +132,28 @@ class Display {
 			
 			if (!enableWaitVblank) {
 				second = 100_000;
+				drawAdd += 1;
+			} else {
+				drawAdd += 10;
 			}
 
-			this.drawRow0Condition.notifyAll();
+			if (drawAdd >= 10) {
+				this.drawRow0Condition.notifyAll();
+			}
 			Thread.sleep(dur!"usecs"(cast(ulong)(second * (vsync_row / hsync_hz))));
 			CURRENT_HCOUNT = cast(uint)vsync_row;
 
-			this.vblankEvent();
-			this.vblankStartCondition.notifyAll();
+			if (drawAdd >= 10) {
+				this.vblankEvent();
+				this.vblankStartCondition.notifyAll();
+			}
 			VBLANK_COUNT++;
+
 			Thread.sleep(dur!"usecs"(cast(ulong)(second * ((number_of_rows - vsync_row) / hsync_hz))));
+			
+			if (drawAdd >= 10) {
+				drawAdd -= 10;
+			}
 		}
 		
 		Logger.log(Logger.Level.TRACE, "Display", "Display.run::ended");

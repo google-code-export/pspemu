@@ -127,6 +127,6 @@ class RootFileSystem {
 		//ms0root.mount("PSP/GAME/virtual", new LocalFileSystem(path));
 
 		
-		Logger.log(Logger.Level.INFO, "IoFileMgrForKernel", "Setted ms0:/PSP/GAME/virtual to '%s'", path);
+		Logger.log(Logger.Level.INFO, "IoFileMgr", "Setted ms0:/PSP/GAME/virtual to '%s'", path);
 	}
 }

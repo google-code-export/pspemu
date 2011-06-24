@@ -1,4 +1,6 @@
-module pspemu.hle.kd.iofilemgr.IoFileMgrForKernel; // kd/iofilemgr.prx (sceIOFileManager)
+module pspemu.hle.kd.iofilemgr.IoFileMgr; // kd/iofilemgr.prx (sceIOFileManager)
+
+import pspemu.hle.ModuleNative;
 
 //debug = DEBUG_SYSCALL;
 
@@ -22,10 +24,9 @@ import pspemu.utils.Logger;
 import pspemu.hle.vfs.VirtualFileSystem;
 
 import pspemu.hle.kd.iofilemgr.Types;
-import pspemu.hle.kd.iofilemgr.Devices;
 
-import pspemu.hle.kd.iofilemgr.Directories;
-import pspemu.hle.kd.iofilemgr.FilesAsync;
+import pspemu.hle.kd.iofilemgr.IoFileMgr_Directories;
+import pspemu.hle.kd.iofilemgr.IoFileMgr_FilesAsync;
 
 import pspemu.hle.RootFileSystem;
 
@@ -656,6 +657,10 @@ FileAccessMode sceModeToFileAccessMode(SceMode mode) {
 	return cast(FileAccessMode)mode;
 }
 
+class IoFileMgrForUser : IoFileMgrForKernel {
+}
+
 static this() {
+	mixin(ModuleNative.registerModule("IoFileMgrForUser"));
 	mixin(ModuleNative.registerModule("IoFileMgrForKernel"));
 }

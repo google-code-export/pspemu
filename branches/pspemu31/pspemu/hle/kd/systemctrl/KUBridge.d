@@ -6,7 +6,7 @@ import pspemu.hle.ModuleNative;
 import pspemu.hle.kd.sysmem.Types;
 import pspemu.hle.kd.modulemgr.Types;
 import pspemu.hle.kd.iofilemgr.Types;
-import pspemu.hle.kd.modulemgr.ModuleMgrForUser;
+import pspemu.hle.kd.modulemgr.ModuleMgr;
 
 class KUBridge : ModuleNative {
 	void initNids() {

@@ -16,6 +16,7 @@ class sceSysreg_driver : ModuleNative {
 	  * @return < 0 on error.
 	  */
 	int sceSysregMeResetEnable() {
+		unimplemented_notice();
 		return 0;
 	}
 	
@@ -25,6 +26,7 @@ class sceSysreg_driver : ModuleNative {
 	  * @return < 0 on error.
 	  */
 	int sceSysregMeResetDisable() {
+		unimplemented_notice();
 		return 0;
 	}
 	
@@ -34,6 +36,7 @@ class sceSysreg_driver : ModuleNative {
 	  * @return < 0 on error.
 	  */
 	int sceSysregVmeResetEnable() {
+		unimplemented_notice();
 		return 0;
 	}
 	
@@ -43,6 +46,7 @@ class sceSysreg_driver : ModuleNative {
 	  * @return < 0 on error.
 	  */
 	int sceSysregVmeResetDisable() {
+		unimplemented_notice();
 		return 0;
 	}
 	
@@ -52,6 +56,7 @@ class sceSysreg_driver : ModuleNative {
 	  * @return < 0 on error.
 	  */
 	int sceSysregMeBusClockEnable() {
+		unimplemented_notice();
 		return 0;
 	}
 	
@@ -61,6 +66,7 @@ class sceSysreg_driver : ModuleNative {
 	  * @return < 0 on error.
 	  */
 	int sceSysregMeBusClockDisable() {
+		unimplemented_notice();
 		return 0;
 	}
 }
