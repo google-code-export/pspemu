@@ -4,7 +4,14 @@ import std.stdio;
 
 pragma(lib, "ole32.lib");
 
+/**
+ * http://ftp.san.ru/unix/soft.cvs/wine.git/wine-git/dlls/quartz/tests/dsoundrender.c
+ * http://www.flipcode.com/archives/DirectShow_For_Media_Playback_In_Windows-Part_III_Customizing_Graphs.shtml
+ */
+
 const uint COINIT_MULTITHREADED = 0x0;
+
+static const GUID CLSID_DSoundRender = {0x79376820, 0x07D0, 0x11CF, [0xA2, 0x4D, 0x0, 0x20, 0xAF, 0xD7, 0x97, 0x67]};
 
 alias void* LPCDSBUFFERDESC;
 alias void* LPLPDIRECTSOUNDBUFFER;
@@ -29,7 +36,7 @@ extern (System) {
 alias IDirectSound LPDIRECTSOUND;
 alias IUnknown     LPUNKNOWN;
 
-LPDIRECTSOUND directSound;
+//LPDIRECTSOUND directSound;
 
 extern (Windows) {
 	HRESULT CoInitializeEx(void* pvReserved, DWORD dwCoInit);
@@ -43,9 +50,26 @@ int main(string[] args) {
 		return -1;
 	}
 	
+	LPUNKNOWN dsoundRender;
+	
+	if (FAILED(CoCreateInstance(&CLSID_DSoundRender, null, 1u, &IID_IUnknown, cast(void *)&dsoundRender))) {
+		writefln("Error DSoundRender");
+		return -1;
+	}
+	
+	dsoundRender.AddRef();
+	dsoundRender.QueryInterface(null, null);
+	dsoundRender.Release();
+	
+	//writefln("%08X", cast(uint)cast(void *)&dsoundRender.AddRef);
+	//writefln("%08X", cast(uint)cast(void *)&dsoundRender.QueryInterface);
+	
+	/*
 	auto lib = LoadLibraryA("dsound.dll");
 	DirectSoundCreate = cast(typeof(DirectSoundCreate))GetProcAddress(lib, "DirectSoundCreate");
 	//writefln("%08X, %08X", cast(uint)lib, cast(uint)DirectSoundCreate);
+	
+	CLSID_DSoundRender
 	
 	if (FAILED(DirectSoundCreate(null, &directSound, null))) {
 		writefln("Error DirectSoundCreate");
@@ -58,6 +82,7 @@ int main(string[] args) {
 	writefln("%08X", cast(uint)cast(void *)&(directSound.GetCaps));
 	writefln("%08X", cast(uint)cast(void *)&(directSound.AddRef));
 	writefln("%08X", cast(uint)cast(void *)&(directSound.Release));
+	*/
 	
 	return 0;
 }
