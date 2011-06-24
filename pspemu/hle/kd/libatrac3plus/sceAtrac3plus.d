@@ -8,6 +8,9 @@ import std.stream;
 import std.intrinsic;
 import pspemu.utils.StructUtils;
 import pspemu.utils.MathUtils;
+import pspemu.utils.audio.wav;
+import pspemu.utils.audio.oma;
+import pspemu.utils.Path;
 
 enum CodecType {
 	Unknown  = 0,
@@ -40,147 +43,138 @@ static struct OMA {
 class Atrac3Object {
 	ubyte[] buf;
 	int nloops;
-	CodecType type;
-	Format format;
-	Fact fact;
-	LoopInfo[] loops;
-	uint dataOffset;
+
 	uint writeBufferSize;
 	uint writeBufferGuestPtr;
 	
+	uint    samplesOffset;
+	short[] samples;
+	
+	Atrac3Processor processor;
+	
+	int getMaxNumberOfSamples() {
+		return 8192;
+	}
+	
+	void writeOma(string filePath) {
+		scope file = new BufferedFile(filePath, FileMode.OutNew);
+		writeOma(file);
+		file.flush();
+		file.close();
+	}
+	
 	void writeOma(Stream stream) {
 		OMA oma;
-		oma.omaInfo = format.omaInfo;
+		oma.omaInfo = processor.atrac3Format.omaInfo;
 		stream.write(TA(oma));
-		stream.copyFrom(new MemoryStream(buf[dataOffset..$]));
-	}
-
-	static struct Format {
-		ushort  compressionCode;
-		ushort  atracChannels;
-		uint    atracSampleRate;
-		uint    atracBitrate;
-		ushort  atracBytesPerFrame;
-		ushort  hiBytesPerSample;
-		uint[6] unk;
-		uint    omaInfo;
+		stream.copyFrom(new MemoryStream(buf[processor.dataOffset..$]));
 	}
 	
-	static struct Fact {
-		uint atracEndSample;
-		uint atracSampleOffset;
+	void getWave() {
+		string omaFile = ApplicationPaths.exe ~ r"\temp.oma";
+		string wavFile = ApplicationPaths.exe ~ r"\temp.wav";
+		
+		this.writeOma(omaFile);
+		convertOmaToWav(omaFile, wavFile);
+		
+		WaveProcessor waveProcessor = new WaveProcessor();
+		waveProcessor.process(new BufferedFile(wavFile));
+		auto stream = waveProcessor.chunksByType["data"].getStream();
+		samples.length = cast(uint)(stream.size / short.sizeof);
+		stream.read(cast(ubyte[])samples);
+		//writefln("%s", samples);
 	}
 	
-	static struct LoopInfo {
-		uint cuePointID;
-		uint type;
-		uint startSample;
-		uint endSample;
-		uint fraction;
-		uint playCount;
+	static class Atrac3Processor : WaveProcessor {
+		static enum CodecType : ushort {
+			PCM_LINEAR     = 0x0001,
+			AT3_MAGIC      = 0x0270,
+			AT3_PLUS_MAGIC = 0xFFFE,
+		}	
+
+		static struct Atrac3Format {
+			CodecType compressionCode;    // 01 00       - For Uncompressed PCM (linear quntization)
+			ushort    numberOfChannels;   // 02 00       - Stereo
+			uint      sampleRate;         // 44 AC 00 00 - 44100
+			uint      bytesPerSecond;     // Should be on uncompressed PCM : sampleRate * short.sizeof * numberOfChannels 
+			ushort    blockAlignment;     // short.sizeof * numberOfChannels
+			ushort    bytesPersample;     // ???
+			
+			uint[6]   unk;                // ???
+			uint      omaInfo;            // Information that will be copied to the OMA Header.
+		}
+		
+		static struct Fact {
+			uint atracEndSample;
+			uint atracSampleOffset;
+		}
+		
+		static struct LoopInfo {
+			uint cuePointID;
+			uint type;
+			uint startSample;
+			uint endSample;
+			uint fraction;
+			uint playCount;
+		}
+		
+		Atrac3Format atrac3Format;
+		Fact fact;
+		LoopInfo[] loops;
+		uint dataOffset;
+
+		override protected void handleChunk(Chunk chunk) {
+			switch (chunk.header.type) {
+				case "fmt ": {
+					chunk.stream.read(TA(atrac3Format));
+				} break;
+				case "fact": {
+					chunk.stream.read(TA(fact));
+				} break;
+				case "smpl": {
+					uint checkNumLoops;
+					chunk.stream.position = 28;
+					chunk.stream.read(checkNumLoops);
+					
+					chunk.stream.position = 36;
+					loops.length = 0;
+					foreach (n; 0..checkNumLoops) {
+						LoopInfo loopInfo;
+						chunk.stream.read(TA(loopInfo));
+						loops ~= loopInfo;
+					}
+				} break;
+				case "data": {
+					// Found data.
+					dataOffset = cast(uint)(chunk.offset + chunk.stream.position);
+				} break;
+				default: break;
+			}
+			
+			chunk.stream.position = 0;
+			super.handleChunk(chunk);
+		}
 	}
 
-	// Codec Type
-    const ushort AT3_MAGIC      = 0x0270; // "AT3"
-    const ushort AT3_PLUS_MAGIC = 0xFFFE; // "AT3PLUS"
-
-    // RIFF Chunks
-    const uint RIFF_MAGIC = 0x46464952; // "RIFF"
-    const uint WAVE_MAGIC = 0x45564157; // "WAVE"
-    const uint FMT_CHUNK_MAGIC = 0x20746D66; // "FMT "
-    const uint FACT_CHUNK_MAGIC = 0x74636166; // "FACT"
-    const uint SMPL_CHUNK_MAGIC = 0x6C706D73; // "SMPL"
-    const uint DATA_CHUNK_MAGIC = 0x61746164; // "DATA"
-    
     public this(ubyte[] buf) {
     	this.buf = buf;
     	this.dump();
 
-    	this.analyzeAtracHeader();
+		processor = new Atrac3Processor();
+		processor.process(new MemoryStream(this.buf));
+		
+		getWave();
     }
     
 	
     @property public CodecType codecType() {
-		switch (format.compressionCode) {
-			case AT3_MAGIC     : return CodecType.AT3;
-			case AT3_PLUS_MAGIC: return CodecType.AT3_PLUS;
-			default:
-				return CodecType.Unknown;
-			break;
-		}
+		switch (processor.atrac3Format.compressionCode) {
+			case Atrac3Processor.CodecType.AT3_MAGIC     : return CodecType.AT3;
+			case Atrac3Processor.CodecType.AT3_PLUS_MAGIC: return CodecType.AT3_PLUS;
+			default: return CodecType.Unknown;
+ 		}
     }
     
-	public void analyzeAtracHeader() {
-		static struct RiffHeader {
-			char[4] riffMagic = "RIFF";
-			uint size;
-			char[4] waveMagic = "WAVE";
-		}
-
-		static struct ChunkHeader {
-			char[4] magic;
-			uint    size;
-			
-			static assert(ChunkHeader.sizeof == 8);
-			
-			string toString() {
-				return std.string.format("ChunkHeader(%s, %d)", magic, size);
-			}
-		}
-		
-		void processChunks(Stream stream, int offset, int level = 0) {
-			while (!stream.eof) {
-				ChunkHeader chunkHeader;
-				stream.read(TA(chunkHeader));
-				writefln("CHUNK(%d): %s", level, chunkHeader);
-				Stream chunkStream = new SliceStream(stream, stream.position, stream.size);
-				
-				// Level + 1
-				//processChunks(chunkStream, offset + stream.position);
-				
-				switch (chunkHeader.magic) {
-					case "fmt ":
-						chunkStream.read(TA(format));
-					break;
-					case "fact":
-						chunkStream.read(TA(fact));
-					break;
-					case "smpl":
-						uint checkNumLoops;
-						chunkStream.position = 28;
-						chunkStream.read(checkNumLoops);
-						
-						chunkStream.position = 36;
-						loops.length = 0;
-						foreach (n; 0..checkNumLoops) {
-							LoopInfo loopInfo;
-							chunkStream.read(TA(loopInfo));
-							loops ~= loopInfo;
-						}
-					break;
-					case "data":
-						// Found data.
-						dataOffset = cast(uint)(offset + stream.position);
-						return;
-					break;
-					default:
-						writefln("   -- UNPROCESSED CHUNK");
-					break;
-				}
-				
-				stream.seekCur(nextAlignedValue(cast(long)chunkHeader.size, cast(long)2));
-			}
-		}
-		
-		Stream bufStream = new MemoryStream(buf);
-		RiffHeader riffHeader;
-		bufStream.read(TA(riffHeader));
-		if (riffHeader.riffMagic != RiffHeader.init.riffMagic) throw(new Exception("Not a RIFF file"));
-		if (riffHeader.waveMagic != RiffHeader.init.waveMagic) throw(new Exception("Not a RIFF.WAVE file"));
-		
-		processChunks(new SliceStream(bufStream, RiffHeader.sizeof, RiffHeader.sizeof + riffHeader.size), RiffHeader.sizeof);
-	}
-	
 	void dump() {
     	writefln("-------- Size(%d)", buf.length);
 		dumpHex(buf[0..0x100]);
@@ -260,7 +254,8 @@ class sceAtrac3plus : ModuleNative {
 	 *
 	 */
 	int sceAtracGetMaxSample(int atracID, int* outMax) {
-		*outMax = 2048;
+		Atrac3Object atrac3Object = getAtrac3ObjectById(atracID);
+		*outMax = atrac3Object.getMaxNumberOfSamples();
 		//unimplemented();
 		return 0;
 	}
@@ -282,10 +277,7 @@ class sceAtrac3plus : ModuleNative {
 		unimplemented_notice();
 		logWarning("Not implemented sceAtracSetDataAndGetID");
 		Atrac3Object atrac3Object = new Atrac3Object((cast(ubyte*)buf)[0..bufsize]);
-		
-		//scope omaOut = new std.stream.File("temp.oma", FileMode.OutNew);
-		//atrac3Object.writeOma(omaOut);
-		
+
 		return cast(int)hleEmulatorState.uniqueIdFactory.add(atrac3Object);
 	}
 	
@@ -342,12 +334,18 @@ class sceAtrac3plus : ModuleNative {
 	int sceAtracDecodeData(int atracID, u16 *outSamples, int *outN, int *outEnd, int *outRemainFrame) {
 		//logInfo("Not implemented sceAtracDecodeData(%d)", atracID);
 		unimplemented_notice();
-
+		
 		Atrac3Object atrac3Object = getAtrac3ObjectById(atracID);
-		*outSamples = 0;
-		*outN = 0;
+		
+		int numSamples = atrac3Object.getMaxNumberOfSamples();
+		int numSamplesPerChannel = atrac3Object.getMaxNumberOfSamples() / 2;
+		
+		outSamples[0..numSamples] = cast(u16[])atrac3Object.samples[atrac3Object.samplesOffset..atrac3Object.samplesOffset + numSamples]; 
+		atrac3Object.samplesOffset += numSamples;
+
+		*outN = numSamplesPerChannel;
 		*outEnd = 0;
-		*outRemainFrame = 0;
+		*outRemainFrame = -1;
 		return 0;
 	}
 	
@@ -405,7 +403,7 @@ class sceAtrac3plus : ModuleNative {
 		
 		*writePointer   = cast(u8*)atrac3Object.writeBufferGuestPtr; // @FIXME!!
 		*availableBytes = cast(u32)atrac3Object.writeBufferSize;
-		*readOffset     = atrac3Object.dataOffset;
+		*readOffset     = atrac3Object.processor.dataOffset;
 
 		return 0;
 	}
@@ -448,10 +446,10 @@ class sceAtrac3plus : ModuleNative {
 		Atrac3Object atrac3Object = getAtrac3ObjectById(atracID);
 		atrac3Object.writeBufferSize = 4096;
 		atrac3Object.writeBufferGuestPtr = hleEmulatorState.memoryManager.malloc(atrac3Object.writeBufferSize);
-		*piEndSample = atrac3Object.fact.atracEndSample;
-		if (atrac3Object.loops.length > 0) {
-			*piLoopStartSample = atrac3Object.loops[0].startSample;
-			*piLoopEndSample   = atrac3Object.loops[0].endSample;
+		*piEndSample = atrac3Object.processor.fact.atracEndSample;
+		if (atrac3Object.processor.loops.length > 0) {
+			*piLoopStartSample = atrac3Object.processor.loops[0].startSample;
+			*piLoopEndSample   = atrac3Object.processor.loops[0].endSample;
 		} else {
 			*piLoopStartSample = -1;
 			*piLoopEndSample   = -1;
