@@ -44,8 +44,9 @@ class SysMemUserForUser : ModuleNative {
 		mixin(registerd!(0xB6D61D02, sceKernelFreePartitionMemory));
 		mixin(registerd!(0x3FC9AE6A, sceKernelDevkitVersion));
 		mixin(registerd!(0x13A5ABEF, sceKernelPrintf));
-		mixin(registerd!(0x7591C7DB, sceKernelSetCompiledSdkVersion));
 		mixin(registerd!(0xF77D77CB, sceKernelSetCompilerVersion));
+		mixin(registerd!(0x7591C7DB, sceKernelSetCompiledSdkVersion));
+		mixin(registerd!(0xEBD5C3E6, sceKernelSetCompiledSdkVersion395));
 	}
 
 	// @TODO: Unknown.
@@ -55,7 +56,11 @@ class SysMemUserForUser : ModuleNative {
 
 	// @TODO: Unknown.
 	void sceKernelSetCompilerVersion(uint param) {
-		Logger.log(Logger.Level.TRACE, "SysMemUserForUser", "sceKernelSetCompilerVersion: 0x%08X", param);
+		logInfo("sceKernelSetCompilerVersion: 0x%08X", param);
+	}
+	
+	void sceKernelSetCompiledSdkVersion395(uint param) {
+		logInfo("sceKernelSetCompiledSdkVersion395: 0x%08X", param);
 	}
 
 	// @TODO: Unknown.

@@ -5,6 +5,10 @@ import pspemu.hle.ModuleNative;
 class scePower : ModuleNative {
 	void initNids() {
 		mixin(registerd!(0xEFD3C963, scePowerTick));
+
+		mixin(registerd!(0x04B7766E, scePowerRegisterCallback));
+		mixin(registerd!(0xDFA8BAF8, scePowerUnregisterCallback));
+
 		mixin(registerd!(0x87440F5E, scePowerIsPowerOnline));
 		mixin(registerd!(0x0AFD0D8B, scePowerIsBatteryExist));
 		mixin(registerd!(0x1E490401, scePowerIsBatteryCharging));
@@ -16,13 +20,11 @@ class scePower : ModuleNative {
 		mixin(registerd!(0x483CE86B, scePowerGetBatteryVolt));
 		mixin(registerd!(0xD6D016EF, scePowerLock));
 		mixin(registerd!(0xCA3D34C1, scePowerUnlock));
-		mixin(registerd!(0x04B7766E, scePowerRegisterCallback));
 		mixin(registerd!(0xFEE03A2F, scePowerGetCpuClockFrequency));
 		mixin(registerd!(0x478FE6F5, scePowerGetBusClockFrequency));
 		mixin(registerd!(0x737486F2, scePowerSetClockFrequency));
 		mixin(registerd!(0x843FBF43, scePowerSetCpuClockFrequency));
 		mixin(registerd!(0xB8D7B3FB, scePowerSetBusClockFrequency));
-		mixin(registerd!(0xDFA8BAF8, scePowerUnregisterCallback));
 		mixin(registerd!(0xFDB5BFE9, scePowerGetCpuClockFrequencyInt));
 
 		mixin(registerd!(0x2B51FE2F, scePower_2B51FE2F));
@@ -51,6 +53,8 @@ class scePower : ModuleNative {
 		mixin(registerd!(0xBD681969, scePowerGetBusClockFrequencyInt));
 		mixin(registerd!(0xB1A52C83, scePowerGetCpuClockFrequencyFloat));
 		mixin(registerd!(0x9BADB3EB, scePowerGetBusClockFrequencyFloat));
+		
+		mixin(registerd!(0xEBD177D6, scePowerSetClockFrequency));
 	}
 
 	/**
@@ -297,6 +301,18 @@ class scePower : ModuleNative {
 			return 0;
 		}
 	}
+	
+	/**
+	 * Unregister Power Callback Function
+	 *
+	 * @param slot - slot of the callback
+	 *
+	 * @return 0 on success, < 0 on error.
+	 */
+	int scePowerUnregisterCallback(int slot) {
+		unimplemented_notice();
+		return 0;
+	}
 
 	/**
 	 * Alias for scePowerGetCpuClockFrequencyInt
@@ -352,18 +368,6 @@ class scePower : ModuleNative {
 	int scePowerSetBusClockFrequency(int busfreq) {
 		this.busfreq = busfreq;
 		return 0;
-	}
-
-	/**
-	 * Unregister Power Callback Function
-	 *
-	 * @param slot - slot of the callback
-	 *
-	 * @return 0 on success, < 0 on error.
-	 */
-	int scePowerUnregisterCallback(int slot) {
-		unimplemented();
-		return -1;
 	}
 
 	/**

@@ -33,9 +33,6 @@ class sceUtility : ModuleNative {
 		mixin(registerd!(0x5EEE6548, sceUtilityCheckNetParam));
 		mixin(registerd!(0x434D4B3A, sceUtilityGetNetParam));
 
-		mixin(registerd!(0x2A2B3DE0, sceUtilityLoadModuleFunction));
-		mixin(registerd!(0xE49BFE92, sceUtilityUnloadModuleFunction));
-
 		mixin(registerd!(0x2AD8E239, sceUtilityMsgDialogInitStart));
 		mixin(registerd!(0x67AF3428, sceUtilityMsgDialogShutdownStart));
 		mixin(registerd!(0x95FC253B, sceUtilityMsgDialogUpdate));
@@ -57,6 +54,7 @@ class sceUtility : ModuleNative {
 		mixin(registerd!(0x64D50C56, sceUtilityUnloadNetModule));
 		
 		mixin(registerd!(0x2A2B3DE0, sceUtilityLoadModule));
+		mixin(registerd!(0xE49BFE92, sceUtilityUnloadModule));
 
 		initNids_sysparams();
 	}
@@ -208,16 +206,6 @@ class sceUtility : ModuleNative {
 	DialogStep sceUtilityMsgDialogGetStatus() {
 		//unimplemented_notice();
 		return currentDialogStep;
-	}
-
-	// @TODO: Unknown
-	void sceUtilityLoadModuleFunction() {
-		unimplemented();
-	}
-
-	// @TODO: Unknown
-	void sceUtilityUnloadModuleFunction() {
-		unimplemented();
 	}
 
 	/**
@@ -402,9 +390,39 @@ class sceUtility : ModuleNative {
 		return -1;
 	}
 	
-	int sceUtilityLoadModule(int _module) {
+	/**
+	 * Load a module (PRX) from user mode.
+	 *
+	 * @param module - module to load (PSP_MODULE_xxx)
+	 *
+	 * @return 0 on success, < 0 on error
+	 */
+	int sceUtilityLoadModule(PspModule _module) {
 		unimplemented_notice();
-		//unimplemented();
+		logInfo("sceUtilityLoadModule(%s:%d)", to!string(_module), _module);
+		switch (_module) {
+			// Loaded modules.
+			case PspModule.PSP_MODULE_AV_AVCODEC:
+				return 0;
+			break;
+			default:
+				logError("Not loaded: sceUtilityLoadModule(%s:%d)", to!string(_module), _module);
+				//unimplemented();
+				//return -1;
+				//return SceKernelErrors.ERROR_MODULE_BAD_ID;
+				return 0;
+			break;
+		}
+	}
+	
+	/**
+	 * Unload a module (PRX) from user mode.
+	 *
+	 * @param module - module to unload (PSP_MODULE_xxx)
+	 *
+	 * @return 0 on success, < 0 on error
+	 */
+	int sceUtilityUnloadModule(PspModule _module) {
 		return -1;
 	}
 }

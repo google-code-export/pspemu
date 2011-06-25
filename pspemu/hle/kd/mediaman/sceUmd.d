@@ -17,6 +17,7 @@ class sceUmdUser : ModuleNative {
 		mixin(registerd!(0x6B4A146C, sceUmdGetDriveStat));
 		mixin(registerd!(0x8EF08FCE, sceUmdWaitDriveStat));
 		mixin(registerd!(0x4A9E5E29, sceUmdWaitDriveStatCB));
+		mixin(registerd!(0x6AF9B50A, sceUmdCancelWaitDriveStat));
 	}
 	
 	/** 
@@ -59,7 +60,8 @@ class sceUmdUser : ModuleNative {
 	  * @return < 0 on error
 	  */
 	int sceUmdUnRegisterUMDCallBack(int cbid) {
-		unimplemented();
+		//unimplemented();
+		unimplemented_notice();
 		return 0;
 	}
 	
@@ -159,6 +161,10 @@ class sceUmdUser : ModuleNative {
 	int sceUmdWaitDriveStatCB(int stat, uint timeout) {
 		logWarning("Not implemented: sceUmdWaitDriveStatCB(%d, %d)", stat, timeout);
 		return 0;
+	}
+	
+	void sceUmdCancelWaitDriveStat() {
+		unimplemented_notice();
 	}
 }
 

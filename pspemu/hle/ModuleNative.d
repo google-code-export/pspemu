@@ -56,6 +56,10 @@ abstract class ModuleNative : Module {
 			Logger.log(Logger.Level.ERROR, "FORMAT_ERROR", "There was an error formating a logInfo for ('%s'.'%s')", this.baseName, getNidName(currentExecutingNid));
 		}
 	}
+	
+	@property public UniqueIdFactory uniqueIdFactory() {
+		return hleEmulatorState.uniqueIdFactory;
+	}
 
 	template Parameters() {
 		void* vparam_ptr(T)(int n) {

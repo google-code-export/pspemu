@@ -3,6 +3,10 @@ module pspemu.hle.vfs.devices.IoDevice;
 public import pspemu.hle.vfs.ProxyVirtualFileSystem;
 public import pspemu.hle.HleEmulatorState;
 
+enum IoCtlCommand {
+	GetUmdFileLength = 0x01020007,
+}
+
 struct DeviceSize {
 	/**
 	 * Total number of clusters on the device.
@@ -45,12 +49,12 @@ class IoDevice : ProxyVirtualFileSystem {
 		this.hleEmulatorState = hleEmulatorState;
 	}
 
-	override int ioctl(uint cmd, ubyte[] indata, ubyte[] outdata) {
-		throw(new Exception("Must implemente ioctl"));
+	override int ioctl(FileHandle fileHandle, uint cmd, ubyte[] indata, ubyte[] outdata) {
+		throw(new Exception("Must implemente ioctl (IoDevice)"));
 	}
 
 	override int devctl(string devname, uint cmd, ubyte[] indata, ubyte[] outdata) {
-		throw(new Exception("Must implemente devctl"));
+		throw(new Exception("Must implemente devctl (IoDevice)"));
 	}
 	
 	bool present() { return true; }

@@ -195,12 +195,12 @@ class VirtualFileSystem {
 		throw(new NotImplementedException("VirtualFileSystem.rename"));
 	}
 
-	int ioctl(uint cmd, ubyte[] indata, ubyte[] outdata) {
-		throw(new NotImplementedException("VirtualFileSystem.ioctl"));
+	int ioctl(FileHandle fileHandle, uint cmd, ubyte[] indata, ubyte[] outdata) {
+		throw(new NotImplementedException("VirtualFileSystem.ioctl (VirtualFileSystem)"));
 	}
 
 	int devctl(string devname, uint cmd, ubyte[] indata, ubyte[] outdata) {
-		throw(new NotImplementedException("VirtualFileSystem.devctl"));
+		throw(new NotImplementedException("VirtualFileSystem.devctl (VirtualFileSystem)"));
 	}
 	
 	ubyte[] readAll(string file) {
