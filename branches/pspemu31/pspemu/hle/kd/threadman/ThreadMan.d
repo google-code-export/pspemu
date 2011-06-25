@@ -153,7 +153,7 @@ class ThreadManForUser : ModuleNative {
 			blocks
 		);
 		logWarning("%s", fixedPool);
-		return hleEmulatorState.uniqueIdFactory.add(fixedPool);
+		return uniqueIdFactory.add(fixedPool);
 	}
 	
 	/**
@@ -180,7 +180,7 @@ class ThreadManForUser : ModuleNative {
 	 */
 	int sceKernelTryAllocateFpl(SceUID uid, uint** data) {
 		logWarning("sceKernelTryAllocateFpl(%d, %08X)", uid, cast(uint)data);
-		FixedPool fixedPool = hleEmulatorState.uniqueIdFactory.get!FixedPool(uid);
+		FixedPool fixedPool = uniqueIdFactory.get!FixedPool(uid);
 		try {
 			*data = cast(uint *)fixedPool.allocate();
 			return 0;
@@ -246,7 +246,7 @@ class ThreadManForUser : ModuleNative {
 			variablePool = new VariablePool(hleEmulatorState.moduleManager.get!SysMemUserForUser()._allocateMemorySegmentLow(part, dupStr(name), size));
 		}
 		logWarning("%s", variablePool);
-		return hleEmulatorState.uniqueIdFactory.add(variablePool);
+		return uniqueIdFactory.add(variablePool);
 	}
 	
 	/**
@@ -275,7 +275,7 @@ class ThreadManForUser : ModuleNative {
 	 */
 	int sceKernelTryAllocateVpl(SceUID uid, uint size, uint** data) {
 		logWarning("sceKernelTryAllocateVpl(%d, %d, %08X)", uid, size, cast(uint)data);
-		VariablePool variablePool = hleEmulatorState.uniqueIdFactory.get!VariablePool(uid);
+		VariablePool variablePool = uniqueIdFactory.get!VariablePool(uid);
 		*data = cast(uint *)variablePool.memorySegment.allocByLow(size).block.low;
 		//unimplemented();
 		return 0;

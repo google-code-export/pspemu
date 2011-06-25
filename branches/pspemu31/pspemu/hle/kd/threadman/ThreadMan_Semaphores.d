@@ -105,7 +105,7 @@ template ThreadManForUser_Semaphores() {
 	 */
 	SceUID sceKernelCreateSema(string name, SceUInt attr, int initCount, int maxCount, SceKernelSemaOptParam* option) {
 		auto semaphore = new PspSemaphore(name, attr, initCount, maxCount);
-		uint uid = hleEmulatorState.uniqueIdFactory.add(semaphore);
+		uint uid = uniqueIdFactory.add(semaphore);
 		logTrace("sceKernelCreateSema(%d:'%s') :: %s", uid, name, semaphore);
 		return uid;
 	}
@@ -125,7 +125,7 @@ template ThreadManForUser_Semaphores() {
 	 * @return < 0 On error.
 	 */
 	int sceKernelSignalSema(SceUID semaid, int signal) {
-		auto semaphore = hleEmulatorState.uniqueIdFactory.get!PspSemaphore(semaid); 
+		auto semaphore = uniqueIdFactory.get!PspSemaphore(semaid); 
 		logTrace("sceKernelSignalSema(%d:'%s', %d) :: %s", semaid, semaphore.name, signal, semaphore);
 		semaphore.incrementCount(signal);
 		return 0;
@@ -138,14 +138,14 @@ template ThreadManForUser_Semaphores() {
 	 * @return Returns the value 0 if its succesful otherwise -1
 	 */
 	int sceKernelDeleteSema(SceUID semaid) {
-		auto semaphore = hleEmulatorState.uniqueIdFactory.get!PspSemaphore(semaid);
+		auto semaphore = uniqueIdFactory.get!PspSemaphore(semaid);
 		logTrace("sceKernelDeleteSema(%d:'%s')", semaid, semaphore.name);
-		hleEmulatorState.uniqueIdFactory.remove!PspSemaphore(semaid);
+		uniqueIdFactory.remove!PspSemaphore(semaid);
 		return 0;
 	}
 	
 	int _sceKernelWaitSemaCB(SceUID semaid, int signal, SceUInt *timeout, bool callback) {
-		auto semaphore = hleEmulatorState.uniqueIdFactory.get!PspSemaphore(semaid);
+		auto semaphore = uniqueIdFactory.get!PspSemaphore(semaid);
 		logTrace("sceKernelWaitSema%s(%d:'%s', %d, %d) :: %s", callback ? "CB" : "", semaid, semaphore.name, signal, (timeout is null) ? 0 : *timeout, semaphore);
 
 		currentCpuThread.threadState.waitingBlock("_sceKernelWaitSemaCB", {
@@ -207,7 +207,7 @@ template ThreadManForUser_Semaphores() {
 
         if (signal <= 0) return ERROR_KERNEL_ILLEGAL_COUNT;
         
-		PspSemaphore pspSemaphore = hleEmulatorState.uniqueIdFactory.get!PspSemaphore(semaid);
+		PspSemaphore pspSemaphore = uniqueIdFactory.get!PspSemaphore(semaid);
 		
         if (pspSemaphore is null) {
             return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
@@ -228,7 +228,7 @@ template ThreadManForUser_Semaphores() {
 	 * @return < 0 on error.
 	 */
 	int sceKernelReferSemaStatus(SceUID semaid, SceKernelSemaInfo* info) {
-		auto semaphore = hleEmulatorState.uniqueIdFactory.get!PspSemaphore(semaid);
+		auto semaphore = uniqueIdFactory.get!PspSemaphore(semaid);
 		*info = semaphore.info;
 		return 0;
 	}

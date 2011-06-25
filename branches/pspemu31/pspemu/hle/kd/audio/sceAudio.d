@@ -41,10 +41,10 @@ class sceAudio_driver : ModuleNative {
 		mixin(registerd!(0x95FD0C2D, sceAudioChangeChannelConfig));
 		mixin(registerd!(0xB7E1D8E7, sceAudioChangeChannelVolume));
 
-		mixin(registerd!(0x01562BA3, sceAudioOutput2ReserveFunction));
-		mixin(registerd!(0x2D53F36E, sceAudioOutput2OutputBlockingFunction));
-		mixin(registerd!(0x43196845, sceAudioOutput2ReleaseFunction));
-		mixin(registerd!(0xB011922F, sceAudioGetChannelRestLengthFunction));
+		mixin(registerd!(0x01562BA3, sceAudioOutput2Reserve));
+		mixin(registerd!(0x2D53F36E, sceAudioOutput2OutputBlocking));
+		mixin(registerd!(0x43196845, sceAudioOutput2Release));
+		mixin(registerd!(0xB011922F, sceAudioGetChannelRestLength));
 
 		mixin(registerd!(0x086E5895, sceAudioInputBlocking));
 		mixin(registerd!(0x7DE61688, sceAudioInputInit));
@@ -78,24 +78,51 @@ class sceAudio_driver : ModuleNative {
 
 	static float volumef(int shortval) { return (cast(float)shortval) / cast(float)0xFFFF; }
 
-	// @TODO: Unknown.
-	void sceAudioOutput2ReserveFunction() {
-		unimplemented();
+	/**
+	 * Reserve the audio output and set the output sample count
+	 *
+	 * @param samplecount - The number of samples to output in one output call (min 17, max 4111).
+	 *
+	 * @return 0 on success, an error if less than 0.
+	 */
+	int sceAudioOutput2Reserve(int samplecount) {
+		unimplemented_notice();
+		return 0;
 	}
 
-	// @TODO: Unknown.
-	void sceAudioOutput2OutputBlockingFunction() {
-		unimplemented();
+	/**
+	 * Output audio (blocking)
+	 *
+	 * @param vol - The volume.
+	 * @param buf - Pointer to the PCM data.
+	 *
+	 * @return 0 on success, an error if less than 0.
+	 */
+	int sceAudioOutput2OutputBlocking(int vol, void *buf) {
+		unimplemented_notice();
+		return 0;
 	}
 
-	// @TODO: Unknown.
-	void sceAudioOutput2ReleaseFunction() {
-		unimplemented();
+	/**
+	 * Release the audio output
+	 *
+	 * @return 0 on success, an error if less than 0.
+	 */
+	int sceAudioOutput2Release() {
+		unimplemented_notice();
+		return 0;
 	}
 
-	// @TODO: Unknown.
-	void sceAudioGetChannelRestLengthFunction() {
+	/**
+	 * Get count of unplayed samples remaining
+	 *
+	 * @param channel - The channel number.
+	 *
+	 * @return Number of samples to be played, an error if less than 0.
+	 */
+	int sceAudioGetChannelRestLength(int channel) {
 		unimplemented();
+		return 0;
 	}
 
 	int _sceAudioOutputPannedBlocking(int channel, int leftvol, int rightvol, void *buf, bool blocking) {
