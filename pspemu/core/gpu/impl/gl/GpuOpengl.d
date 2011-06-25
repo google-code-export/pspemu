@@ -1027,6 +1027,8 @@ template OpenglUtils() {
 
 	void drawBegin(PrimitiveFlags flags) {
 		version (VERSION_ENABLED_STATE_CORTOCIRCUIT_EX) {
+			// @TODO: To avoid checking the whole struct, we could increment a uint inside the struct, every time we preform an update.
+			// If that value has changed, then check the whole state.
 			if (prevState.RealState == (*state).RealState && (flags == prevPrimitiveFlags)) {
 				//prepareTexture();
 				//if (state.textureMappingEnabled) getTexture(state.textures[0], state.clut).bind();

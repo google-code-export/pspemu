@@ -172,9 +172,9 @@ class Memory : Stream {
 		}
 	}
 	
-	public void* getPointerOrNull(Pointer address) {
+	public T* getPointerOrNull(T = void)(Pointer address) {
 		if (address == 0) return null;
-		return getPointer(address);
+		return cast(T *)getPointer(address);
 	}
 
 	/**

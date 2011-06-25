@@ -158,12 +158,53 @@ template Gpu_Draw() {
 	auto OP_IADDR() {
 		gpu.state.indexAddress = gpu.state.baseAddress + command.param24;
 	}
+	
+	// http://en.wikipedia.org/wiki/Bernstein_polynomial
+    float[4] bernsteinCoefficients(float u) {
+    	static if (false) {
+	    	float uPow1  = u;
+	        float uPow2  = uPow1 * uPow1;
+	        float uPow3  = uPow2 * uPow1;
+	
+			// Complementary.
+	        float u1Pow1 = 1 - u;
+	        float u1Pow2 = Pow1 * Pow1;
+	        float u1Pow3 = u1Pow2 * Pow1;
+	
+	    	float[4] ret = [
+	    		(u1Pow3),
+	    		(3 * uPow1 * u1Pow2),
+	    		(3 * uPow2 * u1Pow1),
+	    		(uPow3)
+	    	];
+	    } else {
+	    	float u0 = u - 0;
+	    	float u1 = 1 - u;
+	    	float[4] ret = [
+	    		(u1 ^^ 3),
+	    		(3 * u0 * (u1 ^^ 2)),
+	    		(3 * u1 * (u0 ^^ 2)),
+	    		(u0 ^^ 3)
+	    	];
+	    }
 
+        return ret;
+    }
+
+	// Bezier Patch Kick
+	auto OP_BEZIER() {
+		int ucount = command.extract!(ubyte, 0,  8);
+		int vcount = command.extract!(ubyte, 8, 16);
+		//auto primitiveType = command.extractEnum!(PrimitiveType, 16);
+		Logger.log(Logger.Level.INFO, "Gpu", "OP_BEZIER(ucount=%d, vcount=%d)", ucount, vcount);
+	}
+	
 	VertexState[] vertexListBuffer;
 	ushort[] indexListBuffer;
 	//VertexStateArrays vertexListBufferArrays;
 	
 	// draw PRIMitive
+	// Primitive Kick
 	auto OP_PRIM() {
 		debug (DEBUG_MATRIX) {
 			writefln("gpu.state.viewMatrix:\n%s", gpu.state.viewMatrix);
@@ -171,46 +212,17 @@ template Gpu_Draw() {
 			writefln("gpu.state.projectionMatrix:\n%s", gpu.state.projectionMatrix);
 		}
 
-		// Matrixes for cubes
-		/*
-		gpu.state.viewMatrix.cells = [
-			1.000000, 0.000000, 0.000000, 0.000000,
-			0.000000, 1.000000, 0.000000, 0.000000,
-			0.000000, 0.000000, 1.000000, 0.000000,
-			0.000000, 0.000000, 0.000000, 1.000000
-		];
-
-		gpu.state.worldMatrix.cells = [
-			0.167461, -0.644470, 0.746048, 0.000000,
-			0.147636, -0.731812, -0.665314, 0.000000,
-			0.974747, 0.221561, -0.027400, 0.000000,
-			0.000000, 0.000000, -2.500000, 1.000000
-		];
-
-		gpu.state.projectionMatrix.cells = [
-			0.733063, 0.000000, 0.000000, 0.000000,
-			0.000000, 1.303223, 0.000000, 0.000000,
-			0.000000, 0.000000, -1.000977, -1.000000,
-			0.000000, 0.000000, -1.000488, 0.000000
-		];
-		*/
-	
-		auto vertexPointerBase = cast(ubyte*)gpu.memory.getPointer(gpu.state.vertexAddress);
-		auto indexPointerBase  = gpu.state.indexAddress ? cast(ubyte*)gpu.memory.getPointer(gpu.state.indexAddress) : null;
-
-		ubyte* vertexPointer = vertexPointerBase;
-		ubyte* indexPointer  = indexPointerBase;
+		auto vertexPointerBase = gpu.memory.getPointerOrNull!ubyte(gpu.state.vertexAddress);
+		auto indexPointerBase  = gpu.memory.getPointerOrNull!ubyte(gpu.state.indexAddress);
 
 		auto primitiveType = command.extractEnum!(PrimitiveType, 16);
 		auto vertexType    = gpu.state.vertexType;
 		int  vertexSize    = vertexType.vertexSize;
 		auto vertexCount   = command.param16;
-		auto morphingVertexCount = vertexType.morphingVertexCount;
-		auto vertexCountWithMorph   = vertexCount * morphingVertexCount;
-		int  vertexSizeWithMorph    = vertexSize * morphingVertexCount;
-		auto transform2D = vertexType.transform2D;
+		//auto morphingVertexCount    = vertexType.morphingVertexCount;
+		//int  vertexSizeWithMorph    = vertexSize * morphingVertexCount;
 		
-		float[] morphWeights = gpu.state.morphWeights;
+		//float[] morphWeights = gpu.state.morphWeights;
 		
 		if (vertexType.morphingVertexCount == 1) {
 			gpu.state.morphWeights[0] = 1.0;
@@ -236,233 +248,13 @@ template Gpu_Draw() {
 			gpu.state.clearingMode
 		);
 		
-		void pad(ref ubyte* ptr, ubyte pad) {
-			if ((cast(uint)ptr) % pad) ptr += (pad - ((cast(uint)ptr) % pad));
-		}
-
-		/*
-		void moveIndexGen(T)() {
-			auto TIndexPointer = cast(T *)indexPointer;
-			vertexPointer = vertexPointerBase + (*TIndexPointer * vertexSizeWithMorph);
-			indexPointer += T.sizeof;
-		}
-		*/
-		
-		void extractIndexGen(T)(ref ushort index) {
-			index = cast(ushort)*cast(T *)indexPointer;
-			indexPointer += T.sizeof;
-		}
-
-		void extractArray(T)(float[] array) {
-			pad(vertexPointer, T.sizeof);
-			foreach (ref value; array) {
-				debug (EXTRACT_PRIM_COMPONENT) writefln("%08X(%s):%s", cast(uint)cast(void *)vertexPointer, typeid(T), *cast(T*)vertexPointer);
-				value = *cast(T*)vertexPointer;
-				vertexPointer += T.sizeof;
-			}
-		}
-		void extractColor8888(float[] array) {
-			pad(vertexPointer, 4);
-			for (int n = 0; n < 4; n++) {
-				array[n] = cast(float)vertexPointer[n] / 255.0;
-			}
-			vertexPointer += 4;
-		}
-		void extractColorInvalidbits (float[] array) {
-			pad(vertexPointer, 1);
-			// palette?
-			writefln("Unimplemented Gpu.OP_PRIM.extractColorInvalidbits");
-			//throw(new Exception("Unimplemented Gpu.OP_PRIM.extractColor8bits"));
-			vertexPointer += 1;
-		}
-		void extractColor5650(float[] array) {
-			pad(vertexPointer, 2);
-			ushort data = *cast(ushort*)vertexPointer;
-			array[0] = BitUtils.extractNormalizedFloat!( 0, 5)(data);
-			array[1] = BitUtils.extractNormalizedFloat!( 5, 6)(data);
-			array[2] = BitUtils.extractNormalizedFloat!(11, 5)(data);
-			array[3] = 1.0;
-			vertexPointer += 2;
-		}
-
-		void extractColor5551(float[] array) {
-			pad(vertexPointer, 2);
-			ushort data = *cast(ushort*)vertexPointer;
-			array[0] = BitUtils.extractNormalizedFloat!( 0, 5)(data);
-			array[1] = BitUtils.extractNormalizedFloat!( 5, 5)(data);
-			array[2] = BitUtils.extractNormalizedFloat!(10, 5)(data);
-			array[3] = BitUtils.extractNormalizedFloat!(15, 1)(data);
-			vertexPointer += 2;
-		}
-		
-		void extractColor4444(float[] array) {
-			pad(vertexPointer, 2);
-			ushort data = *cast(ushort*)vertexPointer;
-			array[0] = BitUtils.extractNormalizedFloat!( 0, 4)(data);
-			array[1] = BitUtils.extractNormalizedFloat!( 4, 4)(data);
-			array[2] = BitUtils.extractNormalizedFloat!( 8, 4)(data);
-			array[3] = BitUtils.extractNormalizedFloat!(12, 4)(data);
-			vertexPointer += 2;
-		}
-
-		auto extractTable      = [null, &extractArray!(byte), &extractArray!(short), &extractArray!(float)];
-		
-		auto extractColorTable = [null, &extractColorInvalidbits, &extractColorInvalidbits, &extractColorInvalidbits, &extractColor5650, &extractColor5551, &extractColor4444, &extractColor8888];
-		auto extractIndexTable = [null, &extractIndexGen!(ubyte), &extractIndexGen!(ushort), &extractIndexGen!(uint)];
-		
-		ubyte[] tableSizes = [0, 1, 2, 4];
-		ubyte[] colorSizes = [0, 1, 1, 1, 2, 2, 2, 4];
-
-		auto extractWeights  = extractTable[vertexType.weight  ];
-		auto extractTexture  = extractTable[vertexType.texture ];
-		auto extractPosition = extractTable[vertexType.position];
-		auto extractNormal   = extractTable[vertexType.normal  ];
-		auto extractColor    = extractColorTable[vertexType.color];
-		auto extractIndex    = (indexPointer !is null) ? extractIndexTable[vertexType.index] : null;
-		
-		ubyte vertexAlignSize = 0;
-		vertexAlignSize = max(vertexAlignSize, tableSizes[vertexType.weight]);
-		vertexAlignSize = max(vertexAlignSize, tableSizes[vertexType.texture]);
-		vertexAlignSize = max(vertexAlignSize, tableSizes[vertexType.position]);
-		vertexAlignSize = max(vertexAlignSize, tableSizes[vertexType.normal]);
-		vertexAlignSize = max(vertexAlignSize, colorSizes[vertexType.color]);
-
-		void extractVertex(ref VertexState vertex) {
-			//while ((cast(uint)vertexPointer) & 0b11) vertexPointer++;
-			//if ((cast(uint)vertexPointer) & 0b11) writefln("ERROR!");
-			
-			// Vertex has to be aligned to the maxium size of any component. 
-			pad(vertexPointer, vertexAlignSize);
-			
-			if (extractWeights) {
-				extractWeights(vertex.weights[0..vertexType.skinningWeightCount]);
-				debug (EXTRACT_PRIM) writef("| weights(...) ");
-			}
-			if (extractTexture) {
-				extractTexture((&vertex.u)[0..2]);
-				debug (EXTRACT_PRIM) writef("| texture(%f, %f) ", vertex.u, vertex.v);
-			}
-			if (extractColor) {
-				extractColor((&vertex.r)[0..4]);
-				debug (EXTRACT_PRIM) writef("| color(%f, %f, %f, %f) ", vertex.r, vertex.g, vertex.b, vertex.a);
-			}
-			if (extractNormal) {
-				extractNormal((&vertex.nx)[0..3]);
-				debug (EXTRACT_PRIM) writef("| normal(%f, %f, %f) ", vertex.nx, vertex.ny, vertex.nz);
-			}
-			if (extractPosition) {
-				extractPosition((&vertex.px)[0..3]);
-				debug (EXTRACT_PRIM) writef("| position(%f, %f, %f) ", vertex.px, vertex.py, vertex.pz);
-			}
-			debug (EXTRACT_PRIM) writefln("");
-		}
-
 		//vertexListBufferArrays.reserve(vertexCount);
 		
 		uint indexCount = vertexCount;
-		uint maxVertexCount = 0;
-
-		// Extract indexes.
-		{
-			if (indexListBuffer.length < indexCount) indexListBuffer.length = indexCount;
-			
-			if (extractIndex) {
-				for (int n = 0; n < indexCount; n++) {
-					//auto TIndexPointer = cast(T *)indexPointer;
-					//vertexPointer = vertexPointerBase + (*TIndexPointer * vertexSizeWithMorph);
-					extractIndex(indexListBuffer[n]);
-					if (maxVertexCount < indexListBuffer[n]) maxVertexCount = indexListBuffer[n];
-				}
-				maxVertexCount++;
-			} else {
-				for (int n = 0; n < vertexCount; n++) indexListBuffer[n] = cast(ushort)n;
-				maxVertexCount = vertexCount;
-			}
-		}
 		
-		void multiplyVectorPerMatrix(bool translate)(out float[3] outf, float[] inf, in Matrix matrix, float weight) {
-			for (int i = 0; i < 3; i++) {
-				float f = 0;
-				f += inf[0] * matrix.cells[0 + i]; 
-				f += inf[1] * matrix.cells[4 + i];
-				f += inf[2] * matrix.cells[8 + i];
-				static if (translate) {
-					f += 1 * matrix.cells[12 + i];
-				}
-				outf[i] = f * weight;
-			}
-		}
-		
-		bool shouldPerformSkin = (!transform2D) && (vertexType.skinningWeightCount > 1);
-		
-		VertexState performSkin(VertexState vertexState) {
-			if (!shouldPerformSkin) return vertexState;
-			
-			//writefln("%s", gpu.state.boneMatrix[0]);
-			VertexState skinnedVertexState = vertexState;
-			(cast(float *)&skinnedVertexState.px)[0..3] = 0.0;
-			(cast(float *)&skinnedVertexState.nx)[0..3] = 0.0;
-			
-			float[3] p, n;
-
-			for (int m = 0; m < vertexType.skinningWeightCount; m++) {
-				multiplyVectorPerMatrix!(true)(
-					p,
-					(cast(float *)&vertexState.px)[0..3],
-					gpu.state.boneMatrix[m],
-					vertexState.weights[m]
-				);
-
-				multiplyVectorPerMatrix!(false)(
-					n,
-					(cast(float *)&vertexState.nx)[0..3],
-					gpu.state.boneMatrix[m],
-					vertexState.weights[m]
-				);
-				
-				//writefln("%s", p);
-				
-				(cast(float *)&skinnedVertexState.px)[0..3] += p[];
-				(cast(float *)&skinnedVertexState.nx)[0..3] += n[];
-			}
-			
-			return skinnedVertexState;
-		}
-
-		// Extract vertex list.
-		{
-			if (vertexListBuffer.length < maxVertexCount) vertexListBuffer.length = maxVertexCount;
-			
-			auto extractAllVertex(bool doMorph)() {
-				for (int n = 0; n < maxVertexCount; n++) {
-					static if (!doMorph) {
-						extractVertex(vertexListBuffer[n]);
-						vertexListBuffer[n] = performSkin(vertexListBuffer[n]);
-					} else {
-						VertexState vertexStateMorphed;
-						VertexState currentVertexState = void;
-						
-						for (int m = 0; m < morphingVertexCount; m++) {
-							extractVertex(currentVertexState);
-							currentVertexState = performSkin(currentVertexState);
-							vertexStateMorphed.floatValues[] += currentVertexState.floatValues[] * morphWeights[m];
-						}
-			
-						vertexListBuffer[n] = vertexStateMorphed;
-					}
-				}
-			}
-			
-			if (morphingVertexCount == 1) {
-				extractAllVertex!(false)();
-			} else {
-				extractAllVertex!(true)();
-			}
-			
-			//writefln("%d", maxVertexCount);
-	
-
-		}
+		uint maxVertexCount;
+		gpu.impl.readIndexes(indexListBuffer, indexPointerBase, indexCount, maxVertexCount, vertexType);
+		gpu.impl.readVertices(vertexListBuffer, vertexPointerBase, maxVertexCount, vertexType, gpu.state.morphWeights, gpu.state.boneMatrix);
 		
 		// Need to have the framebuffer updated.
 		// @TODO: Check which buffers are going to be used (using the state).
@@ -475,11 +267,11 @@ template Gpu_Draw() {
 				vertexListBuffer[0..maxVertexCount],
 				primitiveType,
 				PrimitiveFlags(
-					extractWeights  !is null,
-					extractTexture  !is null,
-					extractColor    !is null,
-					extractNormal   !is null,
-					extractPosition !is null,
+					vertexType.weight   != 0,
+					vertexType.texture  != 0,
+					vertexType.color    != 0,
+					vertexType.normal   != 0,
+					vertexType.position != 0,
 					vertexType.skinningWeightCount
 				)
 			);
@@ -535,7 +327,7 @@ template Gpu_Draw() {
 		ushort srcX, srcY, dstX, dstY;
 		ushort width, height;
 	}*/
-
+	
 	// TRansfer X Source (Buffer Pointer/Width)/POSition
 	auto OP_TRXSBP() {
 		with (gpu.state.textureTransfer) {
