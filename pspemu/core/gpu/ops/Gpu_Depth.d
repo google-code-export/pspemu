@@ -1,4 +1,4 @@
-module pspemu.core.gpu.ops.Depth;
+module pspemu.core.gpu.ops.Gpu_Depth;
 
 template Gpu_Depth() {
 	/**

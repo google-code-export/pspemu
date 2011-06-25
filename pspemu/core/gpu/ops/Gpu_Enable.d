@@ -1,4 +1,4 @@
-module pspemu.core.gpu.ops.Enable;
+module pspemu.core.gpu.ops.Gpu_Enable;
 
 template Gpu_Enable() {
 	/**

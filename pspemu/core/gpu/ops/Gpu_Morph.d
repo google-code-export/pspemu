@@ -1,4 +1,4 @@
-module pspemu.core.gpu.ops.Morph;
+module pspemu.core.gpu.ops.Gpu_Morph;
 
 template Gpu_Morph() {
 	/**

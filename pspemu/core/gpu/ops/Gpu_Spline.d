@@ -1,4 +1,4 @@
-module pspemu.core.gpu.ops.Spline;
+module pspemu.core.gpu.ops.Gpu_Spline;
 
 template Gpu_Spline() {
 	/**

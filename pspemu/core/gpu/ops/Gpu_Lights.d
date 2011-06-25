@@ -1,4 +1,4 @@
-module pspemu.core.gpu.ops.Lights;
+module pspemu.core.gpu.ops.Gpu_Lights;
 
 template Gpu_Lights() {
 	string LightArrayOperation(string type, string code, int step = 1) { return ArrayOperation(type, 0, 3, code, step); }

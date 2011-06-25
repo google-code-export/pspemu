@@ -1,4 +1,4 @@
-module pspemu.core.gpu.ops.Special;
+module pspemu.core.gpu.ops.Gpu_Special;
 
 template Gpu_Special() {
 	/**

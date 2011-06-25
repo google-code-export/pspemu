@@ -32,20 +32,20 @@ import pspemu.core.gpu.GpuState;
 import pspemu.core.gpu.GpuImpl;
 import pspemu.core.gpu.DisplayList;
 
-import pspemu.core.gpu.ops.Special;
-import pspemu.core.gpu.ops.Flow;
-import pspemu.core.gpu.ops.Colors;
-import pspemu.core.gpu.ops.Draw;
-import pspemu.core.gpu.ops.Matrix;
-import pspemu.core.gpu.ops.Texture;
-import pspemu.core.gpu.ops.Enable;
-import pspemu.core.gpu.ops.Lights;
-import pspemu.core.gpu.ops.Morph;
-import pspemu.core.gpu.ops.Clut;
-import pspemu.core.gpu.ops.Fog;
-import pspemu.core.gpu.ops.Dither;
-import pspemu.core.gpu.ops.Depth;
-import pspemu.core.gpu.ops.Spline;
+import pspemu.core.gpu.ops.Gpu_Special;
+import pspemu.core.gpu.ops.Gpu_Flow;
+import pspemu.core.gpu.ops.Gpu_Colors;
+import pspemu.core.gpu.ops.Gpu_Draw;
+import pspemu.core.gpu.ops.Gpu_Matrix;
+import pspemu.core.gpu.ops.Gpu_Texture;
+import pspemu.core.gpu.ops.Gpu_Enable;
+import pspemu.core.gpu.ops.Gpu_Lights;
+import pspemu.core.gpu.ops.Gpu_Morph;
+import pspemu.core.gpu.ops.Gpu_Clut;
+import pspemu.core.gpu.ops.Gpu_Fog;
+import pspemu.core.gpu.ops.Gpu_Dither;
+import pspemu.core.gpu.ops.Gpu_Depth;
+import pspemu.core.gpu.ops.Gpu_Spline;
 
 import pspemu.core.exceptions.HaltException;
 

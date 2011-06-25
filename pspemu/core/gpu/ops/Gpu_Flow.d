@@ -1,4 +1,4 @@
-module pspemu.core.gpu.ops.Flow;
+module pspemu.core.gpu.ops.Gpu_Flow;
 
 template Gpu_Flow() {
 	/**
