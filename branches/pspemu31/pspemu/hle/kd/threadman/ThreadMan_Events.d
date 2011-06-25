@@ -150,9 +150,11 @@ template ThreadManForUser_Events() {
 	 */
 	int _sceKernelWaitEventFlagCB(int evid, u32 bits, PspEventFlagWaitTypes wait, u32 *outBits, SceUInt *timeout, bool callback) {
 		logInfo("_sceKernelWaitEventFlagCB(%d, %032b, %s, %s, %08X)", evid, bits, to!string(wait), to!string(callback), cast(uint)timeout);
-		PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
-		uint matchedBits = pspWaitEvent.waitEventFlag(bits, wait, callback);
-		if (outBits !is null) *outBits = matchedBits;
+		currentCpuThread.threadState.waitingBlock("_sceKernelWaitEventFlagCB", {
+			PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
+			uint matchedBits = pspWaitEvent.waitEventFlag(bits, wait, callback);
+			if (outBits !is null) *outBits = matchedBits;
+		});
 		return 0;
 	}
 

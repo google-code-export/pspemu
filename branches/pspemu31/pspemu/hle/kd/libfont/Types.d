@@ -58,3 +58,42 @@ struct FontStyle {
 	uint     fontAttributes;
 	uint     fontExpire;
 }
+
+struct FontInfo {
+    // Glyph metrics (in 26.6 signed fixed-point).
+    uint maxGlyphWidthI;
+    uint maxGlyphHeightI;
+    uint maxGlyphAscenderI;
+    uint maxGlyphDescenderI;
+    uint maxGlyphLeftXI;
+    uint maxGlyphBaseYI;
+    uint minGlyphCenterXI;
+    uint maxGlyphTopYI;
+    uint maxGlyphAdvanceXI;
+    uint maxGlyphAdvanceYI;
+
+    // Glyph metrics (replicated as float).
+    float maxGlyphWidthF;
+    float maxGlyphHeightF;
+    float maxGlyphAscenderF;
+    float maxGlyphDescenderF;
+    float maxGlyphLeftXF;
+    float maxGlyphBaseYF;
+    float minGlyphCenterXF;
+    float maxGlyphTopYF;
+    float maxGlyphAdvanceXF;
+    float maxGlyphAdvanceYF;
+    
+    // Bitmap dimensions.
+    short maxGlyphWidth;
+    short maxGlyphHeight;
+    uint  charMapLength;   // Number of elements in the font's charmap.
+    uint  shadowMapLength; // Number of elements in the font's shadow charmap.
+    
+    // Font style (used by font comparison functions).
+    FontStyle fontStyle;
+    
+    ubyte BPP = 4; // Font's BPP.
+    ubyte[3] pad;
+}
+
