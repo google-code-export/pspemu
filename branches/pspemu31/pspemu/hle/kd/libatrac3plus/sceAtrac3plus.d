@@ -411,8 +411,11 @@ class sceAtrac3plus : ModuleNative {
 		return 0;
 	}
 	
-	void sceAtracGetAtracID() {
-		unimplemented();
+	int sceAtracGetAtracID(int codecType) {
+		ubyte[] data;
+		logInfo("sceAtracGetAtracID(%d)", codecType);
+		unimplemented_notice();
+		return cast(int)hleEmulatorState.uniqueIdFactory.add(new Atrac3Object(data));
 	}
 	
 	/**

@@ -171,7 +171,8 @@ class GpuOpengl : GpuImplAbstract {
 	}
 
 	void reset() {
-		textureCachePool = new TextureCachePool(this);
+		if (textureCachePool is null) textureCachePool = new TextureCachePool(this);
+		textureCachePool.reset();
 	}
 
 	void startDisplayList() {
@@ -546,18 +547,15 @@ class TextureCachePool {
 		string hash;
 	}
 	GpuOpengl gpuOpengl;
-	TextureCacheInfo[Texture] textureCacheInfos;
 	Texture[string] textureCache;
 	
 	this(GpuOpengl gpuOpengl) {
 		this.gpuOpengl = gpuOpengl;
 	}
 	
-	void remove(Texture texture) {
-		string hash = textureCacheInfos[texture].hash;
-		textureCache.remove(hash);
-		textureCacheInfos.remove(texture);
-		delete texture;
+	void reset() {
+		foreach (texture; textureCache) texture.free();
+		textureCache = null;
 	}
 	
 	Texture get(TextureState textureState, ClutState clutState) {

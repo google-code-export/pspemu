@@ -48,9 +48,9 @@ class TaskQueue {
 	}
 
 	void waitExecuted(Task task) {
-		while (true) {
+		while (tasks.length) {
 			synchronized (this) {
-				if ((task in tasks) !is null) break;
+				if ((task in tasks) is null) return;
 			}
 			executedTasksEvent.wait(1);
 		}

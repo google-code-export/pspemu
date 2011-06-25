@@ -25,7 +25,6 @@ import pspemu.utils.MathUtils;
 import pspemu.core.gpu.impl.gl.GpuOpenglUtils;
 
 class Texture {
-	//GLuint gltex;
 	GLuint gltex;
 	TextureState textureState;
 	bool markForRecheck;
@@ -38,9 +37,16 @@ class Texture {
 		markForRecheck = true;
 		refreshAnyway = true;
 	}
+	
+	void free() {
+		if (gltex != 0) {
+			glDeleteTextures(1, &gltex);
+			gltex = 0;
+		}
+	}
 
 	~this() {
-		glDeleteTextures(1, &gltex);
+		free();
 	}
 
 	void bind() {

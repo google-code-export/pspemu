@@ -300,7 +300,11 @@ int main(string[] args) {
 			if (std.path.getExt(dirEntry.name) != "expected") continue;
 			
 			emulatorHelper.loadAndRunTest(dirEntry.name);
-			emulatorHelper.reset();
+			try {
+				emulatorHelper.reset();
+			} catch (Throwable o) {
+				writefln("ERROR Reseting (%s)", o);
+			}
 		}
 		emulatorHelper.stop();
 		return 0;

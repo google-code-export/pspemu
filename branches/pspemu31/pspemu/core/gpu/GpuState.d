@@ -168,8 +168,8 @@ struct LightState {
 }
 
 static struct VertexState {
-	float u = 0.0, v = 0.0;        // Texture coordinates.
-	float r = 0.0, g = 0.0, b = 0.0, a = 0.0;  // Color components.
+	float u  = 0.0, v  = 0.0;        // Texture coordinates.
+	float r  = 0.0, g  = 0.0, b  = 0.0, a  = 0.0;  // Color components.
 	float nx = 0.0, ny = 0.0, nz = 0.0;  // Normal vector.
 	float px = 0.0, py = 0.0, pz = 0.0;  // Position vector.
 	float weights[8] = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];  // Weights for skinning
