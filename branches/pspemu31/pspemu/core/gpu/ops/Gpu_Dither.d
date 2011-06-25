@@ -1,4 +1,4 @@
-module pspemu.core.gpu.ops.Dither;
+module pspemu.core.gpu.ops.Gpu_Dither;
 
 template Gpu_Dither() {
 	/**

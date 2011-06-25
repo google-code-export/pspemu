@@ -1,4 +1,4 @@
-module pspemu.core.gpu.ops.Draw;
+module pspemu.core.gpu.ops.Gpu_Draw;
 
 //debug = EXTRACT_PRIM;
 //debug = EXTRACT_PRIM_COMPONENT;

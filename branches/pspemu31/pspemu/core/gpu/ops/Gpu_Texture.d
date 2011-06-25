@@ -1,4 +1,4 @@
-module pspemu.core.gpu.ops.Texture;
+module pspemu.core.gpu.ops.Gpu_Texture;
 
 template Gpu_Texture() {
 	static pure string TextureArrayOperation(string type, string code) { return ArrayOperation(type, 0, 7, code); }

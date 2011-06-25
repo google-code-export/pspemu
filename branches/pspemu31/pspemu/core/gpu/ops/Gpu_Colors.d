@@ -1,4 +1,4 @@
-module pspemu.core.gpu.ops.Colors;
+module pspemu.core.gpu.ops.Gpu_Colors;
 
 template Gpu_Colors() {
 	/**

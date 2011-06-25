@@ -1,4 +1,4 @@
-module pspemu.core.gpu.ops.Fog;
+module pspemu.core.gpu.ops.Gpu_Fog;
 
 template Gpu_Fog() {
 	/**

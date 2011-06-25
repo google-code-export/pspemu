@@ -1,4 +1,4 @@
-module pspemu.core.gpu.ops.Clut;
+module pspemu.core.gpu.ops.Gpu_Clut;
 
 /**
  * CLUT (Color LookUp Table) opcodes.

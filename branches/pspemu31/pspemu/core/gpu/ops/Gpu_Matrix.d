@@ -1,4 +1,4 @@
-module pspemu.core.gpu.ops.Matrix;
+module pspemu.core.gpu.ops.Gpu_Matrix;
 
 version = VERSION_GPU_MATRIX_LOAD_RAW;
 

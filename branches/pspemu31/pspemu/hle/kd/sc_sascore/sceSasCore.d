@@ -189,9 +189,12 @@ class sceSasCore : ModuleNative {
 	 */
     uint __sceSasGetEndFlag(SasCore* sasCore) {
 		uint endFlags;
+		/*
 		foreach (k, ref voice; sasCore.voices) {
 			if (voice.ended) endFlags |= (1 << k); 
 		}
+		*/
+		endFlags = 0xFFFFFFFF;
 		return endFlags;
     }
 
