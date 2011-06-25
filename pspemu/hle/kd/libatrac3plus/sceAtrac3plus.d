@@ -261,7 +261,12 @@ class sceAtrac3plus : ModuleNative {
 	 *
 	*/
 	int sceAtracGetBitrate(int atracID, int *outBitrate) {
-		unimplemented();
+		unimplemented_notice();
+		
+		Atrac3Object atrac3Object = getAtrac3ObjectById(atracID);
+		
+		*outBitrate = atrac3Object.processor.atrac3Format.sampleRate;
+		
 		return 0;
 	}
 	

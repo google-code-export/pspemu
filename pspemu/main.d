@@ -339,6 +339,8 @@ int main(string[] args) {
 		emulatorHelper.loadModule(args[1]);
 		emulatorHelper.start();
 		return 0;
+	} else {
+		Logger.setLevel(Logger.Level.WARNING);
 	}
 	
 	//displayHelp();
