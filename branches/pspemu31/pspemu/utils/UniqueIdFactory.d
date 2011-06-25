@@ -4,6 +4,9 @@ import std.string;
 
 alias int UID;
 
+class UniqueIdException : Exception { this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null) { super(msg, file, line, next); } }
+class UniqueIdNotFoundException : UniqueIdException { this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null) { super(msg, file, line, next); } }
+
 class UniqueIdFactory {
 	UniqueIdTypeFactory[string] factoryPerType;
 	
@@ -51,7 +54,7 @@ class UniqueIdTypeFactory {
 	}
 
 	public T get(T)(UID uid) {
-		if (uid !in values) throw(new Exception(std.string.format("Can't find %s:%d(%08X)", type, uid, uid)));
+		if (uid !in values) throw(new UniqueIdNotFoundException(std.string.format("Can't find %s:%d(%08X)", type, uid, uid)));
 		return cast(T)values[uid];
 	}
 	

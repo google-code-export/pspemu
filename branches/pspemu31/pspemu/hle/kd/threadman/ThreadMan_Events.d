@@ -149,13 +149,19 @@ template ThreadManForUser_Events() {
 	 * @return < 0 On error
 	 */
 	int _sceKernelWaitEventFlagCB(int evid, u32 bits, PspEventFlagWaitTypes wait, u32 *outBits, SceUInt *timeout, bool callback) {
-		logInfo("_sceKernelWaitEventFlagCB(%d, %032b, %s, %s, %08X)", evid, bits, to!string(wait), to!string(callback), cast(uint)timeout);
-		currentCpuThread.threadState.waitingBlock("_sceKernelWaitEventFlagCB", {
+		try {
+			logInfo("_sceKernelWaitEventFlagCB(%d, %032b, %s, %s, %08X)", evid, bits, to!string(wait), to!string(callback), cast(uint)timeout);
 			PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
-			uint matchedBits = pspWaitEvent.waitEventFlag(bits, wait, callback);
-			if (outBits !is null) *outBits = matchedBits;
-		});
-		return 0;
+			
+			currentCpuThread.threadState.waitingBlock("_sceKernelWaitEventFlagCB", {
+				uint matchedBits = pspWaitEvent.waitEventFlag(bits, wait, callback);
+				if (outBits !is null) *outBits = matchedBits;
+			});
+			return 0;
+		} catch (UniqueIdNotFoundException) {
+			logWarning("SceKernelErrors.ERROR_KERNEL_NOT_FOUND_EVENT_FLAG");
+			return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
+		}
 	}
 
 
@@ -198,9 +204,14 @@ template ThreadManForUser_Events() {
 	  * @return < 0 On error
 	  */
 	int sceKernelSetEventFlag(SceUID evid, u32 bits) {
-		PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
-		pspWaitEvent.setBits(bits);
-		return 0;
+		try {
+			PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
+			pspWaitEvent.setBits(bits);
+			return 0;
+		} catch (UniqueIdNotFoundException) {
+			logWarning("SceKernelErrors.ERROR_KERNEL_NOT_FOUND_EVENT_FLAG");
+			return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
+		}
 	}
 
 	/** 
@@ -214,26 +225,31 @@ template ThreadManForUser_Events() {
 	  * @return < 0 On error
 	  */
 	int sceKernelPollEventFlag(int evid, u32 bits, PspEventFlagWaitTypes wait, u32 *outBits) {
-		PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
-		
-		if (bits == 0) return SceKernelErrors.ERROR_KERNEL_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
-		
-		uint result = pspWaitEvent.checkEventFlag(bits, wait);
-		
-		scope (exit) {
-			logInfo(
-				"sceKernelPollEventFlag(evid=%d, bits=%032b, wait=%s, outBits=(%08X)%032b)",
-				evid, bits, toSet(wait), cast(uint)cast(void *)outBits, result
-			);
-		}
-
-		if (result) {
-			if (outBits !is null) {
-				*outBits = result; 
+		try {
+			PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
+			
+			if (bits == 0) return SceKernelErrors.ERROR_KERNEL_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
+			
+			uint result = pspWaitEvent.checkEventFlag(bits, wait);
+			
+			scope (exit) {
+				logInfo(
+					"sceKernelPollEventFlag(evid=%d, bits=%032b, wait=%s, outBits=(%08X)%032b)",
+					evid, bits, toSet(wait), cast(uint)cast(void *)outBits, result
+				);
 			}
-			return SceKernelErrors.ERROR_KERNEL_EVENT_FLAG_POLL_FAILED;
-		} else {
-			return 0;
+	
+			if (result) {
+				if (outBits !is null) {
+					*outBits = result; 
+				}
+				return SceKernelErrors.ERROR_KERNEL_EVENT_FLAG_POLL_FAILED;
+			} else {
+				return 0;
+			}
+		} catch (UniqueIdNotFoundException) {
+			logWarning("SceKernelErrors.ERROR_KERNEL_NOT_FOUND_EVENT_FLAG");
+			return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
 		}
 	}
 	
