@@ -94,7 +94,6 @@ class Gpu {
 		this.emulatorState = emulatorState;
 		this.impl   = impl;
 		this.memory = emulatorState.memory;
-		this.state.reset();
 		this.reset();
 		
 		emulatorState.runningState.onStop += delegate(...) {
@@ -104,14 +103,18 @@ class Gpu {
 	}
 
 	void reset() {
-		this.state = GpuState.init;
-		this.displayLists    = new DisplayLists(1024);
 		this.externalActions = new TaskQueue;
+		this.state = GpuState.init;
+		this.state.reset();
+		this.displayLists = new DisplayLists(1024);
 		this.state.memory = memory;
-		this.impl.reset();
-		this.impl.setState(&state);
 		this.signalEvent.reset();
 		this.finishEvent.reset();
+		
+		this.externalActionAdd({
+			this.impl.reset();
+			this.impl.setState(&state);
+		});
 	}
 
 	// Utility.
@@ -304,7 +307,7 @@ class Gpu {
 		}
 	}
 
-	bool inDrawingThread() { return Thread.getThis == thread; }
+	@property bool inDrawingThread() { return (Thread.getThis() == thread) || (thread is null); }
 	
 	void newWaitAndCheck(WaitEvent[] waitEvents, string file = __FILE__, int line = __LINE__) {
 		scope WaitMultipleObjects waitMultipleObjects = new WaitMultipleObjects();
@@ -321,9 +324,21 @@ class Gpu {
 		if (inDrawingThread) externalActions();
 	}
 
+	/*
 	void externalActionAdd(TaskQueue.Task task) {
-		externalActions.add(task);
-		if (inDrawingThread) externalActions(); else externalActions.waitExecutedAll();
+		if (inDrawingThread) {
+			task();
+		} else {
+			externalActions.addAndWait(task);
+		}
+	}
+	*/
+	void externalActionAdd(TaskQueue.Task task) {
+		if (inDrawingThread) {
+			externalActions.add(task);
+		} else {
+			externalActions.addAndWait(task);
+		}
 	}
 	
 	void loadBuffer(ScreenBuffer* buffer) {

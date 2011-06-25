@@ -202,12 +202,18 @@ final class Registers {
 	}
 
 	void reset() {
+		EXECUTED_INSTRUCTION_COUNT_THIS_THREAD = 0;
+		PAUSED = false;
 		PC = 0; nPC = 4;
+		IC = 0;
 		R[0..$] = 0;
 		F[0..$] = 0.0;
 		VF[0..$] = 0.0;
 		vfpu_prefixes[0..3] = VfpuPrefix.init;
-		//D[0..$] = 0.0;
+		FCR0 = FCR0.init;
+		FCR31 = FCR31.init;
+		CallStack[] = 0;
+		CallStackPos = 0;
 	}
 
 	uint opIndex(uint   index) { return R[index]; }
