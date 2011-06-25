@@ -161,19 +161,23 @@ class sceSasCore : ModuleNative {
 	 * @return  0 on success
 	 */
 	uint __sceSasInit(SasCore* sasCore, int grainSamples, int maxVoices, OutputMode outMode, int sampleRate) {
-		
-		if (grainSamples > PSP_SAS_GRAIN_SAMPLES) throw(new Exception("Invalid grainSamples"));
-		if (maxVoices    > PSP_SAS_VOICES_MAX   ) throw(new Exception("Invalid maxVoices"));
-		
-		//logWarning("Not implemented __sceSasInit(%08X, %d, %d, %d, %d)", currentMemory().getPointerReverse(sasCore), grainSamples, maxVoices, outMode, sampleRate);
-
-		sasCore.grainSamples = grainSamples;
-		sasCore.maxVoices    = maxVoices;
-		sasCore.outMode      = outMode;
-		sasCore.sampleRate   = sampleRate;
-		//*sasCorePtr = hleEmulatorState.uniqueIdFactory.add!SasCore(sasCore);
-		
-		return 0;
+		try {
+			if (grainSamples > PSP_SAS_GRAIN_SAMPLES) throw(new Exception("Invalid grainSamples"));
+			if (maxVoices    > PSP_SAS_VOICES_MAX   ) throw(new Exception("Invalid maxVoices"));
+			
+			//logWarning("Not implemented __sceSasInit(%08X, %d, %d, %d, %d)", currentMemory().getPointerReverse(sasCore), grainSamples, maxVoices, outMode, sampleRate);
+	
+			sasCore.grainSamples = grainSamples;
+			sasCore.maxVoices    = maxVoices;
+			sasCore.outMode      = outMode;
+			sasCore.sampleRate   = sampleRate;
+			//*sasCorePtr = uniqueIdFactory.add!SasCore(sasCore);
+			
+			return 0;
+		} catch (Exception e) {
+			logError("Error: %s", e);
+			return 0;
+		}
 	}
 
 	/**

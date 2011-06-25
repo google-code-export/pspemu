@@ -80,7 +80,7 @@ template ThreadManForUser_Threads() {
 		newThreadState.registers.SP = hleEmulatorState.memoryManager.allocStack(PspPartition.User, std.string.format("stack for thread '%s'", name), stackSize);
 		
 		newThreadState.registers.RA = 0x08000000;
-		newThreadState.thid = hleEmulatorState.uniqueIdFactory.add(newThreadState);
+		newThreadState.thid = uniqueIdFactory.add(newThreadState);
 		
 		logInfo("sceKernelCreateThread(thid:'%d', entry:%08X, name:'%s', SP:0x%08X)", newThreadState.thid, entry, name, newThreadState.registers.SP);
 		
@@ -110,7 +110,7 @@ template ThreadManForUser_Threads() {
 	int sceKernelStartThread(SceUID thid, SceSize arglen, /*void**/ uint argp) {
 		logInfo("sceKernelStartThread(%d, %d, %08X)", thid, arglen, argp);
 		
-		ThreadState newThreadState = hleEmulatorState.uniqueIdFactory.get!(ThreadState)(thid);
+		ThreadState newThreadState = uniqueIdFactory.get!(ThreadState)(thid);
 		
 		newThreadState.registers.A0 = arglen;
 		newThreadState.registers.A1 = argp;
@@ -300,7 +300,7 @@ template ThreadManForUser_Threads() {
 		
 		logInfo("sceKernelReferThreadStatus(%d)", thid);
 		if (thid < 0) return -1;
-		ThreadState threadState = hleEmulatorState.uniqueIdFactory.get!(ThreadState)(thid);
+		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
 		if (threadState is null) return -1;
 		if (info        is null) return -2;
 
@@ -331,7 +331,7 @@ template ThreadManForUser_Threads() {
 		logInfo("sceKernelChangeThreadPriority(%d, %d)", thid, priority);
 		try {
 			if (thid < 0) return -1;
-			ThreadState threadState = hleEmulatorState.uniqueIdFactory.get!(ThreadState)(thid);
+			ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
 			threadState.sceKernelThreadInfo.currentPriority = priority; 
 			return 0;
 		} catch {
@@ -353,7 +353,7 @@ template ThreadManForUser_Threads() {
 	
 	int _sceKernelWaitThreadEndCB(SceUID thid, SceUInt* timeout, bool callback) {
 		if (thid < 0) return -1;
-		ThreadState threadState = hleEmulatorState.uniqueIdFactory.get!(ThreadState)(thid);
+		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
 		
 		WaitMultipleObjects waitMultipleObjects = _getWaitMultipleObjects(callback);
 		
@@ -400,7 +400,7 @@ template ThreadManForUser_Threads() {
 	 */
 	int sceKernelDeleteThread(SceUID thid) {
 		if (thid < 0) return -1;
-		hleEmulatorState.uniqueIdFactory.remove!(ThreadState)(thid);
+		uniqueIdFactory.remove!(ThreadState)(thid);
 		return 0;
 	}
 
@@ -436,7 +436,7 @@ template ThreadManForUser_Threads() {
 	 */
 	int sceKernelWakeupThread(SceUID thid) {
 		logInfo("sceKernelWakeupThread(thid=%d)", thid);
-		ThreadState threadState = hleEmulatorState.uniqueIdFactory.get!(ThreadState)(thid);
+		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
 		threadState.nativeThreadWakeup();
 		threadState.wakeUpCount++;
 		//return -1;

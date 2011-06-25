@@ -33,7 +33,7 @@ template ThreadManForUser_Callbacks() {
 	 */
 	int sceKernelCreateCallback(string name, SceKernelCallbackFunction func, void* arg) {
 		PspCallback pspCallback = new PspCallback(name, func, arg);
-		int uid = hleEmulatorState.uniqueIdFactory.add(pspCallback);
+		int uid = uniqueIdFactory.add(pspCallback);
 		logInfo("sceKernelCreateCallback('%s':%d, %08X, %08X)", name, uid, cast(uint)func, cast(uint)arg);
 		return uid;
 	}
@@ -46,7 +46,7 @@ template ThreadManForUser_Callbacks() {
 	 * @return 0 on success, < 0 on error
 	 */
 	int sceKernelDeleteCallback(SceUID cb) {
-		hleEmulatorState.uniqueIdFactory.remove!PspCallback(cb);
+		uniqueIdFactory.remove!PspCallback(cb);
 		return 0;
 	}
 

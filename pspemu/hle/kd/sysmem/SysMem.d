@@ -98,9 +98,9 @@ class SysMemUserForUser : ModuleNative {
 	 */
 	int sceKernelFreePartitionMemory(SceUID blockid) {
 		Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelFreePartitionMemory(%d)", blockid);
-		MemorySegment memorySegment = hleEmulatorState.uniqueIdFactory.get!(MemorySegment)(blockid);
+		MemorySegment memorySegment = uniqueIdFactory.get!(MemorySegment)(blockid);
 		memorySegment.free();
-		hleEmulatorState.uniqueIdFactory.remove!(MemorySegment)(blockid);
+		uniqueIdFactory.remove!(MemorySegment)(blockid);
 		return 0;
 	}
 
@@ -175,7 +175,7 @@ class SysMemUserForUser : ModuleNative {
 	
 			if (memorySegment is null) return ERROR_KERNEL_FAILED_ALLOC_MEMBLOCK;
 			
-			SceUID sceUid = hleEmulatorState.uniqueIdFactory.add(memorySegment);
+			SceUID sceUid = uniqueIdFactory.add(memorySegment);
 			
 			Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%s:%d) :: (%d) -> %s", partitionid, name, std.conv.to!string(type), size, sceUid, memorySegment.block);
 			//Logger.log(Logger.Level.INFO, "SysMemUserForUser", "sceKernelAllocPartitionMemory(%d:'%s':%d:%d) :: (%d) -> %s", partitionid, name, (type), size, sceUid, memorySegment.block);
@@ -195,7 +195,7 @@ class SysMemUserForUser : ModuleNative {
 	 * @return The lowest address belonging to the memory block.
 	 */
 	uint sceKernelGetBlockHeadAddr(SceUID blockid) {
-		MemorySegment memorySegment = hleEmulatorState.uniqueIdFactory.get!(MemorySegment)(blockid);
+		MemorySegment memorySegment = uniqueIdFactory.get!(MemorySegment)(blockid);
 		return memorySegment.block.low;
 	}
 }

@@ -57,7 +57,7 @@ template IoFileMgrForKernel_Directories() {
 		dirname = getAbsolutePathFromRelative(dirname);
 		logInfo("sceIoDopen('%s')", dirname);
 		try {
-			return hleEmulatorState.uniqueIdFactory.add!DirHandle(fsroot.dopen(dirname));
+			return uniqueIdFactory.add!DirHandle(fsroot.dopen(dirname));
 		} catch (Throwable o) {
 			logError("sceIoDopen: %s", o);
 			return -1;
@@ -78,7 +78,7 @@ template IoFileMgrForKernel_Directories() {
 	int sceIoDread(SceUID fd, SceIoDirent *dir) {
 		logInfo("sceIoDread(%d)", fd);
 		try {
-			DirHandle dirHandle = hleEmulatorState.uniqueIdFactory.get!DirHandle(fd);
+			DirHandle dirHandle = uniqueIdFactory.get!DirHandle(fd);
 			FileEntry fileEntry = fsroot.dread(dirHandle);
 			if (fileEntry is null) {
 				return 0;
@@ -102,9 +102,9 @@ template IoFileMgrForKernel_Directories() {
 	int sceIoDclose(SceUID fd) {
 		logInfo("sceIoDclose(%d)", fd);
 		try {
-			DirHandle dirHandle = hleEmulatorState.uniqueIdFactory.get!DirHandle(fd);
+			DirHandle dirHandle = uniqueIdFactory.get!DirHandle(fd);
 			fsroot.dclose(dirHandle);
-			hleEmulatorState.uniqueIdFactory.remove!DirHandle(fd);
+			uniqueIdFactory.remove!DirHandle(fd);
 			return 0;
 		} catch (Throwable o) {
 			logError("sceIoDclose: %s", o);

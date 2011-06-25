@@ -68,7 +68,7 @@ class SysTimerForKernel : ModuleNative {
 	 * @return SysTimerId on success, < 0 on error
 	 */
 	SceSysTimerId sceSTimerAlloc() {
-		SceSysTimerId sysTimerId = hleEmulatorState.uniqueIdFactory.add!SysTimer(new SysTimer(hleEmulatorState, currentThreadState));
+		SceSysTimerId sysTimerId = uniqueIdFactory.add!SysTimer(new SysTimer(hleEmulatorState, currentThreadState));
 		logInfo("sceSTimerAlloc() : %d", sysTimerId);
 		return sysTimerId;
 	}
@@ -83,7 +83,7 @@ class SysTimerForKernel : ModuleNative {
 	 */
 	void sceSTimerSetHandler(SceSysTimerId timer, int cycle, uint handler, int unk1) {
 		logInfo("sceSTimerSetHandler(%d, %d, %08X, %d)", timer, cycle, handler, unk1);
-		SysTimer sysTimer = hleEmulatorState.uniqueIdFactory.get!SysTimer(timer);
+		SysTimer sysTimer = uniqueIdFactory.get!SysTimer(timer);
 		sysTimer.setHandler(cycle, handler, unk1);
 	}
 
@@ -95,7 +95,7 @@ class SysTimerForKernel : ModuleNative {
 	 */
 	void sceSTimerStartCount(SceSysTimerId timer) {
 		logInfo("sceSTimerStartCount(%d)", timer);
-		hleEmulatorState.uniqueIdFactory.get!SysTimer(timer).start();
+		uniqueIdFactory.get!SysTimer(timer).start();
 	}
 }
 

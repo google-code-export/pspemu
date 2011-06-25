@@ -44,9 +44,9 @@ class StdioForUser : ModuleNative {
 	}
 	
 	void initModule() {
-		hleEmulatorState.uniqueIdFactory.set!LocalFileHandle(cast(uint)1, new LocalFileHandle(null, new FileWrapperStream(stdin )));
-		hleEmulatorState.uniqueIdFactory.set!LocalFileHandle(cast(uint)2, new LocalFileHandle(null, new FileWrapperStream(stdout)));
-		hleEmulatorState.uniqueIdFactory.set!LocalFileHandle(cast(uint)3, new LocalFileHandle(null, new FileWrapperStream(stderr)));
+		uniqueIdFactory.set!LocalFileHandle(cast(uint)1, new LocalFileHandle(null, new FileWrapperStream(stdin )));
+		uniqueIdFactory.set!LocalFileHandle(cast(uint)2, new LocalFileHandle(null, new FileWrapperStream(stdout)));
+		uniqueIdFactory.set!LocalFileHandle(cast(uint)3, new LocalFileHandle(null, new FileWrapperStream(stderr)));
 	}
 
 	/**

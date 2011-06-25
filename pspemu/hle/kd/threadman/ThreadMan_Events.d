@@ -106,7 +106,7 @@ template ThreadManForUser_Events() {
 	 */
 	SceUID sceKernelCreateEventFlag(string name, int attr, int bits, SceKernelEventFlagOptParam *opt) {
 		PspWaitEvent pspWaitEvent = new PspWaitEvent(name, attr, bits);
-		return hleEmulatorState.uniqueIdFactory.add(pspWaitEvent);
+		return uniqueIdFactory.add(pspWaitEvent);
 	}
 
 	/** 
@@ -117,7 +117,7 @@ template ThreadManForUser_Events() {
 	 * @return < 0 On error
 	 */
 	int sceKernelDeleteEventFlag(int evid) {
-		hleEmulatorState.uniqueIdFactory.remove!PspWaitEvent(evid);
+		uniqueIdFactory.remove!PspWaitEvent(evid);
 		return 0;
 	}
 
@@ -131,7 +131,7 @@ template ThreadManForUser_Events() {
 	 */
 	int sceKernelClearEventFlag(SceUID evid, u32 bits) {
 		//unimplemented_notice();
-		PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
+		PspWaitEvent pspWaitEvent = uniqueIdFactory.get!PspWaitEvent(evid);
 		pspWaitEvent.clearBits(bits);
 		return 0;
 		//return -1;
@@ -151,7 +151,7 @@ template ThreadManForUser_Events() {
 	int _sceKernelWaitEventFlagCB(int evid, u32 bits, PspEventFlagWaitTypes wait, u32 *outBits, SceUInt *timeout, bool callback) {
 		try {
 			logInfo("_sceKernelWaitEventFlagCB(%d, %032b, %s, %s, %08X)", evid, bits, to!string(wait), to!string(callback), cast(uint)timeout);
-			PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
+			PspWaitEvent pspWaitEvent = uniqueIdFactory.get!PspWaitEvent(evid);
 			
 			currentCpuThread.threadState.waitingBlock("_sceKernelWaitEventFlagCB", {
 				uint matchedBits = pspWaitEvent.waitEventFlag(bits, wait, callback);
@@ -205,7 +205,7 @@ template ThreadManForUser_Events() {
 	  */
 	int sceKernelSetEventFlag(SceUID evid, u32 bits) {
 		try {
-			PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
+			PspWaitEvent pspWaitEvent = uniqueIdFactory.get!PspWaitEvent(evid);
 			pspWaitEvent.setBits(bits);
 			return 0;
 		} catch (UniqueIdNotFoundException) {
@@ -226,7 +226,7 @@ template ThreadManForUser_Events() {
 	  */
 	int sceKernelPollEventFlag(int evid, u32 bits, PspEventFlagWaitTypes wait, u32 *outBits) {
 		try {
-			PspWaitEvent pspWaitEvent = hleEmulatorState.uniqueIdFactory.get!PspWaitEvent(evid);
+			PspWaitEvent pspWaitEvent = uniqueIdFactory.get!PspWaitEvent(evid);
 			
 			if (bits == 0) return SceKernelErrors.ERROR_KERNEL_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
 			

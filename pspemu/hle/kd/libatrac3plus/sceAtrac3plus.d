@@ -310,7 +310,7 @@ class sceAtrac3plus : ModuleNative {
 		logWarning("Not implemented sceAtracSetDataAndGetID");
 		Atrac3Object atrac3Object = new Atrac3Object((cast(ubyte*)buf)[0..bufsize]);
 
-		return cast(int)hleEmulatorState.uniqueIdFactory.add(atrac3Object);
+		return cast(int)uniqueIdFactory.add(atrac3Object);
 	}
 	
 	/**
@@ -349,7 +349,7 @@ class sceAtrac3plus : ModuleNative {
 	}
 	
 	Atrac3Object getAtrac3ObjectById(int atracID) {
-		return hleEmulatorState.uniqueIdFactory.get!Atrac3Object(atracID);
+		return uniqueIdFactory.get!Atrac3Object(atracID);
 	}
 	
 	/**
@@ -412,7 +412,7 @@ class sceAtrac3plus : ModuleNative {
 	*/
 	int sceAtracReleaseAtracID(int atracID) {
 		unimplemented_notice();
-		hleEmulatorState.uniqueIdFactory.remove!Atrac3Object(atracID);
+		uniqueIdFactory.remove!Atrac3Object(atracID);
 		return 0;
 	}
 	
@@ -420,7 +420,7 @@ class sceAtrac3plus : ModuleNative {
 		ubyte[] data;
 		logInfo("sceAtracGetAtracID(%d)", codecType);
 		unimplemented_notice();
-		return cast(int)hleEmulatorState.uniqueIdFactory.add(new Atrac3Object(data));
+		return cast(int)uniqueIdFactory.add(new Atrac3Object(data));
 	}
 	
 	/**

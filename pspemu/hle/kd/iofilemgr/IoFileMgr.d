@@ -249,9 +249,9 @@ class IoFileMgrForKernel : ModuleNative {
 		logInfo("sceIoClose('%d')", fd);
 		if (fd < 0) return -1;
 		try {
-			FileHandle fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+			FileHandle fileHandle = uniqueIdFactory.get!FileHandle(fd);
 			fsroot().close(fileHandle);
-			hleEmulatorState.uniqueIdFactory.remove!FileHandle(fd);
+			uniqueIdFactory.remove!FileHandle(fd);
 			return 0;
 		} catch (Throwable o) {
 			.writefln("sceIoClose(%d) : %s", fd, o);
@@ -336,7 +336,7 @@ class IoFileMgrForKernel : ModuleNative {
 		try {
 			logInfo("sceIoOpen('%s', %d, %d) : %08X, %08X, %08X", file, flags, mode, currentRegisters().A0, currentRegisters().A1, currentRegisters().A2);
 			logInfo("   %s", (cast(ubyte*)currentMemory().getPointer(currentRegisters().A0))[0..0x10]);
-			SceUID ret = hleEmulatorState.uniqueIdFactory.add!FileHandle(_open(file, flags, mode));
+			SceUID ret = uniqueIdFactory.add!FileHandle(_open(file, flags, mode));
 			logInfo("sceIoOpen():%d", ret);
 			return ret;
 		} catch (Throwable o) {
@@ -365,7 +365,7 @@ class IoFileMgrForKernel : ModuleNative {
 		if (fd < 0) return -1;
 		if (data is null) return -1;
 		try {
-			return fsroot().read(hleEmulatorState.uniqueIdFactory.get!FileHandle(fd), (cast(ubyte *)data)[0..size]);
+			return fsroot().read(uniqueIdFactory.get!FileHandle(fd), (cast(ubyte *)data)[0..size]);
 		} catch (Throwable o) {
 			logError("sceIoRead: %s", o);
 			return -1;
@@ -390,7 +390,7 @@ class IoFileMgrForKernel : ModuleNative {
 		logInfo("sceIoWrite(%d, %d)", fd, size);
 		if (fd < 0) return -1;
 		if (data is null) return -1;
-		FileHandle fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+		FileHandle fileHandle = uniqueIdFactory.get!FileHandle(fd);
 
 		// Less than 256 MB.
 		/*
@@ -425,7 +425,7 @@ class IoFileMgrForKernel : ModuleNative {
 	SceOff sceIoLseek(SceUID fd, SceOff offset, int whence) {
 		logInfo("sceIoLseek(%d, %d, %d)", fd, offset, whence);
 		if (fd < 0) return -1;
-		FileHandle fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+		FileHandle fileHandle = uniqueIdFactory.get!FileHandle(fd);
 		return fsroot().seek(fileHandle, offset, cast(Whence)whence);
 	}
 
@@ -511,7 +511,7 @@ class IoFileMgrForKernel : ModuleNative {
 	int sceIoIoctl(SceUID fd, uint cmd, void* indata, int inlen, void* outdata, int outlen) {
 		unimplemented_notice();
 		logInfo("sceIoIoctl(%d, 0x%08X, 0x%08X, %d, 0x%08X, %d)", fd, cmd, cast(uint)indata, inlen, cast(uint)outdata, outlen);
-		FileHandle fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+		FileHandle fileHandle = uniqueIdFactory.get!FileHandle(fd);
 		//logInfo("---%s", fileHandle);
 		logInfo("---%s", fileHandle.virtualFileSystem);
 		fileHandle.virtualFileSystem.ioctl(fileHandle, cmd, (cast(ubyte*)indata)[0..inlen], (cast(ubyte*)outdata)[0..outlen]);
@@ -545,8 +545,8 @@ class IoFileMgrForKernel : ModuleNative {
 		try {
 			FileHandle newStream = _open(file, flags, mode);
 			
-			fsroot().close(hleEmulatorState.uniqueIdFactory.get!FileHandle(fd));
-			hleEmulatorState.uniqueIdFactory.set!FileHandle(fd, newStream);
+			fsroot().close(uniqueIdFactory.get!FileHandle(fd));
+			uniqueIdFactory.set!FileHandle(fd, newStream);
 			
 			return fd;
 		} catch (Throwable o) {

@@ -31,7 +31,7 @@ class LoadCoreForKernel : ModuleNative {
 		//unimplemented();
 		Logger.log(Logger.Level.WARNING, "LoadCoreForKernel", "Not implemented sceKernelFindModuleByUID(%d)", modid);
 		
-		return hleEmulatorState.uniqueIdFactory.get!ModulePsp(modid).sceModule;
+		return uniqueIdFactory.get!ModulePsp(modid).sceModule;
 	}
 
 	/**

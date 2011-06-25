@@ -35,17 +35,17 @@ template IoFileMgrForKernel_FilesAsync() {
 	 */
 	SceUID sceIoOpenAsync(string file, SceIoFlags flags, SceMode mode) {
 		SceUID fd = sceIoOpen(file, flags, mode);
-		auto fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+		auto fileHandle = uniqueIdFactory.get!FileHandle(fd);
 		//fileHandle.lastOperationResult = cast(long)fd;
 		fileHandle.lastOperationResult = 0;
 		return cast(SceUID)fd;
 		/*
 		logWarning("sceIoOpenAsync('%s':%d, %d, %d)", file, file !is null, flags, mode);
 		if (file == "") {
-			return hleEmulatorState.uniqueIdFactory.add(new AsyncStream(new MemoryStream()));
+			return uniqueIdFactory.add(new AsyncStream(new MemoryStream()));
 		}
 		try {
-			SceUID ret = hleEmulatorState.uniqueIdFactory.add(_open(file, flags, mode));
+			SceUID ret = uniqueIdFactory.add(_open(file, flags, mode));
 			logInfo("sceIoOpenAsync():%d", ret);
 			return ret;
 		} catch (Throwable o) {
@@ -67,7 +67,7 @@ template IoFileMgrForKernel_FilesAsync() {
 	 */
 	int sceIoLseekAsync(SceUID fd, SceOff offset, int whence) {
 		SceOff offsetAfterSeek = sceIoLseek(fd, offset, whence);
-		auto fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+		auto fileHandle = uniqueIdFactory.get!FileHandle(fd);
 		fileHandle.lastOperationResult = cast(long)offsetAfterSeek;
 		return 0;
 	}
@@ -81,10 +81,10 @@ template IoFileMgrForKernel_FilesAsync() {
 	int sceIoCloseAsync(SceUID fd) {
 		try {
 			logError("sceIoCloseAsync(%d)", fd);
-			auto fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+			auto fileHandle = uniqueIdFactory.get!FileHandle(fd);
 			//fsroot().flush(fileHandle);
 			fsroot().close(fileHandle);
-			//hleEmulatorState.uniqueIdFactory.remove!FileHandle(fd);
+			//uniqueIdFactory.remove!FileHandle(fd);
 			fileHandle.lastOperationResult = 0;
 			return 0;
 		} catch (Throwable o) {
@@ -109,7 +109,7 @@ template IoFileMgrForKernel_FilesAsync() {
 	 */
 	int sceIoReadAsync(SceUID fd, ubyte *data, SceSize size) {
 		logInfo("sceIoReadAsync(%d, %s, %d)", fd, data, size);
-		FileHandle fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+		FileHandle fileHandle = uniqueIdFactory.get!FileHandle(fd);
 		fileHandle.lastOperationResult = sceIoRead(fd, data, size);
 		logInfo("      :%d", fileHandle.lastOperationResult);
 		return 0;
@@ -129,7 +129,7 @@ template IoFileMgrForKernel_FilesAsync() {
 	}
 	
 	int _sceIoWaitAsyncCB(SceUID fd, SceInt64* res, bool callbacks) {
-		FileHandle fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+		FileHandle fileHandle = uniqueIdFactory.get!FileHandle(fd);
 		*res = fileHandle.lastOperationResult;
 		return 0;
 	}
@@ -161,7 +161,7 @@ template IoFileMgrForKernel_FilesAsync() {
 	int sceIoPollAsync(SceUID fd, SceInt64 *res) {
 		logWarning("Not implemented sceIoPollAsync(%d, %s)", fd, res);
 		try {
-			FileHandle fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+			FileHandle fileHandle = uniqueIdFactory.get!FileHandle(fd);
 			logWarning("     result: %d", fileHandle.lastOperationResult);
 			*res = fileHandle.lastOperationResult;
 			return 0;

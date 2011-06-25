@@ -14,6 +14,7 @@ import pspemu.hle.kd.iofilemgr.Types;
 
 import pspemu.hle.kd.threadman.ThreadMan; 
 import pspemu.hle.kd.iofilemgr.IoFileMgr;
+import pspemu.hle.vfs.VirtualFileSystem;
 
 class ModuleMgrForUser : ModuleNative {
 	void initNids() {
@@ -62,7 +63,7 @@ class ModuleMgrForUser : ModuleNative {
 		
 		ModulePsp modulePsp = new ModulePsp();
 		modulePsp.dummyModule = true;
-		return hleEmulatorState.uniqueIdFactory.add(modulePsp);
+		return uniqueIdFactory.add(modulePsp);
 	}
 
 	uint sceKernelStopUnloadSelfModuleWithStatus() {
@@ -95,6 +96,9 @@ class ModuleMgrForUser : ModuleNative {
 	 * @return The UID of the loaded module on success, otherwise one of ::PspKernelErrorCodes.
 	 */
 	SceUID sceKernelLoadModuleByID(SceUID fid, int flags, SceKernelLMOption *option) {
+		FileHandle fileHandle = uniqueIdFactory.get!FileHandle(fid);
+
+		logInfo("sceKernelLoadModuleByID(%d, %d, 0x%08X)", fid, flags, cast(uint)cast(void*)option);
 		unimplemented_notice();
 		return 0;
 	}
@@ -129,13 +133,13 @@ class ModuleMgrForUser : ModuleNative {
 			currentThreadState().threadModule.fillImportsWithExports(currentMemory, modulePsp);
 			
 			Logger.log(Logger.Level.INFO, "ModuleMgrForUser", "sceKernelLoadModule.loaded");
-			return hleEmulatorState.uniqueIdFactory.add(modulePsp);
+			return uniqueIdFactory.add(modulePsp);
 		} catch (Throwable o) {
 			logError("Unable to load module sceKernelLoadModule '%s' : %s", path, o);
 			
 			ModulePsp modulePsp = new ModulePsp();
 			modulePsp.dummyModule = true;
-			return hleEmulatorState.uniqueIdFactory.add(modulePsp);
+			return uniqueIdFactory.add(modulePsp);
 		}
 	}
 
@@ -151,7 +155,11 @@ class ModuleMgrForUser : ModuleNative {
 	 * @return ??? on success, otherwise one of ::PspKernelErrorCodes.
 	 */
 	int sceKernelStartModule(SceUID modid, SceSize argsize, uint argp, int *status, SceKernelSMOption *option) {
-		ModulePsp modulePsp = hleEmulatorState.uniqueIdFactory.get!ModulePsp(modid);
+		if (modid == 0) {
+			return 0;
+		}
+		
+		ModulePsp modulePsp = uniqueIdFactory.get!ModulePsp(modid);
 		
 		if (modulePsp.dummyModule) {
 			return 0;
@@ -161,7 +169,7 @@ class ModuleMgrForUser : ModuleNative {
 		
 		//SceUID sceKernelCreateThread(string name, SceKernelThreadEntry entry, int initPriority, int stackSize, SceUInt attr, SceKernelThreadOptParam *option)
 		SceUID thid = threadManForUser.sceKernelCreateThread("main_thread", modulePsp.sceModule.entry_addr, 0, 0x1000, modulePsp.sceModule.attribute, null);
-		ThreadState threadState = hleEmulatorState.uniqueIdFactory.get!ThreadState(thid);
+		ThreadState threadState = uniqueIdFactory.get!ThreadState(thid);
 		threadState.threadModule = modulePsp;
 		
 		threadManForUser.sceKernelStartThread(thid, argsize, argp);
