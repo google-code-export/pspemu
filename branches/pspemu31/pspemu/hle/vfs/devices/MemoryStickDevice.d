@@ -36,8 +36,8 @@ class MemoryStickDevice : IoDevice {
 		return hleEmulatorState.executeGuestCode(cpuThreadBase.threadState, callbackPtr, [0, inserted ? 1 : 2, 0]);
 	}
 
-	override int ioctl(uint cmd, ubyte[] indata, ubyte[] outdata) {
-		throw(new Exception("Must implemente ioctl"));
+	override int ioctl(FileHandle fileHandle, uint cmd, ubyte[] indata, ubyte[] outdata) {
+		throw(new Exception("Must implemente ioctl (MemoryStickDevice)"));
 	}
 
 	override int devctl(string devname, uint cmd, ubyte[] inData, ubyte[] outData) {

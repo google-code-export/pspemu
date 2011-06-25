@@ -39,6 +39,32 @@ class sceLibFont : ModuleNative {
         mixin(registerd!(0x02D7F94B, sceFontFlush));
 	}
 	
+	class FontLibrary {
+		this(FontNewLibParams* params) {
+			
+		}
+	}
+	
+	class Font {
+		FontLibrary fontLibrary;
+		
+		this(FontLibrary fontLibrary) {
+			this.fontLibrary = fontLibrary;
+		}
+		
+		Font setByIndex(int index) {
+			return this;
+		}
+		
+		Font setByData(ubyte[] data) {
+			return this;
+		}
+		
+		Font setByFileName(string fileName) {
+			return this;
+		}
+	}
+	
 	/**
 	 * Creates a new font library.
 	 *
@@ -48,12 +74,11 @@ class sceLibFont : ModuleNative {
 	 * @return FontLibraryHandle
 	 */
 	FontLibraryHandle sceFontNewLib(FontNewLibParams* params, uint* errorCode) {
-		unimplemented();
-
-		FontLibraryHandle fontLibraryHandle = 0;
-		*errorCode = 0;
 		unimplemented_notice();
-		return fontLibraryHandle;
+
+		*errorCode = 0;
+		
+		return uniqueIdFactory.add(new FontLibrary(params));
 	}
 
 	/**
@@ -80,11 +105,14 @@ class sceLibFont : ModuleNative {
 	 * @return FontHandle
 	 */
 	FontHandle sceFontOpen(FontLibraryHandle libHandle, int index, int mode, uint* errorCode) {
-		unimplemented();
-		
-		uint fontHandle = 0;
+		unimplemented_notice();
+
 		*errorCode = 0;
-		return fontHandle;
+		
+		return uniqueIdFactory.add(
+			(new Font(uniqueIdFactory.get!FontLibrary(libHandle)))
+				.setByIndex(index)
+		);
 	}
 
 	/**
@@ -98,10 +126,14 @@ class sceLibFont : ModuleNative {
 	 * @return FontHandle
 	 */
 	FontHandle sceFontOpenUserMemory(FontLibraryHandle libHandle, void* memoryFontAddr, int memoryFontLength, uint* errorCode) {
-		unimplemented();
+		unimplemented_notice();
 
-		uint fontHandle = 0;
-		return fontHandle;
+		*errorCode = 0;
+		
+		return uniqueIdFactory.add(
+			(new Font(uniqueIdFactory.get!FontLibrary(libHandle)))
+				.setByData((cast(ubyte *)memoryFontAddr)[0..memoryFontLength])
+		);
 	}
 	
 	/**
@@ -115,11 +147,14 @@ class sceLibFont : ModuleNative {
 	 * @return FontHandle
 	 */
 	FontHandle sceFontOpenUserFile(FontLibraryHandle libHandle, string fileName, int mode, uint* errorCode) {
-		unimplemented();
+		unimplemented_notice();
 		
-		uint fontHandle = 0;
 		*errorCode = 0;
-		return fontHandle;
+
+		return uniqueIdFactory.add(
+			(new Font(uniqueIdFactory.get!FontLibrary(libHandle)))
+				.setByFileName(fileName)
+		);
 	}
 
 	/**
@@ -190,7 +225,7 @@ class sceLibFont : ModuleNative {
 	 * @return 0 on success
 	 */
 	int sceFontGetFontInfo(FontHandle fontHandle, FontInfo* fontInfo) {
-		unimplemented();
+		unimplemented_notice();
 
 		return 0;
 	}

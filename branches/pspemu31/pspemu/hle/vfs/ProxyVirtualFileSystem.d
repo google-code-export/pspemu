@@ -94,8 +94,8 @@ class ProxyVirtualFileSystem : VirtualFileSystem {
 		return newFileSystem.rename(oldname, newname);
 	}
 
-	override int ioctl(uint cmd, ubyte[] indata, ubyte[] outdata) {
-		return parentVirtualFileSystem.ioctl(cmd, indata, outdata);
+	override int ioctl(FileHandle fileHandle, uint cmd, ubyte[] indata, ubyte[] outdata) {
+		return parentVirtualFileSystem.ioctl(fileHandle, cmd, indata, outdata);
 	}
 
 	override int devctl(string devname, uint cmd, ubyte[] indata, ubyte[] outdata) {

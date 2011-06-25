@@ -499,16 +499,33 @@ class IoFileMgrForKernel : ModuleNative {
 	/**
 	 * Perform an ioctl on a device.
 	 *
-	 * @param fd - Opened file descriptor to ioctl to
-	 * @param cmd - The command to send to the device
-	 * @param indata - A data block to send to the device, if NULL sends no data
-	 * @param inlen - Length of indata, if 0 sends no data
-	 * @param outdata - A data block to receive the result of a command, if NULL receives no data
-	 * @param outlen - Length of outdata, if 0 receives no data
+	 * @param  fd      - Opened file descriptor to ioctl to
+	 * @param  cmd     - The command to send to the device
+	 * @param  indata  - A data block to send to the device, if NULL sends no data
+	 * @param  inlen   - Length of indata, if 0 sends no data
+	 * @param  outdata - A data block to receive the result of a command, if NULL receives no data
+	 * @param  outlen  - Length of outdata, if 0 receives no data
+	 *
 	 * @return 0 on success, < 0 on error
 	 */
 	int sceIoIoctl(SceUID fd, uint cmd, void* indata, int inlen, void* outdata, int outlen) {
-		unimplemented();
+		unimplemented_notice();
+		logInfo("sceIoIoctl(%d, 0x%08X, 0x%08X, %d, 0x%08X, %d)", fd, cmd, cast(uint)indata, inlen, cast(uint)outdata, outlen);
+		FileHandle fileHandle = hleEmulatorState.uniqueIdFactory.get!FileHandle(fd);
+		//logInfo("---%s", fileHandle);
+		logInfo("---%s", fileHandle.virtualFileSystem);
+		fileHandle.virtualFileSystem.ioctl(fileHandle, cmd, (cast(ubyte*)indata)[0..inlen], (cast(ubyte*)outdata)[0..outlen]);
+		
+		/*
+		logWarning("sceIoDevctl('%s', 0x%08X)", dev, cmd);
+		try {
+			return rootFileSystem().getDevice(dev).devctl(dev, cmd, (cast(ubyte*)indata)[0..inlen], (cast(ubyte*)outdata)[0..outlen]);
+		} catch (Throwable o) {
+			logError("sceIoDevctl: %s", std.encoding.sanitize(o.toString));
+			return -1;
+		}
+		*/
+
 		return -1;
 	}
 

@@ -436,6 +436,7 @@ static struct GpuState {
 	
 	void reset() {
 		textureMatrix = Matrix();
+		morphWeights = [1, 0, 0, 0, 0, 0, 0, 0];
 	}
 	
 	union {
@@ -472,6 +473,7 @@ static struct GpuState {
 			FrontFaceDirection frontFaceDirection;
 			ShadingModel shadeModel;
 
+			//float[8] morphWeights = [1, 0, 0, 0, 0, 0, 0, 0];
 			float[8] morphWeights;
 
 			// State.

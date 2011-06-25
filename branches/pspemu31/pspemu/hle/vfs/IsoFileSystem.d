@@ -78,9 +78,11 @@ class IsoDirHandle : DirHandle {
 
 class IsoFileSystem : VirtualFileSystem {
 	Iso iso;
+	VirtualFileSystem ioDevice;
 
-	public this(Iso iso) {
+	public this(Iso iso, VirtualFileSystem ioDevice = null) {
 		this.iso = iso;
+		this.ioDevice = ioDevice;
 	}
 	
 	Stream getStreamFromHandle(FileHandle handle) {
@@ -141,5 +143,15 @@ class IsoFileSystem : VirtualFileSystem {
 	
 	override FileStat getstat(string file) {
 		return isoNodeToFileStat(this, iso.locate(file));
+	}
+	
+	override int ioctl(FileHandle fileHandle, uint cmd, ubyte[] indata, ubyte[] outdata) {
+		if (ioDevice !is null) return ioDevice.ioctl(fileHandle, cmd, indata, outdata);
+		return super.ioctl(fileHandle, cmd, indata, outdata);
+	}
+
+	override int devctl(string devname, uint cmd, ubyte[] indata, ubyte[] outdata) {
+		if (ioDevice !is null) return ioDevice.devctl(devname, cmd, indata, outdata);
+		return super.devctl(devname, cmd, indata, outdata);
 	}
 }

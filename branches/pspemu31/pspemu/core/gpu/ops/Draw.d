@@ -224,9 +224,7 @@ template Gpu_Draw() {
 		
 		//float[] morphWeights = gpu.state.morphWeights;
 		
-		if (vertexType.morphingVertexCount == 1) {
-			gpu.state.morphWeights[0] = 1.0;
-		}
+		//if (vertexType.morphingVertexCount == 1) gpu.state.morphWeights[0] = 1.0;
 
 		debug (EXTRACT_PRIM) writefln(
 			"Prim(%d) PrimitiveType(%d) Size(%d)"
