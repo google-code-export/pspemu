@@ -13,6 +13,8 @@ import pspemu.utils.Path;
 import core.time;
 import core.thread;
 import std.datetime;
+import std.file;
+import std.md5;
 
 enum CodecType {
 	Unknown  = 0,
@@ -92,14 +94,17 @@ class Atrac3Object {
 	}
 	
 	void getWave() {
-		string omaFile = ApplicationPaths.exe ~ r"\temp.oma";
-		string wavFile = ApplicationPaths.exe ~ r"\temp.wav";
+		ubyte[16] digest;
+		std.md5.sum(digest, buf);
+		string md5 = std.md5.digestToString(digest);
+		string omaFile = ApplicationPaths.exe ~ r"\temp-" ~ md5 ~ ".oma";
+		string wavFile = ApplicationPaths.exe ~ r"\temp-" ~ md5 ~ ".wav";
 		
 		try {
 			this.writeOma(omaFile);
 			convertOmaToWav(omaFile, wavFile);
 			
-			if (std.file.exists(wavFile)) {
+			if (std.file.exists(wavFile) && (std.file.getSize(wavFile) > 0)) {
 				WaveProcessor waveProcessor = new WaveProcessor();
 				waveProcessor.process(new BufferedFile(wavFile));
 				auto stream = waveProcessor.chunksByType["data"].getStream();
@@ -322,7 +327,8 @@ class sceAtrac3plus : ModuleNative {
 	 * Sets the number of loops for this atrac ID
 	 *
 	 * @param atracID - the atracID
-	 * @param nloops  - the number of loops to set
+	 * @param nloops  - the number of loops to set (0 means play it one time, 1 means play it twice, 2 means play it three times, ...)
+	 *                - -1 means play it forever
 	 *
 	 * @return < 0 on error, otherwise 0
 	 *
@@ -346,9 +352,9 @@ class sceAtrac3plus : ModuleNative {
 	 *
 	*/
 	int sceAtracGetRemainFrame(int atracID, int *outRemainFrame) {
-		unimplemented_notice();
+		//unimplemented_notice();
 		Atrac3Object atrac3Object = getAtrac3ObjectById(atracID);
-		logWarning("Not implemented sceAtracGetRemainFrame(%d, %s)", atracID, outRemainFrame);
+		//logWarning("Not implemented sceAtracGetRemainFrame(%d, %s)", atracID, outRemainFrame);
 		*outRemainFrame = -1;
 		return 0;
 	}
@@ -378,15 +384,17 @@ class sceAtrac3plus : ModuleNative {
 		int numSamples = atrac3Object.getMaxNumberOfSamples();
 		int numShorts = numSamples * 2;
 		int result = 0;
+		bool endedStream;
 		
-		if ((atrac3Object.samplesOffset + numShorts) >= atrac3Object.samples.length) {
-			*outEnd = -1;			
-			result = SceKernelErrors.ERROR_ATRAC_ALL_DATA_DECODED;
+		int samplesLeft = cast(int)(atrac3Object.samples.length - atrac3Object.samplesOffset * 2);
+		
+		if (samplesLeft <= numShorts) {
+			endedStream = true;
 		} else {
-			*outEnd = 0;
+			endedStream = false;
 		}
 		
-		int numReadedSamples = min(cast(int)(atrac3Object.samples.length - atrac3Object.samplesOffset * 2), numShorts);
+		int numReadedSamples = min(samplesLeft, numShorts);
 		
 		outSamples[0..numReadedSamples] = cast(u16[])atrac3Object.samples[atrac3Object.samplesOffset * 2..atrac3Object.samplesOffset * 2 + numReadedSamples]; 
 		atrac3Object.samplesOffset += numReadedSamples / 2;
@@ -394,7 +402,24 @@ class sceAtrac3plus : ModuleNative {
 		*outN = numReadedSamples / 2;
 		*outRemainFrame = -1;
 		
-		logInfo("sceAtracDecodeData(atracID=%d, outN=%d, outEnd=%d, outRemainFrame=%d)", atracID, *outN, *outEnd, *outRemainFrame);
+		logInfo("sceAtracDecodeData(atracID=%d, outN=%d, outEnd=%d, outRemainFrame=%d, offset=%d)", atracID, *outN, *outEnd, *outRemainFrame, atrac3Object.samplesOffset);
+
+		if (endedStream) {
+			if (atrac3Object.nloops != 0) {
+				endedStream = false;
+				atrac3Object.samplesOffset = 0;
+				logWarning("sceAtracDecodeData :: reset");
+			}
+			if (atrac3Object.nloops > 0) atrac3Object.nloops--;
+		}
+		
+		if (endedStream) {
+			*outEnd = -1;			
+			result = SceKernelErrors.ERROR_ATRAC_ALL_DATA_DECODED;
+			logWarning("sceAtracDecodeData :: ended");
+		} else {
+			*outEnd = 0;
+		}
 		
 		if (result == 0) {
 			Thread.yield();
