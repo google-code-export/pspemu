@@ -182,8 +182,8 @@ template Gpu_Draw() {
 	    	float u1 = 1 - u;
 	    	float[4] ret = [
 	    		(u1 ^^ 3),
-	    		(3 * u0 * (u1 ^^ 2)),
-	    		(3 * u1 * (u0 ^^ 2)),
+	    		(3 * (u0 ^^ 1) * (u1 ^^ 2)),
+	    		(3 * (u1 ^^ 1) * (u0 ^^ 2)),
 	    		(u0 ^^ 3)
 	    	];
 	    }
@@ -195,8 +195,85 @@ template Gpu_Draw() {
 	auto OP_BEZIER() {
 		int ucount = command.extract!(ubyte, 0,  8);
 		int vcount = command.extract!(ubyte, 8, 16);
-		//auto primitiveType = command.extractEnum!(PrimitiveType, 16);
-		Logger.log(Logger.Level.INFO, "Gpu", "OP_BEZIER(ucount=%d, vcount=%d)", ucount, vcount);
+        int utype  = command.extract!(ubyte, 16, 2);
+        int vtype  = command.extract!(ubyte, 18, 2);
+        
+	    int[] spline_knot(int n, int type) {
+	        int[] knot = new int[n + 5];
+	        foreach (i; 0..n - 1) {
+				knot[i + 3] = i;
+	        }
+	
+	        if ((type & 1) == 0) {
+				knot[0] = -3;
+				knot[1] = -2;
+				knot[2] = -1;
+	        }
+
+	        if ((type & 2) == 0) {
+				knot[n + 2] = n - 1;
+				knot[n + 3] = n;
+				knot[n + 4] = n + 1;
+	        } else {
+				knot[n + 2] = n - 2;
+				knot[n + 3] = n - 2;
+				knot[n + 4] = n - 2;
+	        }
+	
+	        return knot;
+	    }
+		
+		auto vertexPointerBase = gpu.memory.getPointerOrNull!ubyte(gpu.state.vertexAddress);
+		auto indexPointerBase  = gpu.memory.getPointerOrNull!ubyte(gpu.state.indexAddress);
+		auto vertexType        = gpu.state.vertexType;
+
+		if ((ucount - 1) % 3 != 0 || (vcount - 1) % 3 != 0) {
+			Logger.log(Logger.Level.ERROR, "Gpu", std.string.format("Unsupported bezier parameters ucount=%d vcount=%d", ucount, vcount));
+            return;
+        }
+		
+		Logger.log(Logger.Level.INFO, "Gpu", "BEZIER(ucount=%d, vcount=%d, div_s=%d, div_t=%d)", ucount, vcount, gpu.state.patch.div_s, gpu.state.patch.div_t);
+		
+		uint indexCount = ucount * vcount;
+		
+		/*
+		VertexState controlPoints(int u, int v) {
+			return vertexListBuffer[indexListBuffer[v + u * ucount]];
+		}
+		*/
+		
+		uint maxVertexCount;
+		gpu.impl.readIndexes(indexListBuffer, indexPointerBase, indexCount, maxVertexCount, vertexType);
+		gpu.impl.readVertices(vertexListBuffer, vertexPointerBase, maxVertexCount, vertexType, gpu.state.morphWeights, gpu.state.boneMatrix);
+		
+		Logger.log(Logger.Level.TRACE, "Gpu", "VERTEX_TYPE: %s", vertexType);
+		foreach (n; 0..maxVertexCount) {
+			Logger.log(Logger.Level.TRACE, "Gpu", "VERTEX: %d - %s", indexListBuffer[n], vertexListBuffer[indexListBuffer[n]].toString(vertexType));
+		}
+
+		/*
+		{
+			int n = ucount - 1;
+			int m = vcount - 1;
+			
+			int[] knot_u = spline_knot(n, utype);
+			int[] knot_v = spline_knot(m, vtype);
+			
+			float limit = 2.000001f;
+		}
+		*/
+		
+		gpu.performBufferOp(BufferOperation.LOAD, BufferType.ALL);
+		
+		gpu.impl.draw(
+			indexListBuffer[0..indexCount],
+			vertexListBuffer[0..maxVertexCount],
+			//PrimitiveType.GU_TRIANGLE_STRIP,
+			PrimitiveType.GU_LINE_STRIP,
+			vertexType.getPrimitiveFlags
+		);
+		
+		gpu.markBufferOp(BufferOperation.STORE, BufferType.ALL);
 	}
 	
 	VertexState[] vertexListBuffer;
@@ -264,14 +341,7 @@ template Gpu_Draw() {
 				indexListBuffer[0..indexCount],
 				vertexListBuffer[0..maxVertexCount],
 				primitiveType,
-				PrimitiveFlags(
-					vertexType.weight   != 0,
-					vertexType.texture  != 0,
-					vertexType.color    != 0,
-					vertexType.normal   != 0,
-					vertexType.position != 0,
-					vertexType.skinningWeightCount
-				)
+				vertexType.getPrimitiveFlags
 			);
 		} catch (Throwable o) {
 			writefln("gpu.impl.draw Error: %s", o);

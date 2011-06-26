@@ -118,14 +118,15 @@ template IoFileMgrForKernel_FilesAsync() {
 	/**
 	 * Change the priority of the asynchronous thread.
 	 *
-	 * @param fd - The opened fd on which the priority should be changed.
+	 * @param fd  - The opened fd on which the priority should be changed.
 	 * @param pri - The priority of the thread.
 	 *
 	 * @return < 0 on error.
 	 */
 	int sceIoChangeAsyncPriority(SceUID fd, int pri) {
-		unimplemented();
-		return -1;
+		unimplemented_notice();
+		//return -1;
+		return 0;
 	}
 	
 	int _sceIoWaitAsyncCB(SceUID fd, SceInt64* res, bool callbacks) {

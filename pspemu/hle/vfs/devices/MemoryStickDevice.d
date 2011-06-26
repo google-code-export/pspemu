@@ -87,6 +87,10 @@ class MemoryStickDevice : IoDevice {
 				deviceSize.freeClusters      = cast(uint)((freeSize  * 95 / 100) / deviceSize.clusterSize);
 				return 0;
 			break;
+			case 0x02025801: // Check the MemoryStick's driver status (mscmhc0).
+				*(cast(uint*)outData.ptr) = 1;
+				return 0;
+			break;
 			default: // Unknown command
 				Logger.log(Logger.Level.ERROR, "Devices", "MemoryStickDevice.sceIoDevctl: Unknown command 0x%08X!", cmd);
 				return -1;

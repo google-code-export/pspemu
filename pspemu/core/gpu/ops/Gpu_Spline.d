@@ -32,9 +32,8 @@ template Gpu_Spline() {
 	//void sceGuDrawSpline(int vtype, int ucount, int vcount, int uedge, int vedge, const void* indices, const void* vertices);
 	
 	auto OP_PSUB() {
-		float[] params = command.float2;
-		gpu.state.patch.div_s = params[0]; 
-		gpu.state.patch.div_t = params[1];
+		gpu.state.patch.div_s = command.extract!(ubyte,  0, 8); 
+		gpu.state.patch.div_t = command.extract!(ubyte,  8, 8);
 		//gpu.logWarning("OP_PSUB(%f, %f)", params[0], params[1]); 
 	}
 	

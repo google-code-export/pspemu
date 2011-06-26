@@ -198,6 +198,14 @@ int main(string[] args) {
 	void enableLogComponent(string opt, string component) {
 		Logger.enableLogComponent(component);
 	}
+
+	void addCheat8(string opt, string component) {
+		globalCheats.addCheatString(component, 8);
+	}
+
+	void addCheat16(string opt, string component) {
+		globalCheats.addCheatString(component, 16);
+	}
 	
 	void addCheat32(string opt, string component) {
 		globalCheats.addCheatString(component, 32);
@@ -232,6 +240,8 @@ int main(string[] args) {
 		"enlogmod", &enableLogComponent,
 		"loadgpu", &loadgpuDump,
 		"cheat32", &addCheat32,
+		"cheat16", &addCheat16,
+		"cheat8", &addCheat8,
 		"trace_thread", &addTraceThread
 	);
 	

@@ -11,14 +11,15 @@ int pointer;
 
 SceUID sema;
 
-void vblankCallback() {
-	Kprintf("vblankCallback\n");
+void vblankCallback(void *value) {
+	Kprintf("vblankCallback(%d)\n", *(int *)value);
 	sceKernelSignalSema(sema, 1);
 }
 
 int main(int argc, char** argv) {
+	int value = 7;
 	//int cb = sceKernelCreateCallback("vblankCallback", vblankCallback, NULL);
-	sceKernelRegisterSubIntrHandler(PSP_DISPLAY_SUBINT, 0, vblankCallback, 0);
+	sceKernelRegisterSubIntrHandler(PSP_DISPLAY_SUBINT, 0, vblankCallback, &value);
 	Kprintf("beforeEnableVblankCallback\n");
 	sceKernelEnableSubIntr(PSP_DISPLAY_SUBINT, 0);
 	Kprintf("afterEnableVblankCallback\n");

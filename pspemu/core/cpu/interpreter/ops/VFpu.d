@@ -1856,7 +1856,7 @@ template TemplateCpu_VFPU() {
 		throw(new Exception("OP_VRNDF1")); assert(0);
 	}
 
-	void OP_NOP() { registers.pcAdvance(4); }
+	void OP_VNOP() { registers.pcAdvance(4); }
 	void OP_VFLUSH() { registers.pcAdvance(4); }
 	void OP_VSYNC() { registers.pcAdvance(4); }
 }

@@ -141,6 +141,8 @@ class EmulatorHelper {
 			registers.A1 = CODE_PTR_ARGUMENTS + 4;
 		}
 		
+		//emulator.emulatorState.memory.twrite(0x08810D62, cast(ubyte)0);
+		
 		Logger.log(Logger.Level.INFO, "EmulatorHelper", "Module loaded successfully");
 	}
 	

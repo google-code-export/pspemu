@@ -23,6 +23,21 @@ class sceRtc : ModuleNative {
 		mixin(registerd!(0x34885E0D, sceRtcConvertUtcToLocalTime));
 
 		mixin(registerd!(0x27C4594C, sceRtcGetTime_t));
+		
+		mixin(registerd!(0x4CFA57B0, sceRtcGetCurrentClock));
+		mixin(registerd!(0x3A807CC8, sceRtcSetTime_t));
+	}
+	
+	/**
+	 * Get current tick count, adjusted for local time zone
+	 *
+	 * @param time - pointer to pspTime struct to receive time
+	 * @param tz - time zone to adjust to (minutes from UTC)
+	 * @return 0 on success, < 0 on error
+	 */
+	int sceRtcGetCurrentClock(pspTime *time, int tz) {
+		unimplemented();
+		return 0;
 	}
 
 	/**
@@ -34,9 +49,9 @@ class sceRtc : ModuleNative {
 	 * @return 0 on success, < 0 on error
 	 */
 	int sceRtcConvertUtcToLocalTime(u64* tickUTC, u64* tickLocal) {
-		throw(new NotImplementedException("sceRtcConvertUtcToLocalTime"));
+		unimplemented();
 		//*tickLocal = dtime_to_tick(std.date.UTCtoLocalTime(tick_to_dtime(*tickUTC)));
-		//return 0;
+		return 0;
 	}
 
 	/**
@@ -157,13 +172,18 @@ class sceRtc : ModuleNative {
 		return (DateTime(year, month, day).dayOfWeek + 6) % 7;
 	}
 	
+	int sceRtcSetTime_t(pspTime* date, const time_t time) {
+		unimplemented();
+		
+		return 0;
+	}
+
 	int sceRtcGetTime_t(pspTime* date, time_t* time) {
-		// @TODO: check!
-		throw(new NotImplementedException("sceRtcGetTime_t(pspTime* date, time_t* time)"));
+		unimplemented();
 		//tick_to_systime(date.tick);
 		
 		//*time = cast(time_t)(cast(ulong)tick_to_dtime(date.tick) / 1000);
-		//return 0;
+		return 0;
 	}
 }
 

@@ -328,7 +328,7 @@ class sceSasCore : ModuleNative {
     int __sceSasGetEnvelopeHeight(SasCore* sasCore, int voice) {
     	SasVoice* voicePtr = &sasCore.voices[voice];
     	
-    	unimplemented_notice();
+    	//unimplemented_notice();
     	
     	//return 0;
     	return -1;

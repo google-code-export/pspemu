@@ -85,7 +85,7 @@ class sceCtrl_driver : ModuleNative {
 	 * @return The previous cycle setting.
 	 */
 	int sceCtrlSetSamplingCycle(int cycle) {
-		logInfo("sceCtrlSetSamplingCycle(%d)", cycle);
+		//logInfo("sceCtrlSetSamplingCycle(%d)", cycle);
 		int previousCycle = currentEmulatorState.controller.samplingCycle;
 		currentEmulatorState.controller.samplingCycle = cycle;
 		return previousCycle;
@@ -104,7 +104,7 @@ class sceCtrl_driver : ModuleNative {
 	 * @return The previous mode.
 	 */
 	PspCtrlMode sceCtrlSetSamplingMode(PspCtrlMode mode) {
-		logInfo("sceCtrlSetSamplingMode(%d)", mode);
+		//logInfo("sceCtrlSetSamplingMode(%d)", mode);
 		PspCtrlMode previouseMode = currentEmulatorState.controller.samplingMode;
 		currentEmulatorState.controller.samplingMode = mode;
 		return previouseMode;

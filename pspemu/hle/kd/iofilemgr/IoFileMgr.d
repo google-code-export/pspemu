@@ -11,6 +11,7 @@ import std.stream;
 import std.file;
 import std.string;
 import std.conv;
+import std.utf;
 
 //import pspemu.utils.AsyncStream;
 

@@ -61,6 +61,42 @@ struct Colorf {
 
 //void main() {}
 
+struct PrimitiveFlags {
+	bool hasWeights;
+	bool hasTexture;
+	bool hasColor;
+	bool hasNormal;
+	bool hasPosition;
+	int  numWeights;
+	
+	const uint MAX_NUMBER_OF_WEIGHTS = 8;
+	
+	@property static PrimitiveFlags all() {
+		PrimitiveFlags primitiveFlags;
+		with (primitiveFlags) {
+			hasWeights  = true;
+			hasTexture  = true;
+			hasColor    = true;
+			hasNormal   = true;
+			hasPosition = true;
+			numWeights  = MAX_NUMBER_OF_WEIGHTS;
+		}
+		return primitiveFlags;
+	}
+	
+	string toString() {
+		return std.string.format(
+			"PrimitiveFlags(hasWeights=%d,hasTexture=%d,hasColor=%d,hasNormal=%d,hasPosition=%d,numWeights=%d)",
+			hasWeights,
+			hasTexture,
+			hasColor,
+			hasNormal,
+			hasPosition,
+			numWeights
+		);
+	}
+}
+
 struct VertexType {
 	static const uint[] typeSize = [0, byte.sizeof, short.sizeof, float.sizeof];
 	static const uint[] colorSize = [0, 1, 1, 1, 2, 2, 2, 4];
@@ -84,6 +120,17 @@ struct VertexType {
 				uint, "__3",      8
 			));
 		}
+	}
+	
+	@property PrimitiveFlags getPrimitiveFlags() {
+		return PrimitiveFlags(
+			weight   != 0,
+			texture  != 0,
+			color    != 0,
+			normal   != 0,
+			position != 0,
+			skinningWeightCount
+		);
 	}
 	
 	uint morphingVertexCount() { return _morphingVertexCount + 1; }

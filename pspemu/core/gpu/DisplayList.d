@@ -10,9 +10,11 @@ import pspemu.utils.sync.WaitEvent;
 import pspemu.core.gpu.Commands;
 import pspemu.core.gpu.Types;
 
+import std.stdio;
+
 static struct DisplayList {
 	Command* base, pointer, stall;
-	Stack!(Command*, 1024) callStack;
+	Stack!(Command*) callStack;
 	WaitEvent displayListEndedEvent;
 	WaitEvent displayListStalledEvent;
 	WaitEvent displayListNewDataEvent;
@@ -21,6 +23,7 @@ static struct DisplayList {
 		displayListEndedEvent   = new WaitEvent("DisplayList.displayListEndedEvent");
 		displayListStalledEvent = new WaitEvent("DisplayList.displayListStalledEvent");
 		displayListNewDataEvent = new WaitEvent("DisplayList.displayListNewDataEvent");
+		callStack = new Stack!(Command*)(1024);
 	}
 
 	string toString() {

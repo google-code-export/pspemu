@@ -53,10 +53,11 @@ abstract class ModuleNative : Module {
 		try {
 			Logger.log(level, this.baseName, "nPC(%08X) :: Thread(%d:%s) :: %s", currentThreadState().registers.RA, currentThreadState().thid, currentThreadState().name, std.string.format(args));
 		} catch (Throwable o) {
-			Logger.log(Logger.Level.ERROR, "FORMAT_ERROR", "There was an error formating a logInfo for ('%s'.'%s')", this.baseName, getNidName(currentExecutingNid));
+			Logger.log(Logger.Level.ERROR, "FORMAT_ERROR", "There was an error formating a logLevel for ('%s'.'%s')", this.baseName, getNidName(currentExecutingNid));
 		}
 	}
-	
+	mixin Logger.LogPerComponent;
+
 	@property public UniqueIdFactory uniqueIdFactory() {
 		return hleEmulatorState.uniqueIdFactory;
 	}
