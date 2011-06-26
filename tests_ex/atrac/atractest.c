@@ -27,8 +27,7 @@ int main(int argc, char *argv[]) {
 	u32 puiPosition;
 	u32 puiDataByte;
 	
-	file = fopen("bgm01.at3", "rb");
-	//file = fopen("bgm_001_64.at3", "rb");
+	file = fopen("sample.at3", "rb");
 	fseek(file, 0, SEEK_END);
 	at3_size = ftell(file);
 	
@@ -54,6 +53,9 @@ int main(int argc, char *argv[]) {
 	pspDebugScreenPrintf("Header: %s\n", (char *)at3_data);
 		
 	atracID = sceAtracSetDataAndGetID(at3_data, at3_size);
+	
+	result = sceAtracSetLoopNum(atracID, 2);
+	pspDebugScreenPrintf("sceAtracSetLoopNum: %08X\n", result);
 
 	pspDebugScreenPrintf("sceAtracSetDataAndGetID: %08X\n", atracID);
 	
