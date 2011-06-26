@@ -6,7 +6,17 @@ import core.thread;
 
 class WaitMultipleObjects {
 	WaitObject[] waitObjects;
-	public Object object;
+
+	/**
+	 * Object used to
+	 * @deprecated 
+	 */
+	/* deprecated */ public Object object;
+	public Object objectParameter;
+
+	public WaitResult result;
+	public WaitObject resultObject;
+
 	
 	this(Object object = null) {
 		this.object = object;
@@ -20,19 +30,23 @@ class WaitMultipleObjects {
 		if (waitObjects.length) {
 			scope handles = new HANDLE[this.waitObjects .length]; 
 			foreach (index, waitObject; waitObjects) handles[index] = waitObject.handle;
-			uint result;
-			switch (result = WaitForMultipleObjects(handles.length, handles.ptr, false, timeoutMilliseconds)) {
-				case WAIT_ABANDONED:
-				break;
-				case WAIT_TIMEOUT:
-				break;
-				case WAIT_FAILED:
-				break;
-				default:
-					WaitObject waitObject = this.waitObjects[result - WAIT_OBJECT_0];
-					waitObject.callCallback(object);
-					return waitObject;
-				break;
+			uint funcResult;
+			switch (funcResult = WaitForMultipleObjects(handles.length, handles.ptr, false, timeoutMilliseconds)) {
+				case WAIT_ABANDONED: {
+					result = WaitResult.ABANDONED;
+				} break;
+				case WAIT_TIMEOUT: {
+					result = WaitResult.TIMEOUT;
+				} break;
+				case WAIT_FAILED: {
+					result = WaitResult.FAILED;
+				} break;
+				default: {
+					result = WaitResult.OBJECT;
+					resultObject = this.waitObjects[funcResult - WAIT_OBJECT_0];
+					resultObject.callCallback(object);
+					return resultObject;
+				} break;
 			}
 		} else {
 			if (timeoutMilliseconds == uint.max) {

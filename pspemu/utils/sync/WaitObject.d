@@ -5,11 +5,27 @@ public import std.string;
 
 public import std.c.windows.windows;
 
+enum WaitResult {
+	TIMEOUT,
+	ABANDONED,
+	FAILED,
+	OBJECT,
+}
+
 abstract class WaitObject {
 	public string name;
 	public HANDLE handle;
 	public void delegate(Object) callback;
-	public Object object;
+	
+	/**
+	 * Object used to
+	 * @deprecated 
+	 */
+	/* deprecated */ public Object object;
+	public Object objectParameter;
+
+	public WaitResult result;
+	public WaitObject resultObject;
 	
 	~this() {
 		CloseHandle(handle); 
@@ -17,16 +33,21 @@ abstract class WaitObject {
 	
 	public WaitObject wait(uint timeoutMilliseconds = uint.max) {
 		final switch (WaitForSingleObject(handle, timeoutMilliseconds)) {
-			case WAIT_ABANDONED:
-			break;
-			case WAIT_OBJECT_0:
-				callCallback(object);
-				return this;
-			break;
-			case WAIT_TIMEOUT:
-			break;
-			case WAIT_FAILED:
-			break;
+			case WAIT_ABANDONED: {
+				result = WaitResult.ABANDONED;
+			} break;
+			case WAIT_FAILED: {
+				result = WaitResult.FAILED;
+			} break;
+			case WAIT_TIMEOUT: {
+				result = WaitResult.TIMEOUT;
+			} break;
+			case WAIT_OBJECT_0: {
+				result = WaitResult.OBJECT;
+				resultObject = this;
+				resultObject.callCallback(object);
+				return resultObject;
+			} break;
 		}
 		return null;
 	}
