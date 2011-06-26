@@ -229,32 +229,37 @@ class Gpu {
 	}
 
 	protected void run() {
-		try {
-			if (!implInitialized) {
-				impl.init();
-				implInitialized = true;
-			}
-			//componentInitialized = true;
-			while (running) {
-				//writefln("displayLists.readAvailable");
-				endedExecutingListsEvent.reset();
-				while (displayLists.readAvailable) {
-					impl.startDisplayList();
-					{
-						executeList(displayLists.consume);
-					}
-					impl.endDisplayList();
+		while (running) {
+			try {
+				if (!implInitialized) {
+					impl.init();
+					implInitialized = true;
 				}
-				endedExecutingListsEvent.signal();
-				//if (runningState != RunningState.RUNNING) waitUntilResume();
-				newWaitAndCheck([displayLists.readAvailableEvent]);
+				//componentInitialized = true;
+				while (running) {
+					//writefln("[1]");
+					//writefln("displayLists.readAvailable");
+					endedExecutingListsEvent.reset();
+					while (displayLists.readAvailable) {
+						impl.startDisplayList();
+						{
+							executeList(displayLists.consume);
+						}
+						impl.endDisplayList();
+					}
+					endedExecutingListsEvent.signal();
+					//if (runningState != RunningState.RUNNING) waitUntilResume();
+					newWaitAndCheck([displayLists.readAvailableEvent]);
+					newWaitAndCheck2();
+				}
+			} catch (HaltException e) {
+				logDebug("Gpu.run HaltException: %s", e);
+			} catch (Throwable e) {
+				logCritical("Gpu.run exception: %s", e);
+			} finally {
+				logDebug("Gpu.shutdown");
+				writefln("Gpu.shutdown");
 			}
-		} catch (HaltException e) {
-			logDebug("Gpu.run HaltException: %s", e);
-		} catch (Throwable e) {
-			logCritical("Gpu.run exception: %s", e);
-		} finally {
-			logDebug("Gpu.shutdown");
 		}
 	}
 
@@ -333,7 +338,7 @@ class Gpu {
 		}
 	}
 	*/
-	void externalActionAdd(TaskQueue.Task task) {
+	void externalActionAdd(TaskQueue.Task task, bool wait = true) {
 		if (inDrawingThread) {
 			externalActions.add(task);
 		} else {
