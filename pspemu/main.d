@@ -2,6 +2,7 @@ module pspemu.main;
 
 import pspemu.core.EmulatorState;
 import pspemu.utils.Path;
+import pspemu.utils.sync.WaitEvent;
 
 import std.c.windows.windows;
 
@@ -305,18 +306,52 @@ int main(string[] args) {
 		} else {
 			Logger.setLevel(Logger.Level.CRITICAL);			
 		}
+
+		WaitEvent testCompletedEvent = new WaitEvent("testCompletedEvent");
+		
+		bool runningTests = true;
+		int testStep = 0;
+		
+		//new Thread("HangDetector");
+		Thread hangThread = new Thread(delegate() {
+			while (runningTests) {
+				if (testCompletedEvent.wait(2000) is null) {
+					writefln("tests hanged on %d!", testStep);
+				}
+			}
+		});
+		hangThread.name = "HangDetector";
+		hangThread.start();
+		
 		foreach (std.file.DirEntry dirEntry; dirEntries(r"tests_ex", SpanMode.depth, true)) {
 			if (std.string.indexOf(dirEntry.name, ".svn") != -1) continue;
 			if (std.path.getExt(dirEntry.name) != "expected") continue;
 			
+			//writefln("[0]");
+			
+			testStep = 0;
+			
 			emulatorHelper.loadAndRunTest(dirEntry.name);
+			
+			testStep = 1;
+			
+			testCompletedEvent.signal();
+			//writefln("[1]");
+			
 			try {
 				emulatorHelper.reset();
 			} catch (Throwable o) {
 				writefln("ERROR Reseting (%s)", o);
 			}
+			
+			testStep = 2;
+			
+			//writefln("[2]");
 		}
 		emulatorHelper.stop();
+		
+		runningTests = false;
+		
 		return 0;
 	}
 	
