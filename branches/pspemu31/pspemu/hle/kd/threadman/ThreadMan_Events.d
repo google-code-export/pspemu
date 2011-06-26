@@ -1,11 +1,20 @@
 module pspemu.hle.kd.threadman.ThreadMan_Events;
 
+import pspemu.core.exceptions.HaltException;
+
 import pspemu.utils.sync.WaitEvent;
+import pspemu.utils.sync.WaitMultipleObjects;
+
+import pspemu.hle.HleEmulatorState;
+import pspemu.core.ThreadState;
 
 import pspemu.hle.kd.threadman.Types;
 
 import pspemu.utils.Logger;
 import pspemu.utils.String;
+
+import std.datetime;
+import std.stdio;
 
 class PspWaitEvent {
 	WaitEvent waitEvent;
@@ -30,7 +39,7 @@ class PspWaitEvent {
 		this.waitEvent.signal();
 	}
 	
-	public bool checkEventFlag(uint bitsToMatch, PspEventFlagWaitTypes wait, ref uint checkedBits) {
+	public bool checkEventFlag(uint bitsToMatch, PspEventFlagWaitTypes wait, ref u32 checkedBits) {
 		checkedBits = this.bits;
 		if (wait & PspEventFlagWaitTypes.PSP_EVENT_WAITOR) {
 			return ((checkedBits & bitsToMatch) != 0);
@@ -39,25 +48,35 @@ class PspWaitEvent {
 		}
 	}
 	
-	public uint waitEventFlag(uint bitsToMatch, PspEventFlagWaitTypes wait, bool callbacks) {
-		uint matchedBits;
+	public bool waitEventFlag(HleEmulatorState hleEmulatorState, ThreadState threadState, uint bitsToMatch, PspEventFlagWaitTypes wait, bool handleCallbacks, ref u32 checkedBits, uint timeoutMicroseconds) {
+		bool timeout;
+		bool matched;
 
 		bool matches() {
-			//matchedBits = checkEventFlag(bitsToMatch, wait);
-			//return (matchedBits != 0);
-			uint matchedBits;
-			return checkEventFlag(bitsToMatch, wait, matchedBits);
-			//return checkEventFlag(bitsToMatch, wait) != 0; 
+			return (matched = checkEventFlag(bitsToMatch, wait, checkedBits));
 		}
 		
-		if (callbacks) {
-			Logger.log(Logger.Level.WARNING, "ThreadManForUser", "Not implemented PspWaitEvent.waitEventFlag.callbacks");
-		}
+		WaitMultipleObjects waitMultipleObjects = new WaitMultipleObjects(threadState);
+		waitMultipleObjects.add(this.waitEvent);
+		waitMultipleObjects.add(threadState.emulatorState.runningState.stopEvent);
+		if (handleCallbacks) waitMultipleObjects.add(hleEmulatorState.callbacksHandler.waitEvent);
 		
 		//matchedBits = bits;
 
 		while (!matches) {
-			waitEvent.wait();
+			if (timeoutMicroseconds == uint.max) {
+				waitMultipleObjects.waitAny();
+			} else {
+				waitMultipleObjects.waitAny(cast(uint)std.datetime.convert!("usecs", "msecs")(timeoutMicroseconds));
+			}
+			
+			switch (waitMultipleObjects.result) {
+				case WaitResult.TIMEOUT:
+					throw(new TimeoutException(""));
+				break;
+				default:
+				break;
+			}
 		}
 
 		if (wait & PspEventFlagWaitTypes.PSP_EVENT_WAITCLEARALL) {
@@ -66,7 +85,7 @@ class PspWaitEvent {
 			this.bits &= ~bitsToMatch;
 		}
 		
-		return matchedBits;
+		return matches;
 	}
 }
 
@@ -160,11 +179,15 @@ template ThreadManForUser_Events() {
 			PspWaitEvent pspWaitEvent = uniqueIdFactory.get!PspWaitEvent(evid);
 			logInfo("_sceKernelWaitEventFlagCB('%s':%d, %032b, %s, %s, %08X)", pspWaitEvent.name, evid, bits, to!string(wait), to!string(callback), cast(uint)timeout);
 			
+			bool matched;
+			uint matchedBits;
 			currentCpuThread.threadState.waitingBlock("_sceKernelWaitEventFlagCB", {
-				uint matchedBits = pspWaitEvent.waitEventFlag(bits, wait, callback);
-				if (outBits !is null) *outBits = matchedBits;
+				matched = pspWaitEvent.waitEventFlag(hleEmulatorState, currentThreadState, bits, wait, callback, matchedBits, (timeout is null) ? uint.max : *timeout);
 			});
+			if (outBits !is null) *outBits = matchedBits;
 			return 0;
+		} catch (TimeoutException) {
+			return SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 		} catch (UniqueIdNotFoundException) {
 			logWarning("SceKernelErrors.ERROR_KERNEL_NOT_FOUND_EVENT_FLAG");
 			return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
