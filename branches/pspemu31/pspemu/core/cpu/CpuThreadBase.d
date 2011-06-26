@@ -2,6 +2,8 @@ module pspemu.core.cpu.CpuThreadBase;
 
 import std.stdio;
 import core.thread;
+import core.time;
+import std.datetime;
 
 import pspemu.core.ThreadState;
 import pspemu.core.Memory;
@@ -20,6 +22,7 @@ import pspemu.core.cpu.InstructionHandler;
 import pspemu.hle.kd.threadman.Types;
 
 public CpuThreadBase thisThreadCpuThreadBase;
+__gshared CpuThreadBase[Thread] cpuThreadBasePerThread;
 
 abstract class CpuThreadBase : InstructionHandler {
 	CpuThreadBase cpuThread;
@@ -29,7 +32,6 @@ abstract class CpuThreadBase : InstructionHandler {
 	Registers registers;
 	bool running = true;
 	bool trace = false;
-	//static CpuThreadBase[Thread] cpuThreadBasePerThread;
 	
 	//ulong executedInstructionsCount;
 	__gshared long lastThreadId = 0;
@@ -41,7 +43,7 @@ abstract class CpuThreadBase : InstructionHandler {
 		this.registers = this.threadState.registers;
 		this.threadState.nativeThreadSet(&run, std.string.format("PspCpuThread#%d('%s')", lastThreadId++, threadState.name));
 		
-		threadState.emulatorState.runningState.onStop += delegate(...) {
+		threadState.emulatorState.runningState.onStopCpu += delegate(...) {
 			running = false;
 		};
 	}
@@ -56,31 +58,43 @@ abstract class CpuThreadBase : InstructionHandler {
 	
 	protected void run() {
 		thisThreadCpuThreadBase = this;
-		//cpuThreadBasePerThread[Thread.getThis] = this;
+		cpuThreadBasePerThread[Thread.getThis] = this;
 		if (executeBefore != null) executeBefore();
-		
-		threadState.emulatorState.cpuThreads[this] = true;
-		{
-			threadState.emulatorState.cpuThreadRunningBlock({
-				execute(trace);
-			});
+
+		try {
+			threadState.emulatorState.cpuThreads[this] = true;
+			{
+				threadState.emulatorState.cpuThreadRunningBlock({
+					execute(trace);
+				});
+			}
+		} finally {
+			threadState.emulatorState.cpuThreads.remove(this);
+			running = false;
+			threadState.sceKernelThreadInfo.status = PspThreadStatus.PSP_THREAD_STOPPED;
+			cpuThreadBasePerThread.remove(Thread.getThis);
 		}
-		
-		threadState.emulatorState.cpuThreads.remove(this);
-		running = false;
-		threadState.sceKernelThreadInfo.status = PspThreadStatus.PSP_THREAD_STOPPED;
 	}
 	
-	public void thisThreadWaitCyclesAtLeast(int count = 100) {
+	public void thisThreadWaitCyclesAtLeast(int count = 100, int syscall_count = 10) {
+		StopWatch stopWatch;
+		stopWatch.start();
 		while (true) {
 			Thread.yield();
 			// Not running.
 			if (!this.threadState.nativeThreadIsRunning) break;
 			
+			if (stopWatch.peek.seconds >= 1) {
+				Logger.log(Logger.Level.CRITICAL, "CpuThreadBase", "thisThreadWaitCyclesAtLeast waiting for too long");
+				stopWatch.reset();
+			}
+			
 			if (this.threadState.waiting) break;
 			
 			if (this.threadState.registers.EXECUTED_INSTRUCTION_COUNT_THIS_THREAD >= count) break;
+			if (this.threadState.registers.EXECUTED_SYSCALL_COUNT_THIS_THREAD >= syscall_count) break;
 		}
+		stopWatch.stop();
 	}
 	
     void execute(bool trace = false) {

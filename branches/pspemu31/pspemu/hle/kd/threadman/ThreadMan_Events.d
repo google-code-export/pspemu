@@ -58,7 +58,7 @@ class PspWaitEvent {
 		
 		WaitMultipleObjects waitMultipleObjects = new WaitMultipleObjects(threadState);
 		waitMultipleObjects.add(this.waitEvent);
-		waitMultipleObjects.add(threadState.emulatorState.runningState.stopEvent);
+		waitMultipleObjects.add(threadState.emulatorState.runningState.stopEventCpu);
 		if (handleCallbacks) waitMultipleObjects.add(hleEmulatorState.callbacksHandler.waitEvent);
 		
 		//matchedBits = bits;

@@ -256,16 +256,14 @@ class Audio {
 					}
 				break;
 				case 2:
-					// Ignore volume
-					samples.write(samplesToWrite);
-					/*
+					//samples.write(samplesToWrite); // Ignore volume
+					
 					for (int m = 0; m < samplesToWrite.length; m += 2) {
 						samples.write([
 							cast(short)(cast(float)samplesToWrite[m + 0] * volumeLeft),
 							cast(short)(cast(float)samplesToWrite[m + 1] * volumeRight)
 						]);
 					}
-					*/
 				break;
 				default: throw(new Exception(std.string.format("Only supported 1 and 2 numchannels for channel not %d.", numchannels)));
 			}

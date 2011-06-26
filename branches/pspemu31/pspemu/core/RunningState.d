@@ -17,15 +17,30 @@ class RunningState {
 	 * @deprecated use stopEvent instead.
 	 */
 	Event onStop;
+
+	/**
+	 * @deprecated use stopEvent instead.
+	 */
+	Event onStopCpu;
 	
 	/**
 	 * Will trigger when the execution is being stopped.
 	 */
 	WaitEvent stopEvent;
+
+	/**
+	 * Will trigger when the execution is being stopped.
+	 */
+	WaitEvent stopEventCpu;
 	
 	this() {
 		stopEvent = new WaitEvent("stopEvent");
 		stopEvent.callback = delegate(Object object) {
+			throw(new HaltException("Halt"));
+		};
+
+		stopEventCpu = new WaitEvent("stopEventCpu");
+		stopEventCpu.callback = delegate(Object object) {
 			throw(new HaltException("Halt"));
 		};
 	}
@@ -33,6 +48,7 @@ class RunningState {
 	public void reset() {
 		this.running = true;
 		onStop.reset();
+		onStopCpu.reset();
 	}
 
 	public void stop() {
@@ -40,5 +56,12 @@ class RunningState {
 		onStop();
 		running = false;
 		stopEvent.signal();
+		stopCpu();
+	}
+
+	public void stopCpu() {
+		Logger.log(Logger.Level.INFO, "RunningState.stopCpu");
+		onStopCpu();
+		stopEventCpu.signal();
 	}
 }

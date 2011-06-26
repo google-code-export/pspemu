@@ -121,9 +121,10 @@ template ThreadManForUser_Threads() {
 
 		newThreadState.sceKernelThreadInfo.status = PspThreadStatus.PSP_THREAD_RUNNING;
 
-		// newCpuThread could access parent's stack because it has some cycles at the start.
-		newCpuThread.thisThreadWaitCyclesAtLeast(1_000_000);
-		
+		currentCpuThread.threadState.waitingBlock("sceKernelStartThread", {
+			// newCpuThread could access parent's stack because it has some cycles at the start.
+			newCpuThread.thisThreadWaitCyclesAtLeast(1_000_000);
+		});
 		
 		return 0;
 	}
@@ -154,7 +155,7 @@ template ThreadManForUser_Threads() {
 		WaitMultipleObjects waitMultipleObjects = new WaitMultipleObjects();
 
 		// We will listen to the stopping event that will launch a HaltException when triggered.		
-		waitMultipleObjects.add(currentEmulatorState.runningState.stopEvent);
+		waitMultipleObjects.add(currentEmulatorState.runningState.stopEventCpu);
 		
 		// If while sleeping we hav to handle callbacks, we will listen to that to.
 		if (handleCallbacks) {

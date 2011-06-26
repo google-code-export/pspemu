@@ -123,6 +123,8 @@ class ThreadManForUser : ModuleNative {
 		
 		mixin(registerd!(0xC07BB470, sceKernelCreateFpl));
 		mixin(registerd!(0x623AE665, sceKernelTryAllocateFpl));
+		mixin(registerd!(0xD979E9BF, sceKernelAllocateFpl));
+		
 		mixin(registerd!(0x8FFDF9A2, sceKernelCancelSema));
 	}
 	

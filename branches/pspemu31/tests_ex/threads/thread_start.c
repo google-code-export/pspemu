@@ -1,5 +1,4 @@
 /**
- * This demo tests that sceKernelStartThread is scheduled immediately and can access the parent stack without have been modified.
  * This feature is used in pspaudio library and probably in a lot of games.
  *
  * It checks also the correct behaviour of semaphores: sceKernelCreateSema, sceKernelSignalSema and sceKernelWaitSema.
@@ -13,8 +12,10 @@
 #include <pspsdk.h>
 #include <pspkernel.h>
 #include <pspthreadman.h>
+#include <psploadexec.h>
 
 #define eprintf(...) pspDebugScreenPrintf(__VA_ARGS__); Kprintf(__VA_ARGS__);
+//#define eprintf(...) pspDebugScreenPrintf(__VA_ARGS__);
 
 PSP_MODULE_INFO("THREAD TEST", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | THREAD_ATTR_VFPU);
@@ -123,13 +124,44 @@ void testEvents() {
 	// Test callback handling
 }
 
-int main() {
+/* Exit callback */
+int exitCallback(int arg1, int arg2, void *common) {
+	sceKernelExitGame();
+	return 0;
+}
+
+/* Callback thread */
+int callbackThread(SceSize args, void *argp) {
+	int cbid;
+
+	cbid = sceKernelCreateCallback("Exit Callback", (void*) exitCallback, NULL);
+	sceKernelRegisterExitCallback(cbid);
+	sceKernelSleepThreadCB();
+
+	return 0;
+}
+
+/* Sets up the callback thread and returns its thread id */
+int setupCallbacks(void) {
+	int thid = 0;
+
+	thid = sceKernelCreateThread("update_thread", callbackThread, 0x11, 0xFA0, 0, 0);
+	if (thid >= 0) {
+		sceKernelStartThread(thid, 0, 0);
+	}
+	return thid;
+}
+
+int main(int argc, char **argv) {
 	pspDebugScreenInit();
+	
+	setupCallbacks();
 
 	testThreads();
 	testEvents();
 	
-	sceKernelExitGame();
+	//{ int wait = 0; while (1) { pspDebugScreenSetXY(10, 0); pspDebugScreenPrintf("Wait...%d\n", wait); wait++; } }
+	//sceKernelExitGame();
 	
 	return 0;
 }

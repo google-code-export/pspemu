@@ -44,6 +44,7 @@ final class Registers {
 	}
 
 	uint EXECUTED_INSTRUCTION_COUNT_THIS_THREAD;
+	uint EXECUTED_SYSCALL_COUNT_THIS_THREAD;
 	bool PAUSED;
 	uint PC, nPC;    // Program Counter
 	uint IC;         // Interrupt controller
@@ -203,6 +204,7 @@ final class Registers {
 
 	void reset() {
 		EXECUTED_INSTRUCTION_COUNT_THIS_THREAD = 0;
+		EXECUTED_SYSCALL_COUNT_THIS_THREAD = 0;
 		PAUSED = false;
 		PC = 0; nPC = 4;
 		IC = 0;

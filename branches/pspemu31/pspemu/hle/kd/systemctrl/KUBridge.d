@@ -17,3 +17,7 @@ class KUBridge : ModuleNative {
 		return hleEmulatorState.moduleManager.get!ModuleMgrForUser().sceKernelLoadModule(path, flags, option);
 	}
 }
+
+static this() {
+	mixin(ModuleNative.registerModule("KUBridge"));
+}
