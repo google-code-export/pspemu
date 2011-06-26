@@ -4,6 +4,8 @@ import std.file;
 import pspemu.hle.ModuleNative;
 
 import pspemu.hle.kd.mediaman.Types;
+import pspemu.hle.kd.threadman.Types;
+import pspemu.hle.Callbacks;
 
 class sceUmdUser : ModuleNative {
 	void initNids() {
@@ -49,6 +51,12 @@ class sceUmdUser : ModuleNative {
 	int sceUmdRegisterUMDCallBack(int cbid) {
 		//logWarning("Not implemented: sceUmdRegisterUMDCallBack");
 		unimplemented_notice();
+		
+		PspCallback pspCallback = uniqueIdFactory.get!PspCallback(cbid);
+		
+		hleEmulatorState.callbacksHandler.register(CallbacksHandler.Type.Umd, pspCallback);
+		hleEmulatorState.callbacksHandler.trigger(CallbacksHandler.Type.Umd, [cast(uint)sceUmdGetDriveStat()]);
+		
 		return 0;
 	}
 	

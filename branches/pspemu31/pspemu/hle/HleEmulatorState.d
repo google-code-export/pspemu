@@ -75,6 +75,10 @@ class HleEmulatorState : ISyscall {
 		};
 	}
 	
+	public uint executeGuestCode(uint pointer, uint[] arguments = null) {
+		return executeGuestCode(thisThreadCpuThreadBase.threadState, pointer, arguments);
+	}
+	
 	public uint executeGuestCode(ThreadState threadState, uint pointer, uint[] arguments = null) {
 		//new CpuThreadBase();
 		CpuThreadBase tempCpuThread = new CpuThreadInterpreted(threadState);

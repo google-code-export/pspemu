@@ -46,10 +46,10 @@ class sceMpeg : ModuleNative {
 	/**
 	 * sceMpegGetAvcAu
 	 *
-	 * @param Mpeg - SceMpeg handle
+	 * @param Mpeg    - SceMpeg handle
 	 * @param pStream - associated stream
-	 * @param pAu - will contain pointer to Au
-	 * @param iUnk - unknown
+	 * @param pAu     - will contain pointer to Au
+	 * @param iUnk    - unknown
 	 *
 	 * @return 0 if success.
 	 */
@@ -61,8 +61,8 @@ class sceMpeg : ModuleNative {
 	/**
 	 * sceMpegQueryAtracEsSize
 	 *
-	 * @param Mpeg - SceMpeg handle
-	 * @param iEsSize - will contain size of Es
+	 * @param Mpeg     - SceMpeg handle
+	 * @param iEsSize  - will contain size of Es
 	 * @param iOutSize - will contain size of decoded data
 	 *
 	 * @return 0 if success.
@@ -75,10 +75,10 @@ class sceMpeg : ModuleNative {
 	/**
 	 * sceMpegGetAtracAu
 	 *
-	 * @param Mpeg - SceMpeg handle
+	 * @param Mpeg    - SceMpeg handle
 	 * @param pStream - associated stream
-	 * @param pAu - will contain pointer to Au
-	 * @param pUnk - unknown
+	 * @param pAu     - will contain pointer to Au
+	 * @param pUnk    - unknown
 	 *
 	 * @return 0 if success.
 	 */
@@ -105,7 +105,8 @@ class sceMpeg : ModuleNative {
 	 */
 	SceInt32 sceMpegRingbufferAvailableSize(SceMpegRingbuffer* Ringbuffer) {
 		unimplemented_notice();
-		return -1;
+		//return -1;
+		return 0;
 	}
 	
 	/**
@@ -135,10 +136,10 @@ class sceMpeg : ModuleNative {
 	/**
 	 * sceMpegAtracDecode
 	 *
-	 * @param Mpeg - SceMpeg handle
-	 * @param pAu - video Au
+	 * @param Mpeg    - SceMpeg handle
+	 * @param pAu     - video Au
 	 * @param pBuffer - buffer that will contain the decoded frame
-	 * @param iInit - set this to 1 on first call
+	 * @param iInit   - set this to 1 on first call
 	 *
 	 * @return 0 if success.
 	 */
@@ -182,6 +183,9 @@ class sceMpeg : ModuleNative {
 	 */
 	SceInt32 sceMpegQueryStreamSize(ScePVoid pBuffer, SceInt32* iSize) {
 		unimplemented_notice();
+		
+		*iSize = 0;
+		
 		return -1;
 	}
 	
@@ -230,9 +234,9 @@ class sceMpeg : ModuleNative {
 	/**
 	 * sceMpegInitAu
 	 *
-	 * @param Mpeg - SceMpeg handle
+	 * @param Mpeg      - SceMpeg handle
 	 * @param pEsBuffer - prevously allocated Es buffer
-	 * @param pAu - will contain pointer to Au
+	 * @param pAu       - will contain pointer to Au
 	 *
 	 * @return 0 if success.
 	 */
@@ -244,7 +248,7 @@ class sceMpeg : ModuleNative {
 	/**
 	 * sceMpegQueryStreamOffset
 	 *
-	 * @param Mpeg - SceMpeg handle
+	 * @param Mpeg    - SceMpeg handle
 	 * @param pBuffer - pointer to file header
 	 * @param iOffset - will contain stream offset in bytes, usually 2048
 	 *
@@ -252,6 +256,7 @@ class sceMpeg : ModuleNative {
 	 */
 	SceInt32 sceMpegQueryStreamOffset(SceMpeg* Mpeg, ScePVoid pBuffer, SceInt32* iOffset) {
 		unimplemented_notice();
+		*iOffset = 0;
 		return 0;
 	}
 	
@@ -315,31 +320,32 @@ class sceMpeg : ModuleNative {
 	/**
 	 * sceMpegCreate
 	 *
-	 * @param Mpeg - will be filled
-	 * @param pData - pointer to allocated memory of size = sceMpegQueryMemSize()
-	 * @param iSize - size of data, should be = sceMpegQueryMemSize()
-	 * @param Ringbuffer - a ringbuffer
+	 * @param Mpeg        - will be filled
+	 * @param pData       - pointer to allocated memory of size = sceMpegQueryMemSize()
+	 * @param iSize       - size of data, should be = sceMpegQueryMemSize()
+	 * @param Ringbuffer  - a ringbuffer
 	 * @param iFrameWidth - display buffer width, set to 512 if writing to framebuffer
-	 * @param iUnk1 - unknown, set to 0
-	 * @param iUnk2 - unknown, set to 0
+	 * @param iUnk1       - unknown, set to 0
+	 * @param iUnk2       - unknown, set to 0
 	 *
 	 * @return 0 if success.
 	 */
 	SceInt32 sceMpegCreate(SceMpeg* Mpeg, ScePVoid pData, SceInt32 iSize, SceMpegRingbuffer* Ringbuffer, SceInt32 iFrameWidth, SceInt32 iUnk1, SceInt32 iUnk2) {
 		unimplemented_notice();
-		return 0;
+		Ringbuffer.iPackets = 0;
+		return -1;
 	}
 
 	/**
 	 * sceMpegAvcDecodeMode
 	 *
-	 * @param Mpeg - SceMpeg handle
+	 * @param Mpeg  - SceMpeg handle
 	 * @param pMode - pointer to SceMpegAvcMode struct defining the decode mode (pixelformat)
 	 * @return 0 if success.
 	 */
 	SceInt32 sceMpegAvcDecodeMode(SceMpeg* Mpeg, SceMpegAvcMode* pMode) {
 		unimplemented_notice();
-		return 0;
+		return -1;
 	}
 	
 	/**

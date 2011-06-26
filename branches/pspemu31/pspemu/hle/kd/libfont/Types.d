@@ -47,16 +47,45 @@ struct FontStyle {
 	float    fontVRes;
 	float    fontWeight;
 	Family   fontFamily;
-	Style    fontStyle;
+	Style    fontStyleStyle;
 	// Check.
 	ushort   fontStyleSub;
 	Language fontLanguage;
 	ushort   fontRegion;
 	ushort   fontCountry;
-	char[64] fontName;
 	char[64] fontFileName;
+	char[64] fontName;
 	uint     fontAttributes;
 	uint     fontExpire;
+	
+	static FontStyle opCall(
+		int fontH, int fontV, int fontHRes, int fontVRes,
+		int fontAttributes, int fontWeight,
+		Family fontFamily, Style fontStyleStyle, ushort fontStyleSub, Language fontLanguage,
+		ushort fontRegion, ushort fontCountry, string fontFileName,
+		string fontName, int fontExpire, int shadow_option
+	) {
+		FontStyle fontStyle;
+		{
+			fontStyle.fontH          = fontH;
+			fontStyle.fontV          = fontV;
+			fontStyle.fontHRes       = fontVRes;
+			fontStyle.fontHRes       = fontVRes;
+			fontStyle.fontWeight     = fontWeight;
+			fontStyle.fontFamily     = fontFamily;
+			fontStyle.fontStyleStyle = fontStyleStyle;
+			fontStyle.fontStyleSub   = fontStyleSub;
+			fontStyle.fontLanguage   = fontLanguage;
+			fontStyle.fontRegion     = fontRegion;
+			fontStyle.fontCountry    = fontCountry;
+			
+			fontStyle.fontFileName   = fontFileName; // Changed order?
+			fontStyle.fontName       = fontName;
+			fontStyle.fontAttributes = fontAttributes;
+			fontStyle.fontExpire     = fontExpire;
+		}
+		return fontStyle;
+	}
 }
 
 struct FontInfo {

@@ -145,8 +145,9 @@ template ThreadManForUser_Semaphores() {
 	}
 	
 	int _sceKernelWaitSemaCB(SceUID semaid, int signal, SceUInt *timeout, bool callback) {
+		
 		auto semaphore = uniqueIdFactory.get!PspSemaphore(semaid);
-		logTrace("sceKernelWaitSema%s(%d:'%s', %d, %d) :: %s", callback ? "CB" : "", semaid, semaphore.name, signal, (timeout is null) ? 0 : *timeout, semaphore);
+		logInfo("sceKernelWaitSema%s(%d:'%s', %d, %d) :: %s", callback ? "CB" : "", semaid, semaphore.name, signal, (timeout is null) ? 0 : *timeout, semaphore);
 
 		currentCpuThread.threadState.waitingBlock("_sceKernelWaitSemaCB", {
 			semaphore.waitSignal(hleEmulatorState, currentThreadState, signal, (timeout !is null) ? *timeout : 0, callback);

@@ -28,8 +28,6 @@ class PspCallback {
 	 * Argument to send to callback function.
 	 */
 	void* arg;
-	
-	uint argumentValue;
 
 	/**
 	 * Constructor.
@@ -50,6 +48,7 @@ class CallbacksHandler {
 		MemoryStickInsertEject,
 		GraphicEngine,
 		VerticalBlank,
+		Umd,
 		/*
 		PSP_GPIO_SUBINT     = PspInterrupts.PSP_GPIO_INT,
 		PSP_ATA_SUBINT      = PspInterrupts.PSP_ATA_INT,
@@ -154,7 +153,8 @@ class CallbacksHandler {
 					Logger.log(Logger.Level.TRACE, "CallbacksHandler", std.string.format("Executing queued callbacks"));
 					foreach (pspCallback; queuedPspCallbacks) {
 						Logger.log(Logger.Level.TRACE, "CallbacksHandler", std.string.format("Executing callback: %s", pspCallback));
-						hleEmulatorState.executeGuestCode(threadState, pspCallback.func, arguments);
+						uint[] baseArguments = [cast(uint)pspCallback.arg];
+						hleEmulatorState.executeGuestCode(threadState, pspCallback.func, baseArguments ~ arguments);
 					}
 				};
 			}

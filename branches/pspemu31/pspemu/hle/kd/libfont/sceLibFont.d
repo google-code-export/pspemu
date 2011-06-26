@@ -40,8 +40,35 @@ class sceLibFont : ModuleNative {
 	}
 	
 	class FontLibrary {
+		static string[] fontOrder = ["jpn0.pgf", "ltn0.pgf", "ltn1.pgf", "ltn2.pgf", "ltn3.pgf", "ltn4.pgf", "ltn5.pgf", "ltn6.pgf", "ltn7.pgf", "ltn8.pgf", "ltn9.pgf", "ltn10.pgf", "ltn11.pgf", "ltn11.pgf", "ltn12.pgf", "ltn13.pgf", "ltn14.pgf", "ltn15.pgf", "kr0.pgf"];
+		string[] fontNames;
+		FontStyle[] fontStyles;
+
 		this(FontNewLibParams* params) {
-			
+			fontStyles ~= FontStyle(0x288, 0x288, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SANS_SERIF, FontStyle.Style.FONT_STYLE_DB         , 0, FontStyle.Language.FONT_LANGUAGE_JAPANESE, 0, 1, "jpn0.pgf" , "FTT-NewRodin Pro DB"   , 0, 0);
+			fontStyles ~= FontStyle(0x288, 0x288, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SANS_SERIF, FontStyle.Style.FONT_STYLE_REGULAR    , 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn0.pgf" , "FTT-NewRodin Pro Latin", 0, 0);
+			fontStyles ~= FontStyle(0x288, 0x288, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SERIF     , FontStyle.Style.FONT_STYLE_REGULAR    , 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn1.pgf" , "FTT-Matisse Pro Latin" , 0, 0);
+			fontStyles ~= FontStyle(0x288, 0x288, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SANS_SERIF, FontStyle.Style.FONT_STYLE_ITALIC     , 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn2.pgf" , "FTT-NewRodin Pro Latin", 0, 0);
+			fontStyles ~= FontStyle(0x288, 0x288, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SERIF     , FontStyle.Style.FONT_STYLE_ITALIC     , 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn3.pgf" , "FTT-Matisse Pro Latin" , 0, 0);
+			fontStyles ~= FontStyle(0x288, 0x288, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SANS_SERIF, FontStyle.Style.FONT_STYLE_BOLD       , 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn4.pgf" , "FTT-NewRodin Pro Latin", 0, 0);
+			fontStyles ~= FontStyle(0x288, 0x288, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SERIF     , FontStyle.Style.FONT_STYLE_BOLD       , 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn5.pgf" , "FTT-Matisse Pro Latin" , 0, 0);
+			fontStyles ~= FontStyle(0x288, 0x288, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SANS_SERIF, FontStyle.Style.FONT_STYLE_BOLD_ITALIC, 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn6.pgf" , "FTT-NewRodin Pro Latin", 0, 0);
+			fontStyles ~= FontStyle(0x288, 0x288, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SERIF     , FontStyle.Style.FONT_STYLE_BOLD_ITALIC, 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn7.pgf" , "FTT-Matisse Pro Latin" , 0, 0);
+			fontStyles ~= FontStyle(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SANS_SERIF, FontStyle.Style.FONT_STYLE_REGULAR    , 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn8.pgf" , "FTT-NewRodin Pro Latin", 0, 0);
+			fontStyles ~= FontStyle(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SERIF     , FontStyle.Style.FONT_STYLE_REGULAR    , 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn9.pgf" , "FTT-Matisse Pro Latin" , 0, 0);
+			fontStyles ~= FontStyle(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SANS_SERIF, FontStyle.Style.FONT_STYLE_ITALIC     , 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn10.pgf", "FTT-NewRodin Pro Latin", 0, 0);
+			fontStyles ~= FontStyle(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SERIF     , FontStyle.Style.FONT_STYLE_ITALIC     , 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn11.pgf", "FTT-Matisse Pro Latin" , 0, 0);
+			fontStyles ~= FontStyle(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SANS_SERIF, FontStyle.Style.FONT_STYLE_BOLD       , 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn12.pgf", "FTT-NewRodin Pro Latin", 0, 0);
+			fontStyles ~= FontStyle(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SERIF     , FontStyle.Style.FONT_STYLE_BOLD       , 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn13.pgf", "FTT-Matisse Pro Latin" , 0, 0);
+			fontStyles ~= FontStyle(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SANS_SERIF, FontStyle.Style.FONT_STYLE_BOLD_ITALIC, 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn14.pgf", "FTT-NewRodin Pro Latin", 0, 0);
+			fontStyles ~= FontStyle(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SERIF     , FontStyle.Style.FONT_STYLE_BOLD_ITALIC, 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn15.pgf", "FTT-Matisse Pro Latin" , 0, 0);
+			fontStyles ~= FontStyle(0x288, 0x288, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SANS_SERIF, FontStyle.Style.FONT_STYLE_REGULAR    , 0, FontStyle.Language.FONT_LANGUAGE_KOREAN  , 0, 3, "kr0.pgf"  , "AsiaNHH(512Johab)"     , 0, 0);
+
+			foreach (item; hleEmulatorState.rootFileSystem.fsroot.dopen("flash0:/font")) {
+				if (item.stat.isDir) continue;
+				fontNames ~= "flash0:/font/" ~ item.name;
+				//writefln("%s", item.name);
+			}
 		}
 	}
 	
@@ -53,7 +80,7 @@ class sceLibFont : ModuleNative {
 		}
 		
 		Font setByIndex(int index) {
-			return this;
+			return setByFileName(fontLibrary.fontNames[index]);
 		}
 		
 		Font setByData(ubyte[] data) {
@@ -179,10 +206,31 @@ class sceLibFont : ModuleNative {
 	 * @return Number of fonts
 	 */
 	int sceFontGetNumFontList(FontLibraryHandle libHandle, uint* errorCode) {
-		unimplemented();
+		unimplemented_notice();
 
-		return 0;		
+		//unimplemented();
+		FontLibrary fontLibrary = uniqueIdFactory.get!FontLibrary(libHandle);
+		*errorCode = 0;
+
+		return fontLibrary.fontNames.length;		
 	}
+	
+	/**
+	 * Retrieves all the font styles up to numFonts.
+	 *
+	 * @param  libHandle   Handle of the library.
+	 * @param  fontStyles  Pointer to store the font styles.
+	 * @param  numFonts    Number of fonts to write.
+	 *
+	 * @return Number of fonts
+	 */
+    int sceFontGetFontList(FontLibraryHandle libHandle, FontStyle* fontStyles, int numFonts) {
+		unimplemented_notice();
+
+    	FontLibrary fontLibrary = uniqueIdFactory.get!FontLibrary(libHandle);
+    	fontStyles[0..numFonts] = fontLibrary.fontStyles[0..numFonts];
+    	return 0;
+    }
 
 	/**
 	 * Returns a font index that best matches the specified FontStyle.
@@ -194,10 +242,11 @@ class sceLibFont : ModuleNative {
 	 * @return Font index
 	 */
 	int sceFontFindOptimumFont(FontLibraryHandle libHandle, FontStyle* fontStyle, uint* errorCode) {
-		unimplemented();
+		//unimplemented();
+		unimplemented_notice();
 
 		*errorCode = 0;
-		return 0;
+		return 1;
 	}
 
 	/**
@@ -249,7 +298,6 @@ class sceLibFont : ModuleNative {
     void sceFontGetCharInfo() { unimplemented(); }
 	void sceFontGetCharGlyphImage() { unimplemented(); }
     void sceFontGetCharGlyphImage_Clip() { unimplemented(); }
-    void sceFontGetFontList() { unimplemented(); }
     void sceFontSetAltCharacterCode() { unimplemented(); }
     void sceFontGetCharImageRect() { unimplemented(); }
     void sceFontPointToPixelH() { unimplemented(); }

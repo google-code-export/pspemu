@@ -1,4 +1,4 @@
 beforeEnableVblankCallback
 afterEnableVblankCallback
-vblankCallback
+vblankCallback(7)
 ended

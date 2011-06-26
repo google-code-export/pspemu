@@ -130,6 +130,7 @@ abstract class Module {
 		return hleEmulatorState.executeGuestCode(currentThreadState, pointer, arguments);
 	}
 	
+	/*
 	void logLevel(T...)(Logger.Level level, T args) {
 		try {
 			Logger.log(level, this.baseName, "nPC(%08X) :: Thread(%d:%s) :: %s", currentThreadState().registers.RA, currentThreadState().thid, currentThreadState().name, std.string.format(args));
@@ -138,6 +139,7 @@ abstract class Module {
 		}
 	}
 	mixin Logger.LogPerComponent;
+	*/
 	
 	/*
 	static public void writefln(T...)(T args) {

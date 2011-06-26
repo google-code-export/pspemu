@@ -12,7 +12,11 @@ import pspemu.hle.kd.Types;
 import pspemu.hle.kd.threadman.Types;
 import pspemu.hle.Module;
 
+import pspemu.utils.Logger;
+
 import std.c.windows.windows;
+
+public import pspemu.utils.sync.WaitEvent;
 
 class ThreadState {
 	protected __gshared ThreadState[Thread] threadStatePerThread;
@@ -28,10 +32,53 @@ class ThreadState {
 	public SceKernelThreadInfo sceKernelThreadInfo;
 	public Module threadModule;
 	public int wakeUpCount;
+
+	@property public bool sleeping() {
+		return (wakeUpCount < 0);
+	}
+
+	@property public bool sleeping(bool set) {
+		int wakeUpCountPrev = wakeUpCount; 
+		wakeUpCount += set ? -1 : +1;
+		Logger.log(Logger.Level.INFO, "ThreadState", "  Thread.wakeUp(%s) || %d -> %d (sleeping:%s)", this, wakeUpCountPrev, wakeUpCount, sleeping);
+		return sleeping;
+	}
+	
+	WaitEvent wakeUpEvent;
+	
+	public this(string name, EmulatorState emulatorState, Registers registers) {
+		this.name = name;
+		this.emulatorState = emulatorState;
+		this.registers = registers;
+		wakeUpEvent = new WaitEvent("WakeUpEvent");
+		wakeUpEvent.callback = delegate(Object object) {
+			sleeping = false;
+		};
+	}
+
+	public this(string name, EmulatorState emulatorState) {
+		this(name, emulatorState, new Registers());
+	}
+	
 	
 	public void nativeThreadSet(void delegate() run, string name = "<unknown thread>") {
 		nativeThread = new Thread(delegate() {
 			nativeThreadHandle = GetCurrentThread();
+			
+			/*
+			final switch (sceKernelThreadInfo.currentPriority) {
+				case 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15:
+					SetThreadPriority(nativeThreadHandle, THREAD_PRIORITY_ABOVE_NORMAL);
+				break;
+				case 16, 17, 18, 19:
+					SetThreadPriority(nativeThreadHandle, THREAD_PRIORITY_NORMAL);
+				break;
+				case 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32:
+					SetThreadPriority(nativeThreadHandle, THREAD_PRIORITY_BELOW_NORMAL);
+				break;
+			}
+			*/
+			
 			run();
 		});
 		nativeThread.name = name;
@@ -39,14 +86,6 @@ class ThreadState {
 	
 	public void nativeThreadStart() {
 		nativeThread.start();
-	}
-	
-	public void nativeThreadSuspend() {
-		SuspendThread(nativeThreadHandle);
-	}
-
-	public void nativeThreadWakeup() {
-		ResumeThread(nativeThreadHandle);
 	}
 	
 	@property public bool nativeThreadIsRunning() {
@@ -91,16 +130,6 @@ class ThreadState {
 		}
 
 		callback();
-	}
-	
-	public this(string name, EmulatorState emulatorState, Registers registers) {
-		this.name = name;
-		this.emulatorState = emulatorState;
-		this.registers = registers;
-	}
-
-	public this(string name, EmulatorState emulatorState) {
-		this(name, emulatorState, new Registers());
 	}
 	
 	string toString() {

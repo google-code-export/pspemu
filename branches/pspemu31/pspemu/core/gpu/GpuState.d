@@ -192,6 +192,14 @@ static struct VertexState {
 	alias p position;
 	alias n normal;
 
+	string toString(VertexType vertexType) {
+		return toString(vertexType.getPrimitiveFlags);
+	}
+	
+	string toString(PrimitiveFlags flags) {
+		return toString(PrimitiveType.GU_POINTS, flags);
+	}
+
 	string toString(PrimitiveType type, PrimitiveFlags flags) {
 		string ret;
 		ret ~= "VertexState";
@@ -296,8 +304,8 @@ struct TextureState {
 }
 
 struct Patch {
-	float div_s;
-	float div_t;
+	ubyte div_s;
+	ubyte div_t;
 }
 
 struct FogState {
@@ -557,41 +565,5 @@ static struct GpuState {
 		ret ~= format("    colorMask               = %s\n",    colorMask);
 
 		return ret;
-	}
-}
-
-struct PrimitiveFlags {
-	bool hasWeights;
-	bool hasTexture;
-	bool hasColor;
-	bool hasNormal;
-	bool hasPosition;
-	int  numWeights;
-	
-	const uint MAX_NUMBER_OF_WEIGHTS = 8;
-	
-	@property static PrimitiveFlags all() {
-		PrimitiveFlags primitiveFlags;
-		with (primitiveFlags) {
-			hasWeights  = true;
-			hasTexture  = true;
-			hasColor    = true;
-			hasNormal   = true;
-			hasPosition = true;
-			numWeights  = MAX_NUMBER_OF_WEIGHTS;
-		}
-		return primitiveFlags;
-	}
-	
-	string toString() {
-		return std.string.format(
-			"PrimitiveFlags(hasWeights=%d,hasTexture=%d,hasColor=%d,hasNormal=%d,hasPosition=%d,numWeights=%d)",
-			hasWeights,
-			hasTexture,
-			hasColor,
-			hasNormal,
-			hasPosition,
-			numWeights
-		);
 	}
 }

@@ -11,6 +11,10 @@ enum PspThreadStatus {
 	PSP_THREAD_KILLED  = 32, // Thread manager has killed the thread (stack overflow)
 }
 
+enum PspEventFlagAttributes {
+	/** Allow the event flag to be waited upon by multiple threads */
+	PSP_EVENT_WAITMULTIPLE = 0x200
+}
 
 struct SceKernelThreadInfo {
 	/** Size of the structure */

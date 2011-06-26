@@ -67,11 +67,14 @@ class Atrac3Object {
 	*/
 	
 	int getMaxNumberOfSamples() {
-		switch (processor.atrac3Format.compressionCode) {
-			case Atrac3Processor.CodecType.AT3_MAGIC     : return 1024;
-			case Atrac3Processor.CodecType.AT3_PLUS_MAGIC: return 2048;
-			default: return 0;
+		if (processor !is null) { 
+			switch (processor.atrac3Format.compressionCode) {
+				case Atrac3Processor.CodecType.AT3_MAGIC     : return 1024;
+				case Atrac3Processor.CodecType.AT3_PLUS_MAGIC: return 2048;
+				default: break;
+			}
 		}
+		return 2048;
 	}
 	
 	void writeOma(string filePath) {
@@ -184,12 +187,14 @@ class Atrac3Object {
 
     public this(ubyte[] buf) {
     	this.buf = buf;
-    	this.dump();
-
-		processor = new Atrac3Processor();
-		processor.process(new MemoryStream(this.buf));
-		
-		getWave();
+    	if (buf.length) {
+	    	this.dump();
+	
+			processor = new Atrac3Processor();
+			processor.process(new MemoryStream(this.buf));
+			
+			getWave();
+		}
     }
     
 	
@@ -375,7 +380,7 @@ class sceAtrac3plus : ModuleNative {
 		int result = 0;
 		
 		if ((atrac3Object.samplesOffset + numShorts) >= atrac3Object.samples.length) {
-			*outEnd = 1;			
+			*outEnd = -1;			
 			result = SceKernelErrors.ERROR_ATRAC_ALL_DATA_DECODED;
 		} else {
 			*outEnd = 0;

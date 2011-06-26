@@ -77,6 +77,8 @@ class sceAudio_driver : ModuleNative {
 	}
 
 	static float volumef(int shortval) { return (cast(float)shortval) / cast(float)0xFFFF; }
+	
+	int Output2Channel;
 
 	/**
 	 * Reserve the audio output and set the output sample count
@@ -86,7 +88,8 @@ class sceAudio_driver : ModuleNative {
 	 * @return 0 on success, an error if less than 0.
 	 */
 	int sceAudioOutput2Reserve(int samplecount) {
-		unimplemented_notice();
+		Output2Channel = sceAudioChReserve(PSP_AUDIO_NEXT_CHANNEL, samplecount, PspAudioFormats.PSP_AUDIO_FORMAT_STEREO);
+		//unimplemented_notice();
 		return 0;
 	}
 
@@ -100,6 +103,7 @@ class sceAudio_driver : ModuleNative {
 	 */
 	int sceAudioOutput2OutputBlocking(int vol, void *buf) {
 		unimplemented_notice();
+		sceAudioOutputBlocking(Output2Channel, vol, buf);
 		return 0;
 	}
 
@@ -110,6 +114,7 @@ class sceAudio_driver : ModuleNative {
 	 */
 	int sceAudioOutput2Release() {
 		unimplemented_notice();
+		sceAudioChRelease(Output2Channel);
 		return 0;
 	}
 

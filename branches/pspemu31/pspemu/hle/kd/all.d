@@ -22,6 +22,7 @@ public import
 	pspemu.hle.kd.mpeg.sceMpeg,
 	pspemu.hle.kd.mpegbase.sceMpegbase,
 	pspemu.hle.kd.power.scePower,
+	pspemu.hle.kd.pspnet.sceNet,
 	pspemu.hle.kd.pspnet.sceNetInet,
 	pspemu.hle.kd.pspnet.sceNetResolver,
 	pspemu.hle.kd.registry.sceReg,

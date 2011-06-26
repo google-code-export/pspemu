@@ -26,26 +26,27 @@ class PspWaitEvent {
 	}
 	
 	public void setBits(uint bits) {
-		this.bits = bits;
+		this.bits |= bits;
 		this.waitEvent.signal();
 	}
 	
-	public uint checkEventFlag(uint bitsToMatch, PspEventFlagWaitTypes wait) {
-		uint result;
+	public bool checkEventFlag(uint bitsToMatch, PspEventFlagWaitTypes wait, ref uint checkedBits) {
+		checkedBits = this.bits;
 		if (wait & PspEventFlagWaitTypes.PSP_EVENT_WAITOR) {
-			result = (this.bits & bitsToMatch);
+			return ((checkedBits & bitsToMatch) != 0);
 		} else {
-			result = (this.bits & bitsToMatch);
-			if (result != bitsToMatch) result = 0;
+			return ((checkedBits & bitsToMatch) == bitsToMatch);
 		}
-		return result;
 	}
 	
 	public uint waitEventFlag(uint bitsToMatch, PspEventFlagWaitTypes wait, bool callbacks) {
 		uint matchedBits;
 
 		bool matches() {
-			matchedBits = checkEventFlag(bitsToMatch, wait); return (matchedBits != 0);
+			//matchedBits = checkEventFlag(bitsToMatch, wait);
+			//return (matchedBits != 0);
+			uint matchedBits;
+			return checkEventFlag(bitsToMatch, wait, matchedBits);
 			//return checkEventFlag(bitsToMatch, wait) != 0; 
 		}
 		
@@ -104,9 +105,11 @@ template ThreadManForUser_Events() {
 	 * evid = sceKernelCreateEventFlag("wait_event", 0, 0, 0);
 	 * @endcode
 	 */
-	SceUID sceKernelCreateEventFlag(string name, int attr, int bits, SceKernelEventFlagOptParam *opt) {
+	SceUID sceKernelCreateEventFlag(string name, PspEventFlagAttributes attr, int bits, SceKernelEventFlagOptParam *opt) {
 		PspWaitEvent pspWaitEvent = new PspWaitEvent(name, attr, bits);
-		return uniqueIdFactory.add(pspWaitEvent);
+		int evid = uniqueIdFactory.add(pspWaitEvent); 
+		logInfo("sceKernelCreateEventFlag('%s':%d, %s:%d, %032b, %08X)", name, evid, toSet(attr), attr, bits, cast(uint)opt);
+		return evid;
 	}
 
 	/** 
@@ -117,6 +120,7 @@ template ThreadManForUser_Events() {
 	 * @return < 0 On error
 	 */
 	int sceKernelDeleteEventFlag(int evid) {
+		logInfo("sceKernelDeleteEventFlag('%s':%d)", uniqueIdFactory.get!PspWaitEvent(evid).name, evid);
 		uniqueIdFactory.remove!PspWaitEvent(evid);
 		return 0;
 	}
@@ -132,7 +136,10 @@ template ThreadManForUser_Events() {
 	int sceKernelClearEventFlag(SceUID evid, u32 bits) {
 		//unimplemented_notice();
 		PspWaitEvent pspWaitEvent = uniqueIdFactory.get!PspWaitEvent(evid);
+		logInfo("sceKernelClearEventFlag('%s':%d, %032b)", pspWaitEvent.name, evid, bits);
+		uint oldBits = pspWaitEvent.bits;
 		pspWaitEvent.clearBits(bits);
+		logInfo("%032b ---> %032b", oldBits, pspWaitEvent.bits);
 		return 0;
 		//return -1;
 	}
@@ -150,8 +157,8 @@ template ThreadManForUser_Events() {
 	 */
 	int _sceKernelWaitEventFlagCB(int evid, u32 bits, PspEventFlagWaitTypes wait, u32 *outBits, SceUInt *timeout, bool callback) {
 		try {
-			logInfo("_sceKernelWaitEventFlagCB(%d, %032b, %s, %s, %08X)", evid, bits, to!string(wait), to!string(callback), cast(uint)timeout);
 			PspWaitEvent pspWaitEvent = uniqueIdFactory.get!PspWaitEvent(evid);
+			logInfo("_sceKernelWaitEventFlagCB('%s':%d, %032b, %s, %s, %08X)", pspWaitEvent.name, evid, bits, to!string(wait), to!string(callback), cast(uint)timeout);
 			
 			currentCpuThread.threadState.waitingBlock("_sceKernelWaitEventFlagCB", {
 				uint matchedBits = pspWaitEvent.waitEventFlag(bits, wait, callback);
@@ -206,7 +213,12 @@ template ThreadManForUser_Events() {
 	int sceKernelSetEventFlag(SceUID evid, u32 bits) {
 		try {
 			PspWaitEvent pspWaitEvent = uniqueIdFactory.get!PspWaitEvent(evid);
+			
+			logInfo("sceKernelSetEventFlag('%s':%d, %032b)", pspWaitEvent.name, evid, bits);
+			uint oldBits = pspWaitEvent.bits;
 			pspWaitEvent.setBits(bits);
+			logInfo("%032b ---> %032b", oldBits, pspWaitEvent.bits);
+
 			return 0;
 		} catch (UniqueIdNotFoundException) {
 			logWarning("SceKernelErrors.ERROR_KERNEL_NOT_FOUND_EVENT_FLAG");
@@ -230,23 +242,19 @@ template ThreadManForUser_Events() {
 			
 			if (bits == 0) return SceKernelErrors.ERROR_KERNEL_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
 			
-			uint result = pspWaitEvent.checkEventFlag(bits, wait);
+			uint checkedBits;
+			bool matched = pspWaitEvent.checkEventFlag(bits, wait, checkedBits);
 			
 			scope (exit) {
 				logInfo(
-					"sceKernelPollEventFlag(evid=%d, bits=%032b, wait=%s, outBits=(%08X)%032b)",
-					evid, bits, toSet(wait), cast(uint)cast(void *)outBits, result
+					"sceKernelPollEventFlag(evid=%d, bits=%032b, wait=%s, outBits=(%08X)%032b:%s)",
+					evid, bits, toSet(wait), cast(uint)outBits, checkedBits, matched
 				);
 			}
 	
-			if (result) {
-				if (outBits !is null) {
-					*outBits = result; 
-				}
-				return SceKernelErrors.ERROR_KERNEL_EVENT_FLAG_POLL_FAILED;
-			} else {
-				return 0;
-			}
+			if (outBits !is null) *outBits = checkedBits; 
+
+			return (matched) ? 0 : SceKernelErrors.ERROR_KERNEL_EVENT_FLAG_POLL_FAILED; 
 		} catch (UniqueIdNotFoundException) {
 			logWarning("SceKernelErrors.ERROR_KERNEL_NOT_FOUND_EVENT_FLAG");
 			return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;

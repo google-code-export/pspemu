@@ -96,8 +96,8 @@ template Gpu_Flow() {
 	}
 
 	auto OP_CALL() {
-		gpu.logWarning("OP_CALL and OP_RET not tested yet!!");
 		auto address = (gpu.state.baseAddress | command.param24) & (~0b_11);
+		gpu.logWarning("OP_CALL and OP_RET not tested yet!! 0x%08X", address);
 		displayList.call(gpu.memory.getPointer(address));
 	}
 

@@ -10,8 +10,11 @@
 //#pragma compile, "%PSPSDK%/bin/psp-gcc" -I. -I"%PSPSDK%/psp/sdk/include" -L. -L"%PSPSDK%/psp/sdk/lib" -D_PSP_FW_VERSION=150 -Wall -g thread_start.c ../common/emits.c -lpspsdk -lc -lpspuser -lpspkernel -o thread_start.elf
 //#pragma compile, "%PSPSDK%/bin/psp-fixup-imports" thread_start.elf
 
+#include <pspsdk.h>
 #include <pspkernel.h>
 #include <pspthreadman.h>
+
+#define eprintf(...) pspDebugScreenPrintf(__VA_ARGS__); Kprintf(__VA_ARGS__);
 
 PSP_MODULE_INFO("THREAD TEST", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | THREAD_ATTR_VFPU);
@@ -21,14 +24,14 @@ static int semaphore = 0;
 static int threadFunction(int args, void* argp) {
 	int local_value = *(int *)argp;
 
-	Kprintf("%d\n", local_value);
+	eprintf("%d, %d\n", args, local_value);
 
 	sceKernelSignalSema(semaphore, 1);
 	
 	return 0;
 }
 
-int main() {
+void testThreads() {
 	int n;
 
 	// Create a semaphore for waiting both threads to execute.
@@ -49,7 +52,33 @@ int main() {
 	sceKernelWaitSema(semaphore, 2, NULL);
 
 	// After both threads have been executed, we will emit a -1 to check that semaphores work fine.
-	Kprintf("%d\n", -1);
+	eprintf("%d\n", -1);
+}
+
+void testEvents() {
+	SceUID evid;
+	int result;
+	u32 outBits = -1;
+	evid = sceKernelCreateEventFlag("test_event", PSP_EVENT_WAITMULTIPLE, 4 | 2, NULL);
+	result = sceKernelPollEventFlag(evid, 4 | 2, PSP_EVENT_WAITAND, &outBits);
+	eprintf("event: %08X:%d\n", result, outBits);
+	result = sceKernelPollEventFlag(evid, 8 | 2, PSP_EVENT_WAITAND, &outBits);
+	eprintf("event: %08X:%d\n", result, outBits);
+	result = sceKernelPollEventFlag(evid, 8 | 4, PSP_EVENT_WAITOR, &outBits);
+	eprintf("event: %08X:%d\n", result, outBits);
+	result = sceKernelSetEventFlag(evid, 32 | 16);
+	eprintf("event: %08X\n", result);
+	result = sceKernelClearEventFlag(evid, ~4);
+	eprintf("event: %08X\n", result);
+	result = sceKernelPollEventFlag(evid, 0xFFFFFFFC, PSP_EVENT_WAITOR, &outBits);
+	eprintf("event: %08X:%d\n", result, outBits);
+}
+
+int main() {
+	pspDebugScreenInit();
+
+	testThreads();
+	testEvents();
 	
 	sceKernelExitGame();
 	

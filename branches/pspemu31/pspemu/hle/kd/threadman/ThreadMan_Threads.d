@@ -82,7 +82,7 @@ template ThreadManForUser_Threads() {
 		newThreadState.registers.RA = 0x08000000;
 		newThreadState.thid = uniqueIdFactory.add(newThreadState);
 		
-		logInfo("sceKernelCreateThread(thid:'%d', entry:%08X, name:'%s', SP:0x%08X)", newThreadState.thid, entry, name, newThreadState.registers.SP);
+		logInfo("sceKernelCreateThread(thid:'%d', entry:%08X, name:'%s', initPriority=%d, SP:0x%08X)", newThreadState.thid, entry, name, initPriority, newThreadState.registers.SP);
 		
 		newThreadState.sceKernelThreadInfo.attr = attr;
 		newThreadState.sceKernelThreadInfo.name[0..name.length] = name;
@@ -162,6 +162,8 @@ template ThreadManForUser_Threads() {
 			// @TODO
 		}
 		
+		waitMultipleObjects.add(currentThreadState.wakeUpEvent);
+		
 		waitMultipleObjects.object = currentThreadState;
 		
 		return waitMultipleObjects;
@@ -171,7 +173,8 @@ template ThreadManForUser_Threads() {
 		scope waitMultipleObjects = _getWaitMultipleObjects(handleCallbacks);
 		
 		currentCpuThread.threadState.waitingBlock("_sceKernelSleepThreadCB", {
-			while (true) {
+			currentThreadState.sleeping = true;
+			while (currentThreadState.sleeping) {
 				waitMultipleObjects.waitAny();
 			}
 		});
@@ -186,6 +189,8 @@ template ThreadManForUser_Threads() {
 			scope StopWatch stopWatch;
 			
 			stopWatch.start();
+
+			//currentThreadState.sleeping = true;
 			while (true) {
 				long microsecondsToWaitMax = delayInMicroseconds - stopWatch.peek.usecs;
 				if (microsecondsToWaitMax <= 0) break;
@@ -437,8 +442,9 @@ template ThreadManForUser_Threads() {
 	int sceKernelWakeupThread(SceUID thid) {
 		logInfo("sceKernelWakeupThread(thid=%d)", thid);
 		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
-		threadState.nativeThreadWakeup();
-		threadState.wakeUpCount++;
+		threadState.wakeUpEvent.signal();
+		//threadState.nativeThreadWakeup();
+		//threadState.wakeUpCount++;
 		//return -1;
 		return 0;
 	}
