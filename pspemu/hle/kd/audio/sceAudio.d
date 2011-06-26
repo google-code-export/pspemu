@@ -76,7 +76,7 @@ class sceAudio_driver : ModuleNative {
 		return (index >= 0 && index < channels.length);
 	}
 
-	static float volumef(int shortval) { return (cast(float)shortval) / cast(float)0xFFFF; }
+	static float volumef(int shortval) { return (cast(float)shortval) / cast(float)PSP_AUDIO_VOLUME_MAX; }
 	
 	int Output2Channel;
 
@@ -96,7 +96,7 @@ class sceAudio_driver : ModuleNative {
 	/**
 	 * Output audio (blocking)
 	 *
-	 * @param vol - The volume.
+	 * @param vol - The volume. A value between 0 and PSP_AUDIO_VOLUME_MAX.
 	 * @param buf - Pointer to the PCM data.
 	 *
 	 * @return 0 on success, an error if less than 0.
@@ -187,8 +187,8 @@ class sceAudio_driver : ModuleNative {
 	  * Output panned audio of the specified channel (blocking)
 	  *
 	  * @param channel  - The channel number.
-	  * @param leftvol  - The left volume.
-	  * @param rightvol - The right volume.
+	  * @param leftvol  - The left volume. A value between 0 and PSP_AUDIO_VOLUME_MAX.
+	  * @param rightvol - The right volume. A value between 0 and PSP_AUDIO_VOLUME_MAX.
 	  * @param buf      - Pointer to the PCM data to output.
 	  *
 	  * @return 0 on success, an error if less than 0.
@@ -201,8 +201,8 @@ class sceAudio_driver : ModuleNative {
 	 * Output panned audio of the specified channel
 	 *
 	 * @param channel  - The channel number.
-	 * @param leftvol  - The left volume.
-	 * @param rightvol - The right volume.
+	 * @param leftvol  - The left volume. A value between 0 and PSP_AUDIO_VOLUME_MAX.
+	 * @param rightvol - The right volume. A value between 0 and PSP_AUDIO_VOLUME_MAX.
 	 * @param buf      - Pointer to the PCM data to output.
 	 *
 	 * @return 0 on success, an error if less than 0.
@@ -215,8 +215,8 @@ class sceAudio_driver : ModuleNative {
 	 * Output audio of the specified channel
 	 *
 	 * @param channel - The channel number.
-	 * @param vol - The volume.
-	 * @param buf - Pointer to the PCM data to output.
+	 * @param vol     - The volume. A value between 0 and PSP_AUDIO_VOLUME_MAX.
+	 * @param buf     - Pointer to the PCM data to output.
 	 *
 	 * @return 0 on success, an error if less than 0.
 	 */

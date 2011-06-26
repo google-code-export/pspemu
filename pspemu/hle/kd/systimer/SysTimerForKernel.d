@@ -76,10 +76,10 @@ class SysTimerForKernel : ModuleNative {
 	/**
 	 * Setup a SysTimer handler
 	 *
-	 * @param timer - The timer id.
-	 * @param cycle - The timer cycle in microseconds (???). Maximum: 4194303 which represents ~1/10 seconds.
+	 * @param timer   - The timer id.
+	 * @param cycle   - The timer cycle in microseconds (???). Maximum: 4194303 which represents ~1/10 seconds.
 	 * @param handler - The handler function. Has to return -1.
-	 * @param unk1 - Unknown. Pass 0.
+	 * @param unk1    - Unknown. Pass 0.
 	 */
 	void sceSTimerSetHandler(SceSysTimerId timer, int cycle, uint handler, int unk1) {
 		logInfo("sceSTimerSetHandler(%d, %d, %08X, %d)", timer, cycle, handler, unk1);
@@ -91,7 +91,6 @@ class SysTimerForKernel : ModuleNative {
 	 * Start the SysTimer timer count.
 	 *
 	 * @param timer - The timer id.
-	 *
 	 */
 	void sceSTimerStartCount(SceSysTimerId timer) {
 		logInfo("sceSTimerStartCount(%d)", timer);

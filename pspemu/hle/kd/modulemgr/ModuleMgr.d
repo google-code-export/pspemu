@@ -82,6 +82,8 @@ class ModuleMgrForUser : ModuleNative {
 	 * @return ??? on success, otherwise one of ::PspKernelErrorCodes.
 	 */
 	int sceKernelSelfStopUnloadModule(int unknown, SceSize argsize, void *argp) {
+		//hleEmulatorState.emulatorState.runningState.stop();
+		hleEmulatorState.emulatorState.runningState.stopCpu();
 		throw(new HaltException("sceKernelSelfStopUnloadModule"));
 		return 0;
 	}

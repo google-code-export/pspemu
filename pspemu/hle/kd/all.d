@@ -39,5 +39,6 @@ public import
 	pspemu.hle.kd.utility.sceUtility,
 	pspemu.hle.kd.utils.UtilsForKernel,
 	pspemu.hle.kd.videocodec.sceVideocodec,
+	pspemu.hle.kd.wlan.sceWlan,
 	pspemu.hle.kd.systemctrl.KUBridge
 ;

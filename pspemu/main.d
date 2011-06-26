@@ -51,62 +51,6 @@ import pspemu.hle.kd.all;
 import pspemu.utils.Diff;
 
 void executeSandboxTests(string[] args) {
-	/*
-	MountableVirtualFileSystem vfs = new MountableVirtualFileSystem(new VirtualFileSystem());
-	writefln("Format: %s", DetectFormat.detect(args[1]));
-	if (args.length >= 2) {
-		vfs.mount("disc0:", new IsoFileSystem(IsoFactory.getIsoFromStream(args[1])));
-	}
-	vfs.mount("flash0:", new LocalFileSystem(r"bin\pspfs\flash0"));
-	Pgf pgf = new Pgf();
-	pgf.load(vfs.open("flash0:/font/ltn0.pgf", FileOpenMode.In, FileAccessMode.All));
-	writefln("%s", pgf);
-	foreach (entry; vfs.dopen("disc0:/PSP_GAME")) {
-		writefln("%s", entry);
-	}
-	foreach (entry; vfs.dopen("flash0:/font")) {
-		writefln("%s", entry);
-	}
-	*/
-	
-	/*
-	Command command;
-	command.v = 0xFFFFFFFF;
-	LightModel value = command.extractEnum!(LightModel);
-	writefln("LightModel: %d", value);
-	*/
-	
-	writefln("[");
-	
-	string[] listA = ["a", "b", "c"];
-	string[] listB = ["a", "c", "b"];
-	
-	writefln("%s", listA);
-	writefln("%s", listB);
-	
-	
-	Diff.diffTextProcessed(listA, listB).print();
-
-	/*	
-	auto diff = new Diff();
-	int lastpos = 0;
-	foreach (v; diff.diffText(listA, listB)) {
-		foreach (i; lastpos..v.startA) {
-			writefln(" %s", listA[i]);
-		}
-
-		writefln("lastpos(%d) : %s", lastpos, v);
-
-		foreach (i; 0..v.deletedA) {
-			writefln("-%s", listA[v.startA + i]);
-		}
-		foreach (i; 0..v.insertedB) {
-			writefln("+%s", listB[v.startB + i]);
-		}
-		lastpos = v.startA;
-	}
-	*/
-	writefln("]");
 }
 
 void executeIsoListing(string[] args) {
@@ -192,29 +136,12 @@ int main(string[] args) {
 	bool showHelp;
 	bool nolog, log, trace;
 	
-	void disableLogComponent(string opt, string component) {
-		Logger.disableLogComponent(component);
-	}
-	
-	void enableLogComponent(string opt, string component) {
-		Logger.enableLogComponent(component);
-	}
-
-	void addCheat8(string opt, string component) {
-		globalCheats.addCheatString(component, 8);
-	}
-
-	void addCheat16(string opt, string component) {
-		globalCheats.addCheatString(component, 16);
-	}
-	
-	void addCheat32(string opt, string component) {
-		globalCheats.addCheatString(component, 32);
-	}
-	
-	void addTraceThread(string opt, string name) {
-		globalCheats.addTraceThread(name);
-	}
+	void disableLogComponent(string opt, string component) { Logger.disableLogComponent(component); }
+	void enableLogComponent(string opt, string component) { Logger.enableLogComponent(component); }
+	void addCheat8(string opt, string component) { globalCheats.addCheatString(component, 8); }
+	void addCheat16(string opt, string component) { globalCheats.addCheatString(component, 16); }
+	void addCheat32(string opt, string component) { globalCheats.addCheatString(component, 32); }
+	void addTraceThread(string opt, string name) { globalCheats.addTraceThread(name); }
 	
 	void loadgpuDump(string opt, string component) {
 		//GpuState gpuState; writefln("emptyGpuState: %s", gpuState);

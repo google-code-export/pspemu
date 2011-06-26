@@ -258,7 +258,6 @@ class Gpu {
 				logCritical("Gpu.run exception: %s", e);
 			} finally {
 				logDebug("Gpu.shutdown");
-				writefln("Gpu.shutdown");
 			}
 		}
 	}
