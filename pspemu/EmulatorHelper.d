@@ -154,6 +154,7 @@ class EmulatorHelper {
 	public void start() {
 		emulator.startMainThread();
 		
+		emulator.emulatorState.waitSomeCpuThreadsToStart();
 		emulator.emulatorState.waitForAllCpuThreadsToTerminate();
 	}
 	

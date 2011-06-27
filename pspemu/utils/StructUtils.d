@@ -21,6 +21,10 @@ uint   bswap32(uint v) { return cast(uint)(bswap16(v >> 16) | (bswap16(cast(usho
 struct be(T) {
 	T v;
 	
+	this(T that) {
+		opAssign(that);
+	}
+	
 	static T swap(T)(T v) {
 		static if (T.sizeof == 2u) return cast(ushort)bswap16(cast(ushort)v);
 		static if (T.sizeof == 4u) return cast(uint)bswap32(cast(uint)v);
