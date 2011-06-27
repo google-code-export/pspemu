@@ -7,12 +7,14 @@ import pspemu.utils.sync.WaitEvent;
 import std.c.windows.windows;
 
 import core.thread;
+import core.time;
 import std.stdio;
 import std.conv;
 import std.c.stdlib;
 import std.stream;
 import std.file;
 import std.path;
+import std.datetime;
 import std.process;
 import std.string;
 import std.array;
@@ -49,6 +51,14 @@ import pspemu.core.gpu.Types;
 import pspemu.hle.kd.all;
 
 import pspemu.utils.Diff;
+
+import pspemu.utils.SvnVersion;
+import pspemu.extra.Cheats;
+import pspemu.utils.UpdateChecker;
+
+import pspemu.core.gpu.impl.gl.GpuOpengl;
+import pspemu.core.gpu.Commands;
+
 
 void executeSandboxTests(string[] args) {
 }
@@ -95,13 +105,6 @@ void init(string[] args) {
 }
 
 
-import pspemu.utils.SvnVersion;
-import pspemu.extra.Cheats;
-
-import pspemu.core.gpu.impl.gl.GpuOpengl;
-import pspemu.core.gpu.Commands;
-
-
 int main(string[] args) {
 	init(args);
 	
@@ -143,6 +146,22 @@ int main(string[] args) {
 	void addCheat32(string opt, string component) { globalCheats.addCheatString(component, 32); }
 	void addTraceThread(string opt, string name) { globalCheats.addTraceThread(name); }
 	
+	UpdateChecker.tryCheckBackground();
+	
+
+	void associateExtensions(string opt) {	
+		std.windows.registry.Registry.classesRoot.createKey(".elf").setValue(null, "dpspemu.executable");
+		std.windows.registry.Registry.classesRoot.createKey(".pbp").setValue(null, "dpspemu.executable");
+		std.windows.registry.Registry.classesRoot.createKey(".cso").setValue(null, "dpspemu.executable");
+		std.windows.registry.Registry.classesRoot.createKey(".prx").setValue(null, "dpspemu.executable");
+		
+		auto reg = std.windows.registry.Registry.classesRoot.createKey("dpspemu.executable");
+		reg.setValue(null, "PSP executable file (.elf, .pbp, .cso, .prx)");
+		reg.createKey("DefaultIcon").setValue(null, "\"" ~ ApplicationPaths.executablePath ~ "\",0");
+		reg.createKey("shell").createKey("open").createKey("command").setValue(null, "\"" ~ ApplicationPaths.executablePath ~ "\" \"%1\"");
+		std.c.stdlib.exit(0);
+	}
+	
 	void loadgpuDump(string opt, string component) {
 		//GpuState gpuState; writefln("emptyGpuState: %s", gpuState);
 		for (int n = 0; ; n++) {
@@ -170,7 +189,8 @@ int main(string[] args) {
 		"cheat32", &addCheat32,
 		"cheat16", &addCheat16,
 		"cheat8", &addCheat8,
-		"trace_thread", &addTraceThread
+		"trace_thread", &addTraceThread,
+		"associate_extensions", &associateExtensions
 	);
 	
 	void displayHelp() {

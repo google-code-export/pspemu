@@ -22,6 +22,10 @@ import pspemu.utils.SvnVersion;
 
 import pspemu.utils.imaging.hq2x;
 
+import pspemu.utils.Path;
+
+import pspemu.utils.UpdateChecker;
+
 //version = USE_HQ2X;
 
 //import pspemu.hle.kd.iofilemgr.Devices;
@@ -189,7 +193,9 @@ class MainForm : Form, IMessageFilter {
 				createMenu("-"),
 				createMenu("Dump Threads\tF2"),
 				createMenu("-"),
-				createMenu("Asociate extensions (.cso, .pbp)"),
+				createMenu("Asociate extensions (.cso, .pbp)", {
+					RunAsAdmin(ApplicationPaths.executablePath, "--associate_extensions");
+				}),
 			]),
 			createMenu("&Extra", [
 				createMenu("&Indie games (kawagames.com)", { ShellExecuteA(null, "open", "http://kawagames.com/", null, null, SW_SHOWNORMAL); }),
@@ -197,6 +203,12 @@ class MainForm : Form, IMessageFilter {
 			createMenu("&Help", [
 				createMenu("Oficial &Website", { ShellExecuteA(null, "open", "http://pspemu.soywiz.com/", null, null, SW_SHOWNORMAL); }),
 				createMenu("Check for &updates...", {
+					UpdateChecker.tryCheckBackground(delegate(bool result) {
+						if (!result) {
+							msgBox("No new version available", "You have the lastest version", MsgBoxButtons.OK, MsgBoxIcon.INFORMATION, MsgBoxDefaultButton.BUTTON1);
+						}
+					}, true);
+					/*
 					Thread thread = new Thread({
 						int lastestVersion = SvnVersion.getLastOnlineVersion;
 						int currentVersion = SvnVersion.revision;
@@ -211,11 +223,11 @@ class MainForm : Form, IMessageFilter {
 								ShellExecuteA(null, "open", "http://pspemu.soywiz.com/", null, null, SW_SHOWNORMAL);
 							}
 						} else {
-							msgBox("No new version available", "You have the lastest version", MsgBoxButtons.OK, MsgBoxIcon.INFORMATION, MsgBoxDefaultButton.BUTTON1);
 						}
 					});
 					thread.name = "CheckNewVersionThread";
 					thread.start();
+					*/
 				}),
 				createMenu("&About...", {
 					string str = std.string.format(
@@ -246,10 +258,20 @@ class MainForm : Form, IMessageFilter {
 		OpenFileDialog openFileDialog = new OpenFileDialog();
 		openFileDialog.filter = "All compatible files EBOOT.PBP, ELF and ISO Files|EBOOT.PBP;*.elf;*.iso;*.cso|All files (*.*)|*.*";
 		if (openFileDialog.showDialog() == DialogResult.OK) {
-			(new Thread({
+			Thread thread = new Thread({
+				writefln("[1]");
+				guiDfl.emulatorHelper.reset();
+				//guiDfl.emulatorHelper.emulator.emulatorState.runningState.stopCpu();
+				writefln("[2]");
+				//guiDfl.emulatorHelper.emulator.emulatorState.waitForAllCpuThreadsToTerminate();
+				writefln("[3]");
 				guiDfl.emulatorHelper.loadModule(openFileDialog.fileName);
+				writefln("[4]");
 				guiDfl.emulatorHelper.start();
-			})).start();
+				writefln("[5]");
+			});
+			thread.name = "GuiOpen";
+			thread.start();
 		}
 		//openFileDialog.
 	}

@@ -69,11 +69,15 @@ class EmulatorState {
 		threadsRunning--;
 		threadEndedCondition.signal();
 	}
-	
-    public void waitForAllCpuThreadsToTerminate() {
+
+    public void waitSomeCpuThreadsToStart() {
     	while (this.threadsRunning == 0) {
     		this.threadStartedCondition.wait();
     	}
+    }
+	
+    public void waitForAllCpuThreadsToTerminate() {
+    	//waitSomeCpuThreadsToStart();
     	while (this.threadsRunning > 0) {
     		this.threadEndedCondition.wait();
     	}
