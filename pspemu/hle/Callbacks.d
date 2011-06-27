@@ -10,6 +10,10 @@ public import pspemu.hle.kd.threadman.Types;
 import pspemu.utils.sync.WaitEvent;
 import pspemu.utils.Logger;
 
+import pspemu.core.cpu.CpuThreadBase;
+
+import pspemu.core.cpu.Registers;
+
 /**
  * Psp Callback.
  */
@@ -77,7 +81,8 @@ class CallbacksHandler {
 		};
 		
 		hleEmulatorState.emulatorState.display.vblankEvent += delegate(...) {
-			trigger(Type.VerticalBlank, []);
+			//trigger(Type.VerticalBlank, [], true);
+			trigger(Type.VerticalBlank, [], false);
 		};
 		
 		hleEmulatorState.emulatorState.gpu.signalEvent += delegate(...) {
@@ -92,10 +97,12 @@ class CallbacksHandler {
 		hleEmulatorState.emulatorState.gpu.finishEvent += delegate(...) {
 			uint signal = *cast(uint *)_argptr;
 			Logger.log(Logger.Level.TRACE, "Callbacks", "GPU.FINISH! : %08X, %d", hleEmulatorState.emulatorState.gpu.pspGeCallbackData.finish_func, signal);
-			addToExecuteQueue(
-				hleEmulatorState.emulatorState.gpu.pspGeCallbackData.finish_func,
-				[signal, cast(uint)hleEmulatorState.emulatorState.gpu.pspGeCallbackData.finish_arg]
-			);
+			if (hleEmulatorState.emulatorState.gpu.pspGeCallbackData.finish_func != 0) {
+				addToExecuteQueue(
+					hleEmulatorState.emulatorState.gpu.pspGeCallbackData.finish_func,
+					[signal, cast(uint)hleEmulatorState.emulatorState.gpu.pspGeCallbackData.finish_arg]
+				);
+			}
 		};
 	}
 
@@ -140,16 +147,19 @@ class CallbacksHandler {
 	 *
 	 * @param  type  Type of event to trigger.
 	 */
-	void trigger(Type type, uint[] arguments) {
+	void trigger(Type type, uint[] arguments, bool interrupt = false) {
 		if (type != Type.VerticalBlank) {
 			Logger.log(Logger.Level.TRACE, "CallbacksHandler", std.string.format("trigger(%d:%s)(%s)", type, to!string(type), arguments));
+		} else {
+			//Logger.log(Logger.Level.INFO, "CallbacksHandler", std.string.format("trigger(%d:%s)(%s)", type, to!string(type), arguments));
 		}
 		
 		synchronized (this) {
 			if (type in registered) {
 				PspCallback[] queuedPspCallbacks = registered[type].keys.dup;
+				//writefln("%s", to!string(type));
 				
-				queuedCallbacks ~= delegate(ThreadState threadState) {
+				auto callback = delegate(ThreadState threadState) {
 					Logger.log(Logger.Level.TRACE, "CallbacksHandler", std.string.format("Executing queued callbacks"));
 					foreach (pspCallback; queuedPspCallbacks) {
 						Logger.log(Logger.Level.TRACE, "CallbacksHandler", std.string.format("Executing callback: %s", pspCallback));
@@ -157,6 +167,17 @@ class CallbacksHandler {
 						hleEmulatorState.executeGuestCode(threadState, pspCallback.func, baseArguments ~ arguments);
 					}
 				};
+				
+				if (interrupt) {
+					Registers backupRegisters;
+					backupRegisters.copyFrom(thisThreadCpuThreadBase.threadState.registers);
+					{
+						callback(thisThreadCpuThreadBase.threadState);
+					}
+					thisThreadCpuThreadBase.threadState.registers.copyFrom(backupRegisters);
+				} else {
+					queuedCallbacks ~= callback;
+				}
 			}
 		}
 		

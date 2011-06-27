@@ -11,6 +11,7 @@ import std.datetime;
 import std.stream;
 import std.file;
 import pspemu.utils.String;
+import std.algorithm;
 
 FileStat dirEntryToFileStat(VirtualFileSystem virtualFileSystem, DirEntry dirEntry) {
 	//if (dirEntry is null) return null;
@@ -52,9 +53,13 @@ class LocalDirHandle : DirHandle {
 		super(virtualFileSystem);
 		this.path = path;
 		
+		if (!std.file.exists(path)) throw(new Exception(std.string.format("Path '%s' doesn't exists", path)));
+		
 		foreach (DirEntry entry; dirEntries(path, SpanMode.shallow, true)) {
 			entries ~= entry;
 		}
+		
+		std.algorithm.sort!("a.name < b.name")(entries);
 	}
 	
 	bool hasMore() {
@@ -157,6 +162,7 @@ class LocalFileSystem : VirtualFileSystem {
 		//writefln("getstat: %s", file);
 		string realPath = getInternalPath(file);
 		//writefln("realPath:'%s'", realPath);
+		if (!std.file.exists(realPath)) throw(new Exception(std.string.format("Path '%s' doesn't exists", realPath)));
 		return dirEntryToFileStat(this, std.file.dirEntry(realPath));
 	}
 	

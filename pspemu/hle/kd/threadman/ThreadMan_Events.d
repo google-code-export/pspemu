@@ -172,7 +172,10 @@ template ThreadManForUser_Events() {
 	 * @param outBits - The bit pattern that was matched.
 	 * @param timeout - Timeout in microseconds
 	 *
-	 * @return < 0 On error
+	 * @return        - ERROR_KERNEL_NOT_FOUND_EVENT_FLAG - If can't find the eventFlag
+	 *                - ERROR_KERNEL_WAIT_TIMEOUT         - If there was a timeout
+	 *                - 0                                 - On success
+	 *              
 	 */
 	int _sceKernelWaitEventFlagCB(int evid, u32 bits, PspEventFlagWaitTypes wait, u32 *outBits, SceUInt *timeout, bool callback) {
 		try {

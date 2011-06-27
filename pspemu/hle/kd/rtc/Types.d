@@ -11,5 +11,9 @@ alias uint time_t;
 
 alias ScePspDateTime pspTime;
 
+struct SceKernelVTimerOptParam {
+	SceSize 	size;
+}
+
 //alias ulong pspTick;
 

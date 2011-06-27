@@ -19,6 +19,9 @@ public import pspemu.hle.kd.display.Types;
 
 import pspemu.extra.Cheats;
 
+import pspemu.utils.sync.WaitEvent;
+import pspemu.utils.sync.WaitMultipleObjects;
+
 /*
 http://lan.st/archive/index.php/t-1103.html
 
@@ -39,8 +42,11 @@ class Display {
 	public Memory memory;
 	
 	protected Thread thread;
-	Condition drawRow0Condition;
-	Condition vblankStartCondition;
+	//deprecated Condition drawRow0Condition;
+	//deprecated Condition vblankStartCondition;
+	WaitEvent drawRow0ConditionEvent;
+	WaitEvent vblankStartConditionEvent;
+	
 	Event vblankEvent;
 
 	/**
@@ -75,8 +81,11 @@ class Display {
 	this(RunningState runningState, Memory memory) {
 		this.runningState = runningState;
 		this.memory       = memory;
-		this.drawRow0Condition    = new Condition(new Mutex);
-		this.vblankStartCondition = new Condition(new Mutex);
+		//this.drawRow0Condition    = new Condition(new Mutex);
+		//this.vblankStartCondition = new Condition(new Mutex);
+
+		this.drawRow0ConditionEvent    = new WaitEvent("drawRow0ConditionEvent");
+		this.vblankStartConditionEvent = new WaitEvent("vblankStartConditionEvent");
 		
 		sceDisplaySetMode(0, 480, 272);
 		sceDisplaySetFrameBuf(0x44000000, 512, PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_8888, PspDisplaySetBufSync.PSP_DISPLAY_SETBUF_IMMEDIATE);
@@ -110,9 +119,15 @@ class Display {
 	int lastWaitedVblank = -1;
 	
 	public void waitVblank(bool processCallbacks = false) {
+		//writefln("***************************************** [1]");
 		if (enableWaitVblank) {
+			//writefln("***************************************** [2]");
 			if (lastWaitedVblank >= VBLANK_COUNT) {
-				vblankStartCondition.wait();
+				//writefln("***************************************** [3]");
+				//vblankStartCondition.wait(processCallbacks);
+				WaitMultipleObjects waitMultipleObjects = new WaitMultipleObjects();
+				waitMultipleObjects.add(vblankStartConditionEvent);
+				waitMultipleObjects.waitAny();
 			}
 			lastWaitedVblank = VBLANK_COUNT;
 		}
@@ -138,14 +153,16 @@ class Display {
 			}
 
 			if (drawAdd >= 10) {
-				this.drawRow0Condition.notifyAll();
+				//this.drawRow0Condition.notifyAll();
+				this.drawRow0ConditionEvent.signal();
 			}
 			Thread.sleep(dur!"usecs"(cast(ulong)(second * (vsync_row / hsync_hz))));
 			CURRENT_HCOUNT = cast(uint)vsync_row;
 
 			if (drawAdd >= 10) {
 				this.vblankEvent();
-				this.vblankStartCondition.notifyAll();
+				//this.vblankStartCondition.notifyAll();
+				this.vblankStartConditionEvent.signal();
 			}
 			VBLANK_COUNT++;
 

@@ -261,7 +261,8 @@ class IoFileMgrForKernel : ModuleNative {
 	}
 	
 	string getAbsolutePathFromRelative(string relativePath) {
-		auto indexHasDevice = relativePath.indexOf(":/");
+		//auto indexHasDevice = relativePath.indexOf(":/");
+		auto indexHasDevice = relativePath.indexOf(":");
 		string absolutePath;
 
 		if (indexHasDevice >= 0) {
@@ -633,6 +634,7 @@ void fillStats(SceIoStat* psp_stats, VFS.Stats vfs_stats) {
 
 SceIoDirent fileEntryToSceIoDirent(FileEntry fileEntry) {
 	SceIoDirent sceIoDirent;
+	sceIoDirent.d_name[] = 0;
 	sceIoDirent.d_name[0..fileEntry.name.length] = fileEntry.name;
 	sceIoDirent.d_stat = fileStatToSceIoStat(fileEntry.stat);
 	return sceIoDirent;

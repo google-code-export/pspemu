@@ -68,6 +68,34 @@ class FixedPool : MemoryPool {
 	}
 }
 
+class VTimer {
+	bool running;
+	SysTime startTime;
+	
+	this() {
+		running = false;
+	}
+	
+	SysTime now() {
+		return Clock.currTime();
+	}
+	
+	void start() {
+		startTime = now();
+		running = true;
+	}
+	
+	void stop() {
+		running = false;
+	}
+	
+	long get() {
+		if (!running) return 0;
+		Duration duration = (now() - startTime);
+		return duration.total!"usecs";
+	}
+}
+
 /**
  * Library imports for the kernel threading library.
  */
@@ -126,6 +154,79 @@ class ThreadManForUser : ModuleNative {
 		mixin(registerd!(0xD979E9BF, sceKernelAllocateFpl));
 		
 		mixin(registerd!(0x8FFDF9A2, sceKernelCancelSema));
+		
+	    mixin(registerd!(0x034A921F, sceKernelGetVTimerTime));
+	    mixin(registerd!(0xC0B3FFD2, sceKernelGetVTimerTimeWide));
+	    mixin(registerd!(0xC68D9437, sceKernelStartVTimer));
+	    mixin(registerd!(0x20FFF560, sceKernelCreateVTimer));
+	}
+	
+	/**
+	 * Get the timer time
+	 *
+	 * @param uid - UID of the vtimer
+	 * @param time - Pointer to a ::SceKernelSysClock structure
+	 *
+	 * @return 0 on success, < 0 on error
+	 */
+	int sceKernelGetVTimerTime(SceUID uid, SceKernelSysClock *time) {
+		unimplemented_notice();
+		VTimer vTimer = uniqueIdFactory().get!VTimer(uid);
+		long v = vTimer.get();
+		*time = *(cast(SceKernelSysClock*)&v);
+		return 0;
+	}
+	
+	/**
+	 * Get the timer time (wide format)
+	 *
+	 * @param uid - UID of the vtimer
+	 *
+	 * @return The 64bit timer time
+	 */
+	SceInt64 sceKernelGetVTimerTimeWide(SceUID uid) {
+		unimplemented_notice();
+		VTimer vTimer = uniqueIdFactory().get!VTimer(uid);
+		return vTimer.get();
+	}
+	
+	/**
+	 * Create a virtual timer
+	 *
+	 * @param name - Name for the timer.
+	 * @param opt  - Pointer to an ::SceKernelVTimerOptParam (pass NULL)
+	 *
+	 * @return The VTimer's UID or < 0 on error.
+	 */
+	SceUID sceKernelCreateVTimer(string name, SceKernelVTimerOptParam *opt) {
+		return uniqueIdFactory().add(new VTimer());
+	}
+	
+	/**
+	 * Start a virtual timer
+	 *
+	 * @param uid - The UID of the timer
+	 *
+	 * @return < 0 on error
+	 */
+	int sceKernelStartVTimer(SceUID uid) {
+		unimplemented_notice();
+		VTimer vTimer = uniqueIdFactory().get!VTimer(uid);
+		vTimer.start();
+		return 0;
+	}
+	
+	/**
+	 * Stop a virtual timer
+	 *
+	 * @param uid - The UID of the timer
+	 *
+	 * @return < 0 on error
+	 */
+	int sceKernelStopVTimer(SceUID uid) {
+		VTimer vTimer = uniqueIdFactory().get!VTimer(uid);
+		vTimer.stop();
+		return 0;
 	}
 	
 	void sceKernelCancelSema() {

@@ -146,9 +146,6 @@ int main(string[] args) {
 	void addCheat32(string opt, string component) { globalCheats.addCheatString(component, 32); }
 	void addTraceThread(string opt, string name) { globalCheats.addTraceThread(name); }
 	
-	UpdateChecker.tryCheckBackground();
-	
-
 	void associateExtensions(string opt) {	
 		std.windows.registry.Registry.classesRoot.createKey(".elf").setValue(null, "dpspemu.executable");
 		std.windows.registry.Registry.classesRoot.createKey(".pbp").setValue(null, "dpspemu.executable");
@@ -223,6 +220,7 @@ int main(string[] args) {
 		writefln("  pspemu.exe \"isos/My Game.cso\"");
 		writefln("  pspemu.exe game/EBOOT.PBP");
 		writefln("");
+		std.c.stdlib.exit(-1);
 	}
 	
 	if (showHelp) {
@@ -334,6 +332,8 @@ int main(string[] args) {
 	} else {
 		Logger.setLevel(Logger.Level.WARNING);
 	}
+
+	UpdateChecker.tryCheckBackground();
 	
 	//displayHelp();
 	writefln("No specified file to execute");

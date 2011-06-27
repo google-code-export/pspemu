@@ -50,7 +50,7 @@ abstract class GuiBase {
 		this.initialized.setReady();
 		while (display.runningState.running) {
 			try {
-				this.display.drawRow0Condition.wait();
+				this.display.drawRow0ConditionEvent.wait();
 				this.loopStep();
 			} catch (Throwable o) {
 				Logger.log(Logger.Level.ERROR, "Gui", "Error: " ~ o.toString);
