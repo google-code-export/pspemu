@@ -27,6 +27,7 @@ template IoFileMgrForKernel_Directories() {
 	 * @return < 0 on error.
 	 */
 	int sceIoChdir(string path) {
+		path = cast(string)path.dup;
 		path = getAbsolutePathFromRelative(path);
 		logInfo("sceIoChdir('%s')", path);
 		try {
@@ -54,6 +55,7 @@ template IoFileMgrForKernel_Directories() {
 	 * @return If >= 0 then a valid file descriptor, otherwise a Sony error code.
 	 */
 	SceUID sceIoDopen(string dirname) {
+		dirname = cast(string)dirname.dup;
 		dirname = getAbsolutePathFromRelative(dirname);
 		logInfo("sceIoDopen('%s')", dirname);
 		try {
@@ -121,6 +123,7 @@ template IoFileMgrForKernel_Directories() {
 	 * @return Returns the value 0 if its succesful otherwise -1
 	 */
 	int sceIoMkdir(string path, SceMode mode) {
+		path = cast(string)path.dup;
 		path = getAbsolutePathFromRelative(path);
 		logInfo("sceIoMkdir('%s', %d)", path, mode);
 		try {
@@ -140,6 +143,7 @@ template IoFileMgrForKernel_Directories() {
 	 * @return Returns the value 0 if its succesful otherwise -1
 	 */
 	int sceIoRmdir(string path) {
+		path = cast(string)path.dup;
 		path = getAbsolutePathFromRelative(path);
 		logInfo("sceIoRmdir(%d)", path);
 		try {

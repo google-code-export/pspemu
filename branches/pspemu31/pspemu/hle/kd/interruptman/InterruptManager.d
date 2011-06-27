@@ -49,6 +49,15 @@ class InterruptManager : ModuleNative {
 		
 		return 0;
 	}
+	
+	CallbacksHandler.Type convertPspSubInterruptsToCallbacksHandlerType(PspSubInterrupts intno) {
+		switch (intno) {
+			case PspSubInterrupts.PSP_DISPLAY_SUBINT: return CallbacksHandler.Type.VerticalBlank;
+			default:
+				throw(new Exception("Unhandled convertPspSubInterruptsToCallbacksHandlerType.PspSubInterrupts"));
+			break;
+		}
+	}
 
 	/**
 	 * Enable a sub interrupt.
@@ -61,16 +70,13 @@ class InterruptManager : ModuleNative {
 	int sceKernelEnableSubIntr(PspSubInterrupts intno, int no) {
 		//cpu.interrupts.registerCallback(cast(Interrupts.Type)intno, handlers[intno][no]);
 		//unimplemented();
+		
+		hleEmulatorState.callbacksHandler.register(
+			convertPspSubInterruptsToCallbacksHandlerType(intno),
+			handlers[intno][no]
+		);
 
-		switch (intno) {
-			case PspSubInterrupts.PSP_DISPLAY_SUBINT:
-				hleEmulatorState.callbacksHandler.register(CallbacksHandler.Type.VerticalBlank, handlers[intno][no]);
-			break;
-			default:
-				unimplemented();
-			break;
-		}
-
+		unimplemented_notice();
 		return 0;
 	}
 
@@ -83,6 +89,11 @@ class InterruptManager : ModuleNative {
 	 * @return < 0 on error.
 	 */
 	int sceKernelReleaseSubIntrHandler(PspSubInterrupts intno, int no) {
+		hleEmulatorState.callbacksHandler.unregister(
+			convertPspSubInterruptsToCallbacksHandlerType(intno),
+			handlers[intno][no]
+		);
+
 		//cpu.interrupts.unregisterCallback(cast(Interrupts.Type)intno, handlers[intno][no]);
 		unimplemented_notice();
 		return 0;

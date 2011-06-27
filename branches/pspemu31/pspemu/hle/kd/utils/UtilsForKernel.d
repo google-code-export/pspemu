@@ -39,6 +39,19 @@ class UtilsForUser : ModuleNative {
 		mixin(registerd!(0xC8186A58, sceKernelUtilsMd5Digest));
 		mixin(registerd!(0x840259F1, sceKernelUtilsSha1Digest));
 		mixin(registerd!(0x920F104A, sceKernelIcacheInvalidateAll));
+		
+	    mixin(registerd!(0x6AD345D7, sceKernelSetGPO));
+	    mixin(registerd!(0x37FB5C42, sceKernelGetGPI));
+	}
+	
+	int sceKernelSetGPO(int value) {
+		logWarning("sceKernelSetGPO(%d)", value);
+		return 0;
+	}
+
+	int sceKernelGetGPI() {
+		logWarning("sceKernelGetGPI()");
+		return 0;
 	}
 
 	/** 
