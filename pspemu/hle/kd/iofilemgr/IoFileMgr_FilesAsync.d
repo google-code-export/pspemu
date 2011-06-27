@@ -154,7 +154,7 @@ template IoFileMgrForKernel_FilesAsync() {
 	/**
 	 * Poll for asyncronous completion.
 	 * 
-	 * @param fd - The file descriptor which is current performing an asynchronous action.
+	 * @param fd  - The file descriptor which is current performing an asynchronous action.
 	 * @param res - The result of the async action.
 	 *
 	 * @return < 0 on error.

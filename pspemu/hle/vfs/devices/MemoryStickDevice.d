@@ -44,6 +44,12 @@ class MemoryStickDevice : IoDevice {
 		PspCallback pspCallback;
 
 		switch (cmd) {
+			case 0x02425823: // Check if the device is assigned/inserted (fatms0).
+                // 0 - Device is not assigned (callback not registered).
+                // 1 - Device is assigned (callback registered).
+                *(cast(uint*)outData.ptr) = 1;
+                return 0;
+			break;
 			case 0x02025806: // MScmIsMediumInserted
 				Logger.log(Logger.Level.INFO, "Devices", "MScmIsMediumInserted");
 				*(cast(uint*)outData.ptr) = insertedValue;

@@ -178,8 +178,7 @@ class scePower : ModuleNative {
 	 * @return 1 if plugged in, 0 if not plugged in, < 0 on error.
 	 */
 	int scePowerIsPowerOnline() {
-		unimplemented();
-		return -1;
+		return hleEmulatorState.emulatorState.battery.isPowerOnline;
 	}
 
 	/**
@@ -188,8 +187,7 @@ class scePower : ModuleNative {
 	 * @return 1 if battery present, 0 if battery not present, < 0 on error.
 	 */
 	int scePowerIsBatteryExist() {
-		unimplemented();
-		return -1;
+		return hleEmulatorState.emulatorState.battery.isPresent;
 	}
 
 	/**
@@ -198,8 +196,7 @@ class scePower : ModuleNative {
 	 * @return 1 if battery charging, 0 if battery not charging, < 0 on error.
 	 */
 	int scePowerIsBatteryCharging() {
-		unimplemented();
-		return -1;
+		return hleEmulatorState.emulatorState.battery.isCharging;
 	}
 	
 	/**
@@ -226,8 +223,8 @@ class scePower : ModuleNative {
 	 * @return Battery charge percentage (0-100), < 0 on error.
 	 */
 	int scePowerGetBatteryLifePercent() {
-		unimplemented();
-		return -1;
+		//unimplemented();
+		return cast(int)(hleEmulatorState.emulatorState.battery.chargedPercentage * 100);
 	}
 
 	/**
@@ -241,11 +238,10 @@ class scePower : ModuleNative {
 	}
 
 	/**
-	 * Get temperature of the battery
+	 * Get temperature of the battery on deg C
 	 */
 	int scePowerGetBatteryTemp() {
-		unimplemented();
-		return -1;
+		return hleEmulatorState.emulatorState.battery.temperatureInCelsiusDegree;
 	}
 
 	/**

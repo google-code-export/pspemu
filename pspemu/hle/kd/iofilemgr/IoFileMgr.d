@@ -510,7 +510,7 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return 0 on success, < 0 on error
 	 */
 	int sceIoIoctl(SceUID fd, uint cmd, void* indata, int inlen, void* outdata, int outlen) {
-		unimplemented_notice();
+		//unimplemented_notice();
 		logInfo("sceIoIoctl(%d, 0x%08X, 0x%08X, %d, 0x%08X, %d)", fd, cmd, cast(uint)indata, inlen, cast(uint)outdata, outlen);
 		FileHandle fileHandle = uniqueIdFactory.get!FileHandle(fd);
 		//logInfo("---%s", fileHandle);

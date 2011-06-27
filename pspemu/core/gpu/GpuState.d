@@ -542,9 +542,12 @@ static struct GpuState {
 			ret ~= format("    viewMatrix              = \n%s\n",  viewMatrix);
 		}
 		
-		ret ~= format("    textureMatrix           = \n%s\n",  textureMatrix);
+		if (flags.hasTexture) {
+			ret ~= format("    textureMatrix           = \n%s\n",  textureMatrix);
+			ret ~= format("    texture                 = %s\n",    texture);
+		}
+
 		ret ~= format("    transformMode           = %s\n",    to!string(transformMode));
-		ret ~= format("    texture                 = %s\n",    texture);
 		ret ~= format("    uploadedClut            = %s\n",    uploadedClut);
 		ret ~= format("    clut                    = %s\n",    clut);
 		ret ~= format("    scissor                 = %s\n",    scissor);
