@@ -153,7 +153,7 @@ class sceUmdUser : ModuleNative {
 	  *
 	  * @return < 0 on error
 	  */
-	int sceUmdWaitDriveStat(int stat) {
+	int sceUmdWaitDriveStat(PspUmdState stat) {
 		logWarning("Not implemented: sceUmdWaitDriveStat(%d)", stat);
 		return 0;
 	}
@@ -161,13 +161,14 @@ class sceUmdUser : ModuleNative {
 	/** 
 	  * Wait for the UMD drive to reach a certain state (plus callback)
 	  *
-	  * @param stat - One or more of ::pspUmdState
+	  * @param stat    - One or more of ::pspUmdState
 	  * @param timeout - Timeout value in microseconds
 	  *
 	  * @return < 0 on error
 	  */
-	int sceUmdWaitDriveStatCB(int stat, uint timeout) {
-		logWarning("Not implemented: sceUmdWaitDriveStatCB(%d, %d)", stat, timeout);
+	int sceUmdWaitDriveStatCB(PspUmdState stat, uint timeout) {
+		logWarning("Not implemented: sceUmdWaitDriveStatCB(%s:%d, %d)", to!string(stat), stat, timeout);
+		
 		return 0;
 	}
 	

@@ -17,11 +17,13 @@ import pspemu.core.ThreadState;
 
 import core.sync.condition;
 import core.sync.mutex;
+import pspemu.core.battery.Battery;
 
 import pspemu.utils.sync.WaitEvent;
 
 class EmulatorState {
 	public Memory        memory;
+	public Battery       battery;
 	public Display       display;
 	public Controller    controller;
 	public Gpu           gpu;
@@ -42,6 +44,7 @@ class EmulatorState {
 		this.threadStartedCondition = new WaitEvent("EmulatorState.threadStartedCondition");
 		this.threadEndedCondition   = new WaitEvent("EmulatorState.threadEndedCondition");
 		this.memory                 = new Memory();
+		this.battery                = new Battery();
 		this.display                = new Display(this.runningState, this.memory);
 		this.controller             = new Controller();
 		this.gpu                    = new Gpu(this, new GpuOpengl());

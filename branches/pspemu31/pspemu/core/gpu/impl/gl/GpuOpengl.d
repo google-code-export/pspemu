@@ -332,7 +332,10 @@ class GpuOpengl : GpuImplAbstract {
 	
 		void putVertex(ref VertexState vertex) {
 			if (flags.hasTexture ) glTexCoord2f(vertex.u, vertex.v);
-			if (flags.hasColor   ) glColor4fv(&vertex.r);
+			if (flags.hasColor   ) {
+				glColor4fv(&vertex.r);
+				//glColor4f(vertex.r, vertex.g, vertex.b, 1.0);
+			}
 			if (flags.hasNormal  ) glNormal3f(vertex.nx, vertex.ny, vertex.nz);
 			if (flags.hasPosition) glVertex3f(vertex.px, vertex.py, vertex.pz);
 			//writefln("UV(%f, %f)", vertex.u, vertex.v);
@@ -356,6 +359,13 @@ class GpuOpengl : GpuImplAbstract {
 						s ~= "vertex.px = " ~ vx ~ ".px; vertex.py = " ~ vy ~ ".py;";
 						s ~= "vertex.nx = " ~ vx ~ ".px; vertex.ny = " ~ vy ~ ".py;";
 						s ~= "vertex.u  = " ~ vx ~ ".u ; vertex.v  = " ~ vy ~ ".v;";
+						/*
+						s ~= "vertex.weights[]  = " ~ vy ~ ".weights[];";
+						s ~= "vertex.r  = " ~ vy ~ ".r;";
+						s ~= "vertex.g  = " ~ vy ~ ".g;";
+						s ~= "vertex.b  = " ~ vy ~ ".b;";
+						s ~= "vertex.a  = " ~ vy ~ ".a;";
+						*/
 						return s;
 					}
 
