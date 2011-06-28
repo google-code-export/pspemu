@@ -80,6 +80,8 @@ class Gpu {
 	bool recordFrameEnd = false;
 	bool recordFrameStart = false;
 	
+	WaitEvent initializedEvent;
+	
 	enum RecordFrameStep {
 		doNone,
 		doStart,
@@ -90,6 +92,7 @@ class Gpu {
 
 	this(EmulatorState emulatorState, GpuImpl impl) {
 		this.endedExecutingListsEvent = new WaitEvent();
+		this.initializedEvent = new WaitEvent();
 
 		this.emulatorState = emulatorState;
 		this.impl   = impl;
@@ -227,6 +230,10 @@ class Gpu {
 		thread.name = "GpuThread";
 		thread.start();
 	}
+	
+	public void waitStarted() {
+		initializedEvent.wait();
+	}
 
 	protected void run() {
 		while (running) {
@@ -234,6 +241,7 @@ class Gpu {
 				if (!implInitialized) {
 					impl.init();
 					implInitialized = true;
+					initializedEvent.signal();
 				}
 				//componentInitialized = true;
 				while (running) {
@@ -340,6 +348,7 @@ class Gpu {
 	void externalActionAdd(TaskQueue.Task task, bool wait = true) {
 		if (inDrawingThread) {
 			externalActions.add(task);
+			externalActions.executeAll();
 		} else {
 			externalActions.addAndWait(task);
 		}

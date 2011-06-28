@@ -47,6 +47,8 @@ class Display {
 	WaitEvent drawRow0ConditionEvent;
 	WaitEvent vblankStartConditionEvent;
 	
+	WaitEvent initializedEvent;
+	
 	Event vblankEvent;
 
 	/**
@@ -87,6 +89,8 @@ class Display {
 		this.drawRow0ConditionEvent    = new WaitEvent("drawRow0ConditionEvent");
 		this.vblankStartConditionEvent = new WaitEvent("vblankStartConditionEvent");
 		
+		this.initializedEvent = new WaitEvent("Display.initializedEvent");
+		
 		sceDisplaySetMode(0, 480, 272);
 		sceDisplaySetFrameBuf(0x44000000, 512, PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_8888, PspDisplaySetBufSync.PSP_DISPLAY_SETBUF_IMMEDIATE);
 	}
@@ -116,6 +120,10 @@ class Display {
 		this.thread.start();
 	}
 	
+	public void waitStarted() {
+		initializedEvent.wait();
+	}
+	
 	int lastWaitedVblank = -1;
 	
 	public void waitVblank(bool processCallbacks = false) {
@@ -137,6 +145,8 @@ class Display {
 
 	protected void run() {
 		StopWatch stopWatch;
+		
+		initializedEvent.signal();
 		
 		// @TODO: use stopWatch to allow frameskipping
 		uint drawAdd = 0;

@@ -46,6 +46,14 @@ class Emulator {
 		emulatorState.gpu.start();
 	}
 	
+	public void waitDisplayStarted() {
+		emulatorState.display.waitStarted();
+	}
+	
+	public void waitGpuStarted() {
+		emulatorState.gpu.waitStarted();
+	}
+	
 	public void startMainThread() {
 		mainCpuThread.start();
 	}

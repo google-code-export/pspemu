@@ -267,7 +267,7 @@ class sceMpeg : ModuleNative {
 	 */
 	SceInt32 sceMpegInit() {
 		unimplemented_notice();
-		return -1;
+		return 0;
 	}
 	
 	/**

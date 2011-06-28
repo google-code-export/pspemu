@@ -380,6 +380,7 @@ class ThreadManForUser : ModuleNative {
 		logWarning("sceKernelTryAllocateVpl(%d, %d, %08X)", uid, size, cast(uint)data);
 		VariablePool variablePool = uniqueIdFactory.get!VariablePool(uid);
 		*data = cast(uint *)variablePool.memorySegment.allocByLow(size).block.low;
+		logWarning(" <<<---", *data);
 		//unimplemented();
 		return 0;
 	}

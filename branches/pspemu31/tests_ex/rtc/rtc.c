@@ -11,6 +11,8 @@
 
 //#include "../common/emits.h"
 
+#define eprintf(...) pspDebugScreenPrintf(__VA_ARGS__); Kprintf(__VA_ARGS__);
+
 PSP_MODULE_INFO("rtctest", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
@@ -24,7 +26,7 @@ void checkGetCurrentTick() {
 	u64 tick0, tick1;
 	int microseconds = 2 * 1000; // 2ms
 
-	Kprintf("Checking sceRtcGetCurrentTick\n");
+	eprintf("Checking sceRtcGetCurrentTick\n");
 
 	sceRtcGetCurrentTick(&tick0);
 	{
@@ -32,22 +34,24 @@ void checkGetCurrentTick() {
 	}
 	sceRtcGetCurrentTick(&tick1);
 	
-	Kprintf("%d\n", (tick1 - tick0) >= microseconds);
+	eprintf("%d\n", (tick1 - tick0) >= microseconds);
 }
 
 void checkDaysInMonth() {
-	Kprintf("Checking sceRtcGetDaysInMonth\n");
-	Kprintf("sceRtcGetDaysInMonth:2010, 4\n");
-	Kprintf("%d\n", sceRtcGetDaysInMonth(2010, 4));
+	eprintf("Checking sceRtcGetDaysInMonth\n");
+	eprintf("sceRtcGetDaysInMonth:2010, 4\n");
+	eprintf("%d\n", sceRtcGetDaysInMonth(2010, 4));
 }
 
 void checkDayOfWeek() {
-	Kprintf("Checking sceRtcGetDayOfWeek\n");
-	Kprintf("sceRtcGetDayOfWeek:2010, 4, 27\n");
-	Kprintf("%d\n", sceRtcGetDayOfWeek(2010, 4, 27));
+	eprintf("Checking sceRtcGetDayOfWeek\n");
+	eprintf("sceRtcGetDayOfWeek:2010, 4, 27\n");
+	eprintf("%d\n", sceRtcGetDayOfWeek(2010, 4, 27));
 }
 
 int main() {
+	pspDebugScreenInit();
+
 	checkGetCurrentTick();
 	checkDaysInMonth();
 	checkDayOfWeek();

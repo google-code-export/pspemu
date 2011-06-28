@@ -6,12 +6,12 @@ Initial dir: ms0:/PSP/GAME/virtual
  chdir() attempt --> resulting getcwd()
  --------------- --> ------------------
                  --> ms0:/PSP/GAME/virtual
-           hello --> ms0:/PSP/GAME/virtual/hello
-              .. --> ms0:/PSP/GAME/virtual
-     ../SAVEDATA --> ms0:/PSP/GAME/SAVEDATA
-           ../.. --> ms0:/PSP
-               . --> ms0:/PSP
-     ./././//PSP --> ms0:/PSP/PSP
+           hello --> (chdir error)
+              .. --> ms0:/PSP/GAME
+     ../SAVEDATA --> ms0:/PSP/SAVEDATA
+           ../.. --> ms0:
+               . --> ms0:
+     ./././//PSP --> ms0:/PSP
      /PSP/./GAME --> ms0:/PSP/GAME
                / --> ms0:
    ms0:/PSP/GAME --> ms0:/PSP/GAME

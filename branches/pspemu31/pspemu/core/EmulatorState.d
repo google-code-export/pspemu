@@ -1,6 +1,7 @@
 module pspemu.core.EmulatorState;
 
 import std.stdio;
+import core.thread;
 
 import pspemu.core.Memory;
 import pspemu.core.cpu.ISyscall;
@@ -34,7 +35,8 @@ class EmulatorState {
 	uint                 threadsRunning = 0;
 	bool[CpuThreadBase]  cpuThreads;
 	bool                 unittesting = false;
-	
+	bool                 enabledInterrupts = true;
+
 	CpuThreadBase[] getCpuThreadsDup() {
 		return cpuThreads.keys.dup;
 	}
@@ -58,6 +60,7 @@ class EmulatorState {
 		this.gpu.reset();
 		this.runningState.reset();
 		this.threadsRunning = 0;
+		this.enabledInterrupts = true;
 	}
 	
 	public void cpuThreadRunningBlock(void delegate() callback) {
@@ -82,4 +85,37 @@ class EmulatorState {
     		this.threadEndedCondition.wait();
     	}
     }
+    
+	void dumpThreads() {
+		try {
+			writefln("Threads(%d):", Thread.getAll.length);
+			foreach (thread; Thread.getAll) {
+				writefln("  - Thread: '%s', running:%d, priority:%d", thread.name, thread.isRunning, thread.priority);
+			}
+			auto cpuThreadList = this.getCpuThreadsDup;
+			writefln("CpuThreads(%d):", cpuThreadList.length);
+			foreach (CpuThreadBase cpuThread; cpuThreadList) {
+				writef("  - CpuThread:");
+				try {
+					writef("%s", cpuThread);
+				} catch {
+					
+				}
+				writefln("");
+				//int callStackPosEnd   = min(cast(int)cpuThread.threadState.registers.CallStackPos, cast(int)cpuThread.threadState.registers.CallStack.length);
+				//int callStackPosStart = max(0, callStackPosEnd - 10);
+
+				try {								
+					//foreach (k, pc; cpuThread.threadState.registers.CallStack[callStackPosStart..callStackPosEnd])
+					foreach (k, pc; cpuThread.threadState.registers.CallStack[0..cpuThread.threadState.registers.CallStackPos]) {
+						writefln("    - %d - 0x%08X", k, pc);
+					}
+				} catch (Throwable o) {
+					
+				}
+			}
+		} catch (Throwable o) {
+			
+		}
+	}
 }

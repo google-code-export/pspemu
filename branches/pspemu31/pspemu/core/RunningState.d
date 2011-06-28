@@ -36,11 +36,13 @@ class RunningState {
 	this() {
 		stopEvent = new WaitEvent("stopEvent");
 		stopEvent.callback = delegate(Object object) {
+			Logger.log(Logger.Level.WARNING, "RunningState", "Launching stopEvent");
 			throw(new HaltException("Halt"));
 		};
 
 		stopEventCpu = new WaitEvent("stopEventCpu");
 		stopEventCpu.callback = delegate(Object object) {
+			Logger.log(Logger.Level.WARNING, "RunningState", "Launching stopEventCpu");
 			throw(new HaltException("Halt"));
 		};
 	}
@@ -49,6 +51,8 @@ class RunningState {
 		this.running = true;
 		onStop.reset();
 		onStopCpu.reset();
+		stopEvent.reset();
+		stopEventCpu.reset();
 	}
 
 	public void stop() {

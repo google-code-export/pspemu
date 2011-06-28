@@ -151,16 +151,28 @@ class EmulatorHelper {
 		emulator.startGpu();
 	}
 	
+	public void waitComponentsInitialized() {
+		emulator.waitDisplayStarted();
+		emulator.waitGpuStarted();		
+	}
+	
 	public void start() {
+		emulator.emulatorState.waitForAllCpuThreadsToTerminate();
+
 		emulator.startMainThread();
+
+		//emulator.emulatorState.dumpThreads();
 		
 		emulator.emulatorState.waitSomeCpuThreadsToStart();
+		//emulator.emulatorState.dumpThreads();
+
 		emulator.emulatorState.waitForAllCpuThreadsToTerminate();
+		//emulator.emulatorState.dumpThreads();
 	}
 	
 	public void loadAndRunTest(string pspTestExpectedPath) {
-		auto pspTestBasePath     = std.path.getName(pspTestExpectedPath);
-		auto pspTestElfPath = std.string.format("%s.elf", pspTestBasePath);
+		auto pspTestBasePath = std.path.getName(pspTestExpectedPath);
+		auto pspTestElfPath  = std.string.format("%s.elf", pspTestBasePath);
 		
 		emulator.emulatorState.unittesting = true;
 		
@@ -168,6 +180,7 @@ class EmulatorHelper {
 		if (std.file.exists(pspTestElfPath)) {
 			loadModule(pspTestElfPath);
 			start();
+
 			string expected = std.string.strip(cast(string)std.file.read(pspTestExpectedPath));
 			string returned = std.string.strip(emulator.hleEmulatorState.kPrint.outputBuffer);
 			

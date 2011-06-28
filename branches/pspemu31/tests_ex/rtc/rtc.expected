@@ -1,8 +1,8 @@
 Checking sceRtcGetCurrentTick
 1
-sceRtcGetDaysInMonth
+Checking sceRtcGetDaysInMonth
 sceRtcGetDaysInMonth:2010, 4
 30
-sceRtcGetDayOfWeek
+Checking sceRtcGetDayOfWeek
 sceRtcGetDayOfWeek:2010, 4, 27
 1

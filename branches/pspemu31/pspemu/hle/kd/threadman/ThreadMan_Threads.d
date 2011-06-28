@@ -157,7 +157,7 @@ template ThreadManForUser_Threads() {
 		// We will listen to the stopping event that will launch a HaltException when triggered.		
 		waitMultipleObjects.add(currentEmulatorState.runningState.stopEventCpu);
 		
-		// If while sleeping we hav to handle callbacks, we will listen to that to.
+		// If while sleeping we have to handle callbacks, we will listen to those too.
 		if (handleCallbacks) {
 			waitMultipleObjects.add(hleEmulatorState.callbacksHandler.waitEvent);
 			// @TODO
@@ -191,12 +191,17 @@ template ThreadManForUser_Threads() {
 			
 			stopWatch.start();
 
-			//currentThreadState.sleeping = true;
-			while (true) {
-				long microsecondsToWaitMax = delayInMicroseconds - stopWatch.peek.usecs;
-				if (microsecondsToWaitMax <= 0) break;
-
-				waitMultipleObjects.waitAny(cast(uint)(microsecondsToWaitMax / 1000));
+			try {
+				//currentThreadState.sleeping = true;
+				while (true) {
+					long microsecondsToWaitMax = delayInMicroseconds - stopWatch.peek.usecs;
+					if (microsecondsToWaitMax <= 0) break;
+	
+					waitMultipleObjects.waitAny(cast(uint)(microsecondsToWaitMax / 1000));
+				}
+			} catch (HaltException haltException) {
+				logWarning("HaltException launched on sceKernelDelayThread");
+				throw(haltException);
 			}
 			
 			stopWatch.stop();

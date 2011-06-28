@@ -235,6 +235,15 @@ final class Registers {
 		assert(aliasName in aliases, format("Unknown register alias '%s'", aliasName));
 		return aliases[aliasName];
 	}
+	
+	void restoreBlock(void delegate() callback) {
+		scope Registers thisBackup = new Registers();
+		thisBackup.copyFrom(this);
+		{
+			callback();
+		}
+		this.copyFrom(thisBackup);
+	}
 
 
 	void pcAdvance(int offset = 4) { PC = nPC; nPC += offset; }

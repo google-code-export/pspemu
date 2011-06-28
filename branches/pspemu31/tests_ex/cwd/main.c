@@ -24,17 +24,19 @@
 #include <sys/types.h>
 #include <sys/unistd.h>
 
+#define eprintf(...) pspDebugScreenPrintf(__VA_ARGS__); Kprintf(__VA_ARGS__);
+
 PSP_MODULE_INFO("CwdTest", 0, 1, 1);
 
 void try(const char *dest)
 {
 	char buf[MAXPATHLEN];
 
-	Kprintf("%16s --> ", dest);
+	eprintf("%16s --> ", dest);
 	if(chdir(dest) < 0) {
-		Kprintf("(chdir error)\n");
+		eprintf("(chdir error)\n");
 	} else {
-		Kprintf("%s\n", getcwd(buf, MAXPATHLEN) ?: "(getcwd error)");
+		eprintf("%s\n", getcwd(buf, MAXPATHLEN) ?: "(getcwd error)");
 	}
 }
 
@@ -42,16 +44,18 @@ int main(int argc, char *argv[])
 {
 	int n;
 	char buf[MAXPATHLEN];
+	
+	pspDebugScreenInit();
 
-	Kprintf("Working Directory Examples\n");
-	Kprintf("Arguments: %d\n", argc);
+	eprintf("Working Directory Examples\n");
+	eprintf("Arguments: %d\n", argc);
 	for (n = 0; n < argc; n++) {
-		Kprintf("Argument[%d]: '%s'\n", n, argv[n]);
+		eprintf("Argument[%d]: '%s'\n", n, argv[n]);
 	}
-	Kprintf("Initial dir: %s\n\n", getcwd(buf, MAXPATHLEN) ?: "(error)");
+	eprintf("Initial dir: %s\n\n", getcwd(buf, MAXPATHLEN) ?: "(error)");
 
-	Kprintf("%16s --> %s\n", "chdir() attempt", "resulting getcwd()");
-	Kprintf("%16s --> %s\n", "---------------", "------------------");
+	eprintf("%16s --> %s\n", "chdir() attempt", "resulting getcwd()");
+	eprintf("%16s --> %s\n", "---------------", "------------------");
 	try("");		   /* empty string                */
 	try("hello");		   /* nonexistent path            */
 	try("..");		   /* parent dir                  */
@@ -65,7 +69,7 @@ int main(int argc, char *argv[])
 	try("flash0:/");           /* different drive             */
 	try("ms0:/PSP/../PSP/");   /* mixed                       */
 
-	Kprintf("\nAll done!\n");
+	eprintf("\nAll done!\n");
 
 	return 0;
 }
