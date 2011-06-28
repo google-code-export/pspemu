@@ -14,7 +14,8 @@ class Kernel_Library : ModuleNative {
 	 * @return The current state of the interrupt controller, to be used with ::sceKernelCpuResumeIntr().
 	 */
 	uint sceKernelCpuSuspendIntr() {
-		logInfo("Not implemented :: sceKernelCpuSuspendIntr");
+		hleEmulatorState.emulatorState.enabledInterrupts = false;
+		//logInfo("Not implemented :: sceKernelCpuSuspendIntr");
 		return -1;
 	}
 	
@@ -24,7 +25,8 @@ class Kernel_Library : ModuleNative {
 	 * @param flags - The value returned from ::sceKernelCpuSuspendIntr().
 	 */
 	void sceKernelCpuResumeIntr(uint flags) {
-		logInfo("Not implemented :: sceKernelCpuResumeIntr (0b%032b)", flags);
+		hleEmulatorState.emulatorState.enabledInterrupts = true;
+		//logInfo("Not implemented :: sceKernelCpuResumeIntr (0b%032b)", flags);
 	}
 }
 

@@ -31,7 +31,7 @@ template ThreadManForUser_Callbacks() {
 	 *
 	 * @return >= 0 A callback id which can be used in subsequent functions, < 0 an error.
 	 */
-	int sceKernelCreateCallback(string name, SceKernelCallbackFunction func, void* arg) {
+	int sceKernelCreateCallback(string name, SceKernelCallbackFunction func, uint arg) {
 		PspCallback pspCallback = new PspCallback(name, func, arg);
 		int uid = uniqueIdFactory.add(pspCallback);
 		logInfo("sceKernelCreateCallback('%s':%d, %08X, %08X)", name, uid, cast(uint)func, cast(uint)arg);

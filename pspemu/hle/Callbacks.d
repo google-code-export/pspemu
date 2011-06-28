@@ -13,6 +13,7 @@ import pspemu.utils.Logger;
 import pspemu.core.cpu.CpuThreadBase;
 
 import pspemu.core.cpu.Registers;
+import pspemu.hle.kd.interruptman.Types;
 
 /**
  * Psp Callback.
@@ -31,12 +32,12 @@ class PspCallback {
 	/**
 	 * Argument to send to callback function.
 	 */
-	void* arg;
+	uint arg;
 
 	/**
 	 * Constructor.
 	 */
-	this(string name, SceKernelCallbackFunction func, void* arg) {
+	this(string name, SceKernelCallbackFunction func, uint arg) {
 		this.name = name;
 		this.func = func;
 		this.arg  = arg;
@@ -82,7 +83,7 @@ class CallbacksHandler {
 		
 		hleEmulatorState.emulatorState.display.vblankEvent += delegate(...) {
 			//trigger(Type.VerticalBlank, [], true);
-			trigger(Type.VerticalBlank, [], false);
+			triggerInterrupt(Type.VerticalBlank);
 		};
 		
 		hleEmulatorState.emulatorState.gpu.signalEvent += delegate(...) {
@@ -140,6 +141,15 @@ class CallbacksHandler {
 		
 		waitEvent.signal();
 	}
+	
+	void triggerInterrupt(Type type) {
+		switch (type) {
+			case Type.VerticalBlank:
+				trigger(type, [PspInterrupts.PSP_VBLANK_INT, -1], 1, true);
+			break;
+			default: throw(new Exception("Not implemented interrupt"));
+		}
+	}
 
 	/**
 	 * Trigger an event type. This will queue for executing all the registered callbacks for
@@ -147,7 +157,7 @@ class CallbacksHandler {
 	 *
 	 * @param  type  Type of event to trigger.
 	 */
-	void trigger(Type type, uint[] arguments, bool interrupt = false) {
+	void trigger(Type type, uint[] arguments, int callbackArgumentOffset = -1, bool interrupt = false) {
 		if (type != Type.VerticalBlank) {
 			Logger.log(Logger.Level.TRACE, "CallbacksHandler", std.string.format("trigger(%d:%s)(%s)", type, to!string(type), arguments));
 		} else {
@@ -159,24 +169,55 @@ class CallbacksHandler {
 				PspCallback[] queuedPspCallbacks = registered[type].keys.dup;
 				//writefln("%s", to!string(type));
 				
-				auto callback = delegate(ThreadState threadState) {
-					Logger.log(Logger.Level.TRACE, "CallbacksHandler", std.string.format("Executing queued callbacks"));
-					foreach (pspCallback; queuedPspCallbacks) {
-						Logger.log(Logger.Level.TRACE, "CallbacksHandler", std.string.format("Executing callback: %s", pspCallback));
-						uint[] baseArguments = [cast(uint)pspCallback.arg];
-						hleEmulatorState.executeGuestCode(threadState, pspCallback.func, baseArguments ~ arguments);
+				if (queuedPspCallbacks.length > 0) {
+					auto callback = delegate(ThreadState threadState) {
+						Logger.log(Logger.Level.TRACE, "CallbacksHandler", std.string.format("Executing queued callbacks"));
+						foreach (pspCallback; queuedPspCallbacks) {
+							Logger.log(Logger.Level.TRACE, "CallbacksHandler", std.string.format("Executing callback: %s", pspCallback));
+							if (callbackArgumentOffset >= 0) {
+								arguments[callbackArgumentOffset] = pspCallback.arg;
+							}
+							//uint[] baseArguments = [cast(uint)pspCallback.arg];
+							
+							//writefln("Calling 0x%08X with arguments %s", pspCallback.func, arguments);
+							
+							hleEmulatorState.executeGuestCode(threadState, pspCallback.func, arguments);
+						}
+					};
+					
+					if (interrupt) {
+						if (hleEmulatorState.emulatorState.enabledInterrupts) {
+							//writefln("ThreadState.suspendAllCpuThreadsButThis[1]");
+							ThreadState.suspendAllCpuThreadsButThis();
+							//writefln("ThreadState.suspendAllCpuThreadsButThis[2]");
+							{
+								CpuThreadBase cpuThreadBaseBase = getOneCpuThreadBase();
+								ThreadState threadState = new ThreadState("InterruptThreadBase", hleEmulatorState.emulatorState);
+								CpuThreadBase cpuThreadBase = cpuThreadBaseBase.createCpuThread(threadState);
+								threadState.registers.copyFrom(cpuThreadBaseBase.registers);
+								thisThreadCpuThreadBase = cpuThreadBase;
+								callback(threadState);
+								/*
+								cpuThreadBase.cpuThread.registers.restoreBlock({
+									callback(cpuThreadBase.cpuThread.threadState);
+								});
+								*/
+
+								/*
+								CpuThreadBase cpuThreadBase = getOneCpuThreadBase();
+								thisThreadCpuThreadBase = cpuThreadBase;
+								cpuThreadBase.cpuThread.registers.restoreBlock({
+									callback(cpuThreadBase.cpuThread.threadState);
+								});
+								*/
+							}
+							//writefln("ThreadState.resumeAllCpuThreadsButThis[1]");
+							ThreadState.resumeAllCpuThreadsButThis();
+							//writefln("ThreadState.resumeAllCpuThreadsButThis[2]");
+						}
+					} else {
+						queuedCallbacks ~= callback;
 					}
-				};
-				
-				if (interrupt) {
-					Registers backupRegisters;
-					backupRegisters.copyFrom(thisThreadCpuThreadBase.threadState.registers);
-					{
-						callback(thisThreadCpuThreadBase.threadState);
-					}
-					thisThreadCpuThreadBase.threadState.registers.copyFrom(backupRegisters);
-				} else {
-					queuedCallbacks ~= callback;
 				}
 			}
 		}

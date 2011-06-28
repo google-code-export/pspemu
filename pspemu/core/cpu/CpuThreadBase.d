@@ -24,6 +24,11 @@ import pspemu.hle.kd.threadman.Types;
 public CpuThreadBase thisThreadCpuThreadBase;
 __gshared CpuThreadBase[Thread] cpuThreadBasePerThread;
 
+static CpuThreadBase getOneCpuThreadBase() {
+	foreach (cpuThread; cpuThreadBasePerThread) return cpuThread;
+	return null;
+}
+
 abstract class CpuThreadBase : InstructionHandler {
 	CpuThreadBase cpuThread;
 	Instruction instruction;

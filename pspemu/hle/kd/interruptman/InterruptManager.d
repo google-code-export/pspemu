@@ -44,8 +44,7 @@ class InterruptManager : ModuleNative {
 	int sceKernelRegisterSubIntrHandler(PspSubInterrupts intno, int no, uint handler, uint arg) {
 		logInfo("sceKernelRegisterSubIntrHandler(%d:%s, %d, %08X, %08X)", intno, to!string(intno), no, handler, arg);
 		
-		handlers[intno][no] = new PspCallback("sceKernelRegisterSubIntrHandlerCallback", handler, null);
-		handlers[intno][no].arg = cast(void *)arg;
+		handlers[intno][no] = new PspCallback("sceKernelRegisterSubIntrHandlerCallback", handler, arg);
 		
 		return 0;
 	}

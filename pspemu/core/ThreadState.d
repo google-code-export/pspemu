@@ -32,6 +32,31 @@ class ThreadState {
 	public SceKernelThreadInfo sceKernelThreadInfo;
 	public Module threadModule;
 	public int wakeUpCount;
+	
+	static ThreadState getOneThreadState() {
+		foreach (threadState; threadStatePerThread) return threadState;
+		return null;
+	}
+	
+	static void suspendAllCpuThreadsButThis() {
+		HANDLE thisNativeThreadHandle = GetCurrentThread();
+		foreach (threadState; threadStatePerThread) {
+			//writefln("suspendAllCpuThreadsButThis: %08X %08X", thisNativeThreadHandle, threadState.nativeThreadHandle);
+			if (threadState.nativeThreadHandle != thisNativeThreadHandle) {
+				SuspendThread(threadState.nativeThreadHandle);
+			}
+		}
+	}
+	
+	static void resumeAllCpuThreadsButThis() {
+		HANDLE thisNativeThreadHandle = GetCurrentThread();
+		foreach (threadState; threadStatePerThread) {
+			//writefln("resumeAllCpuThreadsButThis: %08X %08X", thisNativeThreadHandle, threadState.nativeThreadHandle);
+			if (threadState.nativeThreadHandle != thisNativeThreadHandle) {
+				ResumeThread(threadState.nativeThreadHandle);
+			}
+		}
+	}
 
 	@property public bool sleeping() {
 		return (wakeUpCount < 0);

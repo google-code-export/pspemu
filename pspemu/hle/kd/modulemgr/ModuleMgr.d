@@ -83,6 +83,7 @@ class ModuleMgrForUser : ModuleNative {
 	 */
 	int sceKernelSelfStopUnloadModule(int unknown, SceSize argsize, void *argp) {
 		//hleEmulatorState.emulatorState.runningState.stop();
+		logWarning("sceKernelSelfStopUnloadModule");
 		hleEmulatorState.emulatorState.runningState.stopCpu();
 		throw(new HaltException("sceKernelSelfStopUnloadModule"));
 		return 0;

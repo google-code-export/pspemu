@@ -19,6 +19,8 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 // http://forums.ps2dev.org/viewtopic.php?t=5687
 // @TODO! Fixme! In which thread should handlers be executed?
 
+//#define eprintf(...) pspDebugScreenPrintf(__VA_ARGS__); Kprintf(__VA_ARGS__);
+
 void vblank_handler_counter(int no, int* counter) {
 	*counter = *counter + 1;
 }
@@ -26,6 +28,10 @@ void vblank_handler_counter(int no, int* counter) {
 void checkVblankInterruptHandler() {
 	int counter = 0, last_counter = 0;
 	int results[3], n;
+
+	pspDebugScreenInit();
+	pspDebugScreenPrintf("Starting...\n");
+	Kprintf("Starting...\n");
 
 	sceKernelRegisterSubIntrHandler(PSP_VBLANK_INT, 0, vblank_handler_counter, &counter);
 	sceKernelDelayThread(80000);
@@ -43,8 +49,10 @@ void checkVblankInterruptHandler() {
 	results[2] = counter;
 	Kprintf("%d\n", last_counter == counter); // n. Disabled.
 	
-	pspDebugScreenInit();
-	for (n = 0; n < 3; n++) pspDebugScreenPrintf("%d\n", results[n]);
+	for (n = 0; n < 3; n++) {
+		//Kprintf("Output %d:%d\n", n, results[n]);
+		pspDebugScreenPrintf("%d\n", results[n]);
+	}
 }
 
 /*

@@ -1,5 +1,7 @@
 module pspemu.main;
 
+import std.traits;
+
 import pspemu.core.EmulatorState;
 import pspemu.utils.Path;
 import pspemu.utils.sync.WaitEvent;
@@ -249,7 +251,7 @@ int main(string[] args) {
 		if (log) {
 			Logger.setLevel(Logger.Level.TRACE);
 		} else {
-			Logger.setLevel(Logger.Level.CRITICAL);			
+			Logger.setLevel(Logger.Level.CRITICAL);
 		}
 
 		WaitEvent testCompletedEvent = new WaitEvent("testCompletedEvent");
@@ -268,9 +270,28 @@ int main(string[] args) {
 		hangThread.name = "HangDetector";
 		hangThread.start();
 		
+		// Remove the first argument.
+		auto filterExpressionStrings = args[1..$];
+		typeof(regex(""))[] filterExpressionRegexs;
+		foreach (filterExpressionString; filterExpressionStrings) {
+			filterExpressionRegexs ~= regex("^.*" ~ filterExpressionString ~ ".*$");
+		}
+		
+		writefln("%s", args);
+		
 		foreach (std.file.DirEntry dirEntry; dirEntries(r"tests_ex", SpanMode.depth, true)) {
 			if (std.string.indexOf(dirEntry.name, ".svn") != -1) continue;
 			if (std.path.getExt(dirEntry.name) != "expected") continue;
+			bool filter = false;
+			foreach (filterExpressionRegex; filterExpressionRegexs) {
+				if (!match(dirEntry.name, filterExpressionRegex).empty) {
+					filter = false;
+					break;
+				} else {
+					filter = true;
+				}
+			}
+			if (filter) continue;
 			
 			//writefln("[0]");
 			
@@ -325,6 +346,9 @@ int main(string[] args) {
 	GuiBase gui = new GuiDfl(emulatorHelper);
 	gui.start();
 	emulatorHelper.emulator.mainCpuThread.trace = trace;
+	
+	emulatorHelper.waitComponentsInitialized();
+	
 	if (args.length > 1) {
 		emulatorHelper.loadModule(args[1]);
 		emulatorHelper.start();
