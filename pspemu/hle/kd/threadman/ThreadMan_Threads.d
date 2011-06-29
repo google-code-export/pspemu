@@ -246,6 +246,7 @@ template ThreadManForUser_Threads() {
 	 */
 	int sceKernelDelayThread(SceUInt delay) {
 		logTrace("sceKernelDelayThread(%d)", delay);
+		scope (exit) logTrace("Returning from sceKernelDelayThreadCB");
 		return _sceKernelDelayThread(delay, /*callbacks = */false);
 	}
 	
@@ -261,6 +262,7 @@ template ThreadManForUser_Threads() {
 	 */
 	int sceKernelDelayThreadCB(SceUInt delay) {
 		logTrace("sceKernelDelayThreadCB(%d)", delay);
+		scope (exit) logTrace("Returning from sceKernelDelayThreadCB");
 		return _sceKernelDelayThread(delay, /*callbacks = */true);
 	}
 	
@@ -423,6 +425,8 @@ template ThreadManForUser_Threads() {
 	 * @return Success if >= 0, an error if < 0.
 	 */
 	int sceKernelTerminateDeleteThread(SceUID thid) {
+		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
+		threadState.onDeleteThread();
 		return sceKernelDeleteThread(thid);
 	}
 
@@ -476,8 +480,9 @@ template ThreadManForUser_Threads() {
 	 * @return Success if >= 0, an error if < 0.
 	 */
 	int sceKernelTerminateThread(SceUID thid) {
-		unimplemented();
-		return -1;
+		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
+		threadState.onDeleteThread();
+		return 0;
 	}
 
 	/**

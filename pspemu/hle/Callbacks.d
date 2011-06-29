@@ -54,6 +54,7 @@ class CallbacksHandler {
 		GraphicEngine,
 		VerticalBlank,
 		Umd,
+		Power,
 		/*
 		PSP_GPIO_SUBINT     = PspInterrupts.PSP_GPIO_INT,
 		PSP_ATA_SUBINT      = PspInterrupts.PSP_ATA_INT,
@@ -157,9 +158,9 @@ class CallbacksHandler {
 	 *
 	 * @param  type  Type of event to trigger.
 	 */
-	void trigger(Type type, uint[] arguments, int callbackArgumentOffset = -1, bool interrupt = false) {
+	void trigger(Type type, uint[] arguments, int callbackArgumentOffset = 2, bool interrupt = false) {
 		if (type != Type.VerticalBlank) {
-			Logger.log(Logger.Level.TRACE, "CallbacksHandler", std.string.format("trigger(%d:%s)(%s)", type, to!string(type), arguments));
+			Logger.log(Logger.Level.INFO, "CallbacksHandler", std.string.format("trigger(%d:%s)(%s)", type, to!string(type), arguments));
 		} else {
 			//Logger.log(Logger.Level.INFO, "CallbacksHandler", std.string.format("trigger(%d:%s)(%s)", type, to!string(type), arguments));
 		}
@@ -173,7 +174,7 @@ class CallbacksHandler {
 					auto callback = delegate(ThreadState threadState) {
 						Logger.log(Logger.Level.TRACE, "CallbacksHandler", std.string.format("Executing queued callbacks"));
 						foreach (pspCallback; queuedPspCallbacks) {
-							Logger.log(Logger.Level.TRACE, "CallbacksHandler", std.string.format("Executing callback: %s", pspCallback));
+							Logger.log(Logger.Level.INFO, "CallbacksHandler", std.string.format("Executing callback: %s", pspCallback));
 							if (callbackArgumentOffset >= 0) {
 								arguments[callbackArgumentOffset] = pspCallback.arg;
 							}

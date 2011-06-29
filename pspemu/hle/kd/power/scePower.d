@@ -2,6 +2,8 @@ module pspemu.hle.kd.power.scePower; // kd/power.prx (scePower_Service)
 
 import pspemu.hle.ModuleNative;
 
+import pspemu.hle.Callbacks;
+
 class scePower : ModuleNative {
 	void initNids() {
 		mixin(registerd!(0xEFD3C963, scePowerTick));
@@ -278,6 +280,8 @@ class scePower : ModuleNative {
 		unimplemented();
 		return -1;
 	}
+	
+	PspCallback[16] callbacks;
 
 	/**
 	 * Register Power Callback Function
@@ -290,12 +294,28 @@ class scePower : ModuleNative {
 	int scePowerRegisterCallback(int slot, SceUID cbid) {
 		//unimplemented();
 		//return -1;
+		
 		unimplemented_notice();
+		
 		if (slot == -1) {
-			return 1;
-		} else {
-			return 0;
+			foreach (k, callback; callbacks) {
+				if (callback is null) {
+					slot = k;
+					break;
+				}
+			}
 		}
+		
+		if (callbacks[slot] !is null) {
+			return SceKernelErrors.ERROR_ALREADY;
+		}
+		
+		callbacks[slot] = uniqueIdFactory.get!PspCallback(cbid);
+		hleEmulatorState.callbacksHandler.register(CallbacksHandler.Type.Power, callbacks[slot]);
+
+		hleEmulatorState.callbacksHandler.trigger(CallbacksHandler.Type.Power, [cbid, 0x00001000, 0], 2);
+		
+		return 0;
 	}
 	
 	/**
@@ -306,7 +326,8 @@ class scePower : ModuleNative {
 	 * @return 0 on success, < 0 on error.
 	 */
 	int scePowerUnregisterCallback(int slot) {
-		unimplemented_notice();
+		hleEmulatorState.callbacksHandler.unregister(CallbacksHandler.Type.Power, callbacks[slot]);
+		callbacks[slot] = null;
 		return 0;
 	}
 

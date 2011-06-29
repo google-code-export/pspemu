@@ -16,79 +16,6 @@ import pspemu.utils.String;
 import std.datetime;
 import std.stdio;
 
-class PspWaitEvent {
-	WaitEvent waitEvent;
-	string name;
-	int attr;
-	int bits;
-	
-	this(string name, int attr, int bits) {
-		this.waitEvent = new WaitEvent("PspWaitEvent");
-		this.name = cast(string)((cast(char [])name).dup);
-		this.attr = attr;
-		this.bits = bits;		
-	}
-	
-	public void clearBits(uint bits) {
-		this.bits &= bits;
-		//this.waitEvent.signal();
-	}
-	
-	public void setBits(uint bits) {
-		this.bits |= bits;
-		this.waitEvent.signal();
-	}
-	
-	public bool checkEventFlag(uint bitsToMatch, PspEventFlagWaitTypes wait, ref u32 checkedBits) {
-		checkedBits = this.bits;
-		if (wait & PspEventFlagWaitTypes.PSP_EVENT_WAITOR) {
-			return ((checkedBits & bitsToMatch) != 0);
-		} else {
-			return ((checkedBits & bitsToMatch) == bitsToMatch);
-		}
-	}
-	
-	public bool waitEventFlag(HleEmulatorState hleEmulatorState, ThreadState threadState, uint bitsToMatch, PspEventFlagWaitTypes wait, bool handleCallbacks, ref u32 checkedBits, uint timeoutMicroseconds) {
-		bool timeout;
-		bool matched;
-
-		bool matches() {
-			return (matched = checkEventFlag(bitsToMatch, wait, checkedBits));
-		}
-		
-		WaitMultipleObjects waitMultipleObjects = new WaitMultipleObjects(threadState);
-		waitMultipleObjects.add(this.waitEvent);
-		waitMultipleObjects.add(threadState.emulatorState.runningState.stopEventCpu);
-		if (handleCallbacks) waitMultipleObjects.add(hleEmulatorState.callbacksHandler.waitEvent);
-		
-		//matchedBits = bits;
-
-		while (!matches) {
-			if (timeoutMicroseconds == uint.max) {
-				waitMultipleObjects.waitAny();
-			} else {
-				waitMultipleObjects.waitAny(cast(uint)std.datetime.convert!("usecs", "msecs")(timeoutMicroseconds));
-			}
-			
-			switch (waitMultipleObjects.result) {
-				case WaitResult.TIMEOUT:
-					throw(new TimeoutException(""));
-				break;
-				default:
-				break;
-			}
-		}
-
-		if (wait & PspEventFlagWaitTypes.PSP_EVENT_WAITCLEARALL) {
-			this.bits = 0;
-		} else if (wait & PspEventFlagWaitTypes.PSP_EVENT_WAITCLEAR) {
-			this.bits &= ~bitsToMatch;
-		}
-		
-		return matches;
-	}
-}
-
 /**
  * Events related stuff.
  */
@@ -184,7 +111,7 @@ template ThreadManForUser_Events() {
 			
 			bool matched;
 			uint matchedBits;
-			currentCpuThread.threadState.waitingBlock("_sceKernelWaitEventFlagCB", {
+			currentCpuThread.threadState.waitingBlock(std.string.format("_sceKernelWaitEventFlagCB(%d)", evid), {
 				matched = pspWaitEvent.waitEventFlag(hleEmulatorState, currentThreadState, bits, wait, callback, matchedBits, (timeout is null) ? uint.max : *timeout);
 			});
 			if (outBits !is null) *outBits = matchedBits;
@@ -287,7 +214,89 @@ template ThreadManForUser_Events() {
 		}
 	}
 	
-	void sceKernelReferEventFlagStatus() {
+	/** 
+	  * Get the status of an event flag.
+	  * 
+	  * @param event - The UID of the event.
+	  * @param status - A pointer to a ::SceKernelEventFlagInfo structure.
+	  *
+	  * @return < 0 on error.
+	  */
+	int sceKernelReferEventFlagStatus(SceUID event, SceKernelEventFlagInfo* status) {
 		unimplemented();
+		return 0;
+	}
+}
+
+class PspWaitEvent {
+	WaitEvent waitEvent;
+	string name;
+	int attr;
+	int bits;
+	
+	this(string name, int attr, int bits) {
+		this.waitEvent = new WaitEvent("PspWaitEvent");
+		this.name = cast(string)((cast(char [])name).dup);
+		this.attr = attr;
+		this.bits = bits;		
+	}
+	
+	public void clearBits(uint bits) {
+		this.bits &= bits;
+		//this.waitEvent.signal();
+	}
+	
+	public void setBits(uint bits) {
+		this.bits |= bits;
+		this.waitEvent.signal();
+	}
+	
+	public bool checkEventFlag(uint bitsToMatch, PspEventFlagWaitTypes wait, ref u32 checkedBits) {
+		checkedBits = this.bits;
+		if (wait & PspEventFlagWaitTypes.PSP_EVENT_WAITOR) {
+			return ((checkedBits & bitsToMatch) != 0);
+		} else {
+			return ((checkedBits & bitsToMatch) == bitsToMatch);
+		}
+	}
+	
+	public bool waitEventFlag(HleEmulatorState hleEmulatorState, ThreadState threadState, uint bitsToMatch, PspEventFlagWaitTypes wait, bool handleCallbacks, ref u32 checkedBits, uint timeoutMicroseconds) {
+		bool timeout;
+		bool matched;
+
+		bool matches() {
+			return (matched = checkEventFlag(bitsToMatch, wait, checkedBits));
+		}
+		
+		WaitMultipleObjects waitMultipleObjects = new WaitMultipleObjects(threadState);
+		waitMultipleObjects.add(this.waitEvent);
+		waitMultipleObjects.add(threadState.emulatorState.runningState.stopEventCpu);
+		if (handleCallbacks) waitMultipleObjects.add(hleEmulatorState.callbacksHandler.waitEvent);
+		
+		//matchedBits = bits;
+
+		while (!matches) {
+			if (timeoutMicroseconds == uint.max) {
+				waitMultipleObjects.waitAny();
+			} else {
+				waitMultipleObjects.waitAny(cast(uint)std.datetime.convert!("usecs", "msecs")(timeoutMicroseconds));
+			}
+			
+			switch (waitMultipleObjects.result) {
+				case WaitResult.TIMEOUT:
+					throw(new TimeoutException(""));
+				break;
+				default:
+				break;
+			}
+		}
+
+		if (wait & PspEventFlagWaitTypes.PSP_EVENT_WAITCLEARALL) {
+			this.bits = 0;
+		} else if (wait & PspEventFlagWaitTypes.PSP_EVENT_WAITCLEAR) {
+			this.bits &= ~bitsToMatch;
+		}
+		
+		return matches;
 	}
 }
