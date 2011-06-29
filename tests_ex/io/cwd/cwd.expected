@@ -1,6 +1,6 @@
 Working Directory Examples
 Arguments: 1
-Argument[0]: 'ms0:/PSP/GAME/virtual/main.elf'
+Argument[0]: 'ms0:/PSP/GAME/virtual/cwd.elf'
 Initial dir: ms0:/PSP/GAME/virtual
 
  chdir() attempt --> resulting getcwd()

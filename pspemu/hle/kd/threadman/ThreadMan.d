@@ -153,8 +153,6 @@ class ThreadManForUser : ModuleNative {
 		mixin(registerd!(0x623AE665, sceKernelTryAllocateFpl));
 		mixin(registerd!(0xD979E9BF, sceKernelAllocateFpl));
 		
-		mixin(registerd!(0x8FFDF9A2, sceKernelCancelSema));
-		
 	    mixin(registerd!(0x034A921F, sceKernelGetVTimerTime));
 	    mixin(registerd!(0xC0B3FFD2, sceKernelGetVTimerTimeWide));
 	    mixin(registerd!(0xC68D9437, sceKernelStartVTimer));
@@ -227,10 +225,6 @@ class ThreadManForUser : ModuleNative {
 		VTimer vTimer = uniqueIdFactory().get!VTimer(uid);
 		vTimer.stop();
 		return 0;
-	}
-	
-	void sceKernelCancelSema() {
-		unimplemented();
 	}
 	
 	/**

@@ -55,6 +55,11 @@ class sceUtility : ModuleNative {
 		
 		mixin(registerd!(0x2A2B3DE0, sceUtilityLoadModule));
 		mixin(registerd!(0xE49BFE92, sceUtilityUnloadModule));
+		
+		mixin(registerd!(0xC492F751, sceUtilityGameSharingInitStart));
+		mixin(registerd!(0xEFC6F80F, sceUtilityGameSharingShutdownStart));
+		mixin(registerd!(0x7853182D, sceUtilityGameSharingUpdate));
+		mixin(registerd!(0x946963F3, sceUtilityGameSharingGetStatus));
 
 		initNids_sysparams();
 	}
@@ -425,6 +430,77 @@ class sceUtility : ModuleNative {
 	int sceUtilityUnloadModule(PspModule _module) {
 		return -1;
 	}
+	
+	enum pspUtilityGameSharingMode {
+		PSP_UTILITY_GAMESHARING_MODE_SINGLE		= 1,	/* Single send */
+		PSP_UTILITY_GAMESHARING_MODE_MULTIPLE	= 2		/* Up to 4 simultaneous sends */
+	}
+	
+	enum pspUtilityGameSharingDataType {
+		PSP_UTILITY_GAMESHARING_DATA_TYPE_FILE		= 1, /* EBOOT is a file */
+		PSP_UTILITY_GAMESHARING_DATA_TYPE_MEMORY	= 2, /* EBOOT is in memory */
+	}
+	
+	/**
+	 * Structure to hold the parameters for Game Sharing
+	**/
+	struct pspUtilityGameSharingParams
+	{
+	    pspUtilityDialogCommon base;
+	    int unknown1;							/* Set to 0 */
+		int unknown2;							/* Set to 0 */
+		char name[8];
+		int unknown3;							/* Set to 0 */
+		int unknown4;							/* Set to 0 */
+		int unknown5;							/* Set to 0 */
+		int result;								/* Return value */
+		char *filepath;							/* File path if PSP_UTILITY_GAMESHARING_DATA_TYPE_FILE specified */
+		pspUtilityGameSharingMode mode;			/* Send mode. One of ::pspUtilityGameSharingMode */
+		pspUtilityGameSharingDataType datatype; /* Data type. One of ::pspUtilityGameSharingDataType */
+		void *data;								/* Pointer to the EBOOT data in memory */
+		uint datasize;				         	/* Size of the EBOOT data in memory */
+	
+	}
+	
+	/**
+	 * Init the game sharing
+	 *
+	 * @param params - game sharing parameters
+	 * @return 0 on success, < 0 on error.
+	 */
+	int sceUtilityGameSharingInitStart(pspUtilityGameSharingParams *params) {
+		unimplemented();
+		return 0;
+	}
+	
+	/**
+	 * Shutdown game sharing. 
+	 */
+	void sceUtilityGameSharingShutdownStart() {
+		unimplemented();
+	}
+	
+	/**
+	 * Get the current status of game sharing.
+	 *
+	 * @return 2 if the GUI is visible (you need to call sceUtilityGameSharingGetStatus).
+	 * 3 if the user cancelled the dialog, and you need to call sceUtilityGameSharingShutdownStart.
+	 * 4 if the dialog has been successfully shut down.
+	 */
+	int sceUtilityGameSharingGetStatus() {
+		unimplemented();
+		return 0;
+	}
+	
+	/**
+	 * Refresh the GUI for game sharing
+	 *
+	 * @param n - unknown, pass 1
+	 */
+	void sceUtilityGameSharingUpdate(int n) {
+		unimplemented();
+	}
+
 }
 
 static this() {
