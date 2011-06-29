@@ -1,0 +1,9 @@
+Size          : 56
+Name          : sema1
+Attr          : 0
+initCount     : 2
+currentCount  : 2
+maxCount      : 2
+numWaitThreads: 0
+00000000
+80020199

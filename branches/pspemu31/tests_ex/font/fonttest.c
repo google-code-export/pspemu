@@ -37,6 +37,7 @@ int main(int argc, char *argv[]) {
 	fontHandle = sceFontOpen(libHandle, 0, 0777, &errorCode);
 	eprintf("sceFontOpen: %d, %08X\n", fontHandle != 0, errorCode);
 	
+	/*
 	result = sceFontGetFontInfo(fontHandle, &fontInfo);
 	eprintf("sceFontGetFontInfo: %d\n", result);
 	
@@ -53,6 +54,7 @@ int main(int argc, char *argv[]) {
 	PRINT_GLYPH_METRICS_MAX(GlyphTopY);
 	PRINT_GLYPH_METRICS_MAX(GlyphAdvanceX);
 	PRINT_GLYPH_METRICS_MAX(GlyphAdvanceY);
+	*/
 
 	return 0;
 }
