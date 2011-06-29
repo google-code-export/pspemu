@@ -18,6 +18,8 @@ import std.c.windows.windows;
 
 public import pspemu.utils.sync.WaitEvent;
 
+import pspemu.utils.Event;
+
 class ThreadState {
 	protected __gshared ThreadState[Thread] threadStatePerThread;
 	
@@ -32,6 +34,7 @@ class ThreadState {
 	public SceKernelThreadInfo sceKernelThreadInfo;
 	public Module threadModule;
 	public int wakeUpCount;
+	public Event onDeleteThread;
 	
 	static ThreadState getOneThreadState() {
 		foreach (threadState; threadStatePerThread) return threadState;
@@ -72,6 +75,7 @@ class ThreadState {
 	WaitEvent wakeUpEvent;
 	
 	public this(string name, EmulatorState emulatorState, Registers registers) {
+		//this.onDeleteThread = new Event();
 		this.name = name;
 		this.emulatorState = emulatorState;
 		this.registers = registers;

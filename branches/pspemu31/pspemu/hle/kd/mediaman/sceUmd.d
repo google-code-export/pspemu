@@ -31,8 +31,13 @@ class sceUmdUser : ModuleNative {
 		return 0;
 	}
 	
+	PspCallback umdPspCallback;
+	
 	/** 
 	  * Register a callback for the UMD drive
+	  * This function schedules a call to the callback with the current UMD status.
+	  * So you can expect this to be executed when processing callbacks at least once. 
+	  *
 	  * @note Callback is of type UmdCallback
 	  *
 	  * @param cbid - A callback ID created from sceKernelCreateCallback
@@ -40,11 +45,11 @@ class sceUmdUser : ModuleNative {
 	  * @return < 0 on error
 	  * @par Example:
 	  * @code
-	  * int umd_callback(int unknown, int event)
+	  * int umd_callback(int cbid, pspUmdState state, void *argument)
 	  * {
 	  *      //do something
 	  * }     
-	  * int cbid = sceKernelCreateCallback("UMD Callback", umd_callback, NULL);
+	  * int cbid = sceKernelCreateCallback("UMD Callback", umd_callback, argument);
 	  * sceUmdRegisterUMDCallBack(cbid);
 	  * @endcode
 	  */
@@ -52,10 +57,10 @@ class sceUmdUser : ModuleNative {
 		//logWarning("Not implemented: sceUmdRegisterUMDCallBack");
 		unimplemented_notice();
 		
-		PspCallback pspCallback = uniqueIdFactory.get!PspCallback(cbid);
+		umdPspCallback = uniqueIdFactory.get!PspCallback(cbid);
 		
-		hleEmulatorState.callbacksHandler.register(CallbacksHandler.Type.Umd, pspCallback);
-		hleEmulatorState.callbacksHandler.trigger(CallbacksHandler.Type.Umd, [cast(uint)sceUmdGetDriveStat()]);
+		hleEmulatorState.callbacksHandler.register(CallbacksHandler.Type.Umd, umdPspCallback);
+		hleEmulatorState.callbacksHandler.trigger(CallbacksHandler.Type.Umd, [cbid, cast(uint)sceUmdGetDriveStat(), 0], 2);
 		
 		return 0;
 	}
@@ -69,14 +74,16 @@ class sceUmdUser : ModuleNative {
 	  */
 	int sceUmdUnRegisterUMDCallBack(int cbid) {
 		//unimplemented();
-		unimplemented_notice();
+		if (umdPspCallback is null) return -1;
+		hleEmulatorState.callbacksHandler.unregister(CallbacksHandler.Type.Umd, umdPspCallback);
+		umdPspCallback = null;
 		return 0;
 	}
 	
 	/** 
 	  * Wait for the UMD drive to reach a certain state
 	  *
-	  * @param stat - One or more of ::pspUmdState
+	  * @param stat    - One or more of ::pspUmdState
 	  * @param timeout - Timeout value in microseconds
 	  *
 	  * @return < 0 on error
@@ -99,7 +106,7 @@ class sceUmdUser : ModuleNative {
 	/** 
 	  * Activates the UMD drive
 	  * 
-	  * @param unit - The unit to initialise (probably). Should be set to 1.
+	  * @param mode  - Mode.
 	  * @param drive - A prefix string for the fs device to mount the UMD on (e.g. "disc0:")
 	  *
 	  * @return < 0 on error
@@ -118,20 +125,21 @@ class sceUmdUser : ModuleNative {
 	  * // Now you can access the UMD using standard sceIo functions
 	  * @endcode
 	  */
-	int sceUmdActivate(int unit, string drive) {
-		logWarning("Partially implemented: sceUmdActivate(%d, '%s')", unit, drive);
+	int sceUmdActivate(int mode, string drive) {
+		logWarning("Partially implemented: sceUmdActivate(%d, '%s')", mode, drive);
+		//hleEmulatorState.callbacksHandler.trigger(CallbacksHandler.Type.Umd, [cast(uint)sceUmdGetDriveStat()]);
 		return 0;
 	}
 	
 	/** 
 	  * Deativates the UMD drive
 	  * 
-	  * @param unit - The unit to initialise (probably). Should be set to 1.
+	  * @param mode  - Mode.
 	  * @param drive - A prefix string for the fs device to mount the UMD on (e.g. "disc0:")
 	  *
 	  * @return < 0 on error
 	  */
-	int sceUmdDeactivate(int unit, const char *drive) {
+	int sceUmdDeactivate(int mode, const char *drive) {
 		unimplemented_notice();
 		return 0;
 	}
@@ -172,8 +180,9 @@ class sceUmdUser : ModuleNative {
 		return 0;
 	}
 	
-	void sceUmdCancelWaitDriveStat() {
+	int sceUmdCancelWaitDriveStat() {
 		unimplemented_notice();
+		return 0;
 	}
 }
 

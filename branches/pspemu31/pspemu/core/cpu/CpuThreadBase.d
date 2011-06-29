@@ -51,6 +51,10 @@ abstract class CpuThreadBase : InstructionHandler {
 		threadState.emulatorState.runningState.onStopCpu += delegate(...) {
 			running = false;
 		};
+		
+		threadState.onDeleteThread += delegate(...) {
+			running = false;
+		};
 	}
 
 	public void start() {

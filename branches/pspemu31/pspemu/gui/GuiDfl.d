@@ -145,6 +145,10 @@ class MainForm : Form, IMessageFilter {
 			}
 			windowSize = -1;
 		};
+		
+		closed ~= delegate(Control control, EventArgs ea) {
+			guiDfl.dumpThreads();
+		};
 
 		setClientSizeCore(480, 272);
 		minimumSize = size;
