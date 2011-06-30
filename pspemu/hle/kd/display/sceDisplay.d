@@ -78,6 +78,7 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	int _sceDisplayWaitVblankStart(bool _processCallbacks) {
 		Logger.log(Logger.Level.TRACE, "sceDisplay_driver", "_sceDisplayWaitVblankStart");
 		currentEmulatorState.display.waitVblank(_processCallbacks);
+		hleEmulatorState.emulatorState.gpu.waitVblank();
 		
 		return 0;
 

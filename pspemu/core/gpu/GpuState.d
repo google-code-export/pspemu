@@ -256,6 +256,8 @@ struct TextureState {
 	TextureColorComponent colorComponent; ///
 	bool           fragment_2x;           /// ???
 
+	TextureLevelMode levelMode;
+
 	// Mimaps
 	struct MipmapState {
 		uint address;                     /// Pointer 
@@ -265,6 +267,7 @@ struct TextureState {
 	int            mipmapMaxLevel;        /// Levels of mipmaps
 	bool           mipmapShareClut;       /// Mipmaps share clut?
 	MipmapState[8] mipmaps;               /// MipmapState list
+	float          mipmapBias;
 
 	int mipmapRealWidth(int mipmap = 0) { return PixelFormatSize(format, mipmaps[mipmap].buffer_width); }
 	int mipmapTotalSize(int mipmap = 0) { return mipmapRealWidth(mipmap) * mipmaps[mipmap].height; }
@@ -307,6 +310,7 @@ struct TextureState {
 struct Patch {
 	ubyte div_s;
 	ubyte div_t;
+	PatchPrimitiveType type;
 }
 
 struct FogState {

@@ -14,8 +14,8 @@ import pspemu.core.cpu.Instruction;
 import pspemu.core.cpu.Registers;
 
 string genSwitchAll() {
-	static if (false) {
-	//static if (true) {
+	//static if (false) {
+	static if (true) {
 		const string str = q{
 			genSwitch(
 				PspInstructions_ALU ~
@@ -28,7 +28,7 @@ string genSwitchAll() {
 				PspInstructions_SPECIAL
 			)
 		};
-		pragma(msg, mixin(str));
+		//pragma(msg, mixin(str));
 		return mixin(str);
 	} else {
 		return import("cached_switch_all.dcode");

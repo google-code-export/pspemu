@@ -8,6 +8,8 @@ module pspemu.core.gpu.Gpu;
 //debug = DEBUG_WARNING_PERFORM_BUFFER_OP;
 
 import core.thread;
+import core.time;
+import std.datetime;
 
 import std.stdio;
 import std.conv;
@@ -79,6 +81,11 @@ class Gpu {
 	PspGeCallbackData pspGeCallbackData;
 	bool recordFrameEnd = false;
 	bool recordFrameStart = false;
+	
+	// Statistics.
+	uint lastFrameTime;
+	uint numberOfPrims, numberOfPrimsTemp;
+	uint numberOfVertices, numberOfVerticesTemp;
 	
 	WaitEvent initializedEvent;
 	
@@ -211,7 +218,9 @@ class Gpu {
 				}
 				newWaitAndCheck2();
 				lastCommandPointer = displayList.pointer;
+				gpuTimePerFrameStopWatch.start();
 				executeSingleCommand(displayList);
+				gpuTimePerFrameStopWatch.stop();
 			}
 		} catch (Throwable o) {
 			writefln("Last command: %s", *lastCommandPointer);
@@ -234,6 +243,8 @@ class Gpu {
 	public void waitStarted() {
 		initializedEvent.wait();
 	}
+	
+	StopWatch gpuTimePerFrameStopWatch;
 
 	protected void run() {
 		while (running) {
@@ -295,6 +306,25 @@ class Gpu {
 			}
 
 			performBufferOp(BufferOperation.STORE);
+		}
+		
+		void waitVblank() {
+			uint lastFrameTimeTemp = cast(uint)gpuTimePerFrameStopWatch.peek().msecs;
+			
+			if (lastFrameTimeTemp != 0) {
+				lastFrameTime = lastFrameTimeTemp;
+			}
+			
+			if (numberOfPrimsTemp != 0) {
+				numberOfPrims = numberOfPrimsTemp; numberOfPrimsTemp = 0;
+			}
+
+			if (numberOfVerticesTemp != 0) {
+				numberOfVertices = numberOfVerticesTemp; numberOfVerticesTemp = 0;
+			}
+
+			//writefln("Frame: %s", lastFrameTime);
+			gpuTimePerFrameStopWatch.reset();
 		}
 		
 		/**

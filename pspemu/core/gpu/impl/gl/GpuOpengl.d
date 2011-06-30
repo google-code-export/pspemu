@@ -740,11 +740,23 @@ template OpenglUtils() {
 						glLoadMatrixf(state.texture.matrix.pointer);
 					break;
 					case TextureMapMode.GU_ENVIRONMENT_MAP:
-						glLoadIdentity();
+						Matrix envmapMatrix;
+						envmapMatrix.setIdentity();
+						
+						for (int i = 0; i < 3; i++) {
+							envmapMatrix.rows[0][i] = state.lighting.lights[state.texture.texShade[0]].position[i];
+							envmapMatrix.rows[1][i] = state.lighting.lights[state.texture.texShade[1]].position[i];
+						}
+						
+						glLoadMatrixf(envmapMatrix.pointer);
 						Logger.log(Logger.Level.WARNING, "GPU", "Not implemented! texture for transform3D!");
 					break;
 				}
 			}
+
+			// @TODO! Based on BIAS.			
+			//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, level);
+			//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, level);
 			
 			//writefln("prepareTexture[2]");
 			glEnable(GL_TEXTURE_2D);

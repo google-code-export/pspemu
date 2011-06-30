@@ -60,7 +60,7 @@ class CpuThreadInterpreted : CpuThreadBase {
     		
 			void OP_UNK() {
 				registers.pcAdvance(4);
-				Logger.log(Logger.Level.CRITICAL, "CpuThreadInterpreted", "Thread(%d): OP_UNK", threadState.thid);
+				Logger.log(Logger.Level.CRITICAL, "CpuThreadInterpreted", "Thread(%d): PC(%08X): OP_UNK 0x%08X", threadState.thid, registers.PC, instruction.v);
 			}
 
 			mixin TemplateCpu_ALU;

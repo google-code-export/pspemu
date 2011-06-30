@@ -14,6 +14,8 @@ import pspemu.hle.kd.threadman.ThreadMan_Threads;
 import pspemu.hle.kd.threadman.ThreadMan_Semaphores;
 import pspemu.hle.kd.threadman.ThreadMan_Events;
 import pspemu.hle.kd.threadman.ThreadMan_Callbacks;
+import pspemu.hle.kd.threadman.ThreadMan_VTimers;
+import pspemu.hle.kd.threadman.ThreadMan_MsgPipes;
 import pspemu.hle.kd.threadman.Types;
 import pspemu.hle.MemoryManager;
 
@@ -68,42 +70,6 @@ class FixedPool : MemoryPool {
 	}
 }
 
-class VTimer {
-	bool running;
-	SysTime startTime;
-	
-	this() {
-		running = false;
-	}
-	
-	SysTime now() {
-		return Clock.currTime();
-	}
-	
-	void start() {
-		startTime = now();
-		running = true;
-	}
-	
-	void stop() {
-		running = false;
-	}
-	
-	long get() {
-		if (!running) return 0;
-		Duration duration = (now() - startTime);
-		return duration.total!"usecs";
-	}
-}
-
-/*
-alias SceUInt function(SceUID uid, SceKernelSysClock *, SceKernelSysClock *, void *) SceKernelVTimerHandler;
-alias SceUInt function(SceUID uid, SceInt64, SceInt64, void *) SceKernelVTimerHandlerWide;
-*/
-
-alias uint SceKernelVTimerHandler;
-alias uint SceKernelVTimerHandlerWide;
-
 
 /**
  * Library imports for the kernel threading library.
@@ -113,12 +79,16 @@ class ThreadManForUser : ModuleNative {
 	mixin ThreadManForUser_Semaphores;
 	mixin ThreadManForUser_Events;
 	mixin ThreadManForUser_Callbacks;
+	mixin ThreadManForUser_VTimers;
+	mixin ThreadManForUser_MsgPipes;
 
 	void initModule() {
 		initModule_Threads();
 		initModule_Semaphores();
 		initModule_Events();
 		initModule_Callbacks();
+		initModule_VTimers();
+		initModule_MsgPipes();
 		//moduleManager.getCurrentThreadName = { return threadManager.currentThread.name; };
 	}
 
@@ -127,14 +97,8 @@ class ThreadManForUser : ModuleNative {
 		initNids_Semaphores();
 		initNids_Events();
 		initNids_Callbacks();
-		
-		mixin(registerd!(0x7C0DC2A0, sceKernelCreateMsgPipe));
-		mixin(registerd!(0xF0B7DA1C, sceKernelDeleteMsgPipe));
-		mixin(registerd!(0x876DBFAD, sceKernelSendMsgPipe));
-		mixin(registerd!(0x884C9F90, sceKernelTrySendMsgPipe));
-		mixin(registerd!(0x74829B76, sceKernelReceiveMsgPipe));
-		mixin(registerd!(0xDF52098F, sceKernelTryReceiveMsgPipe));
-		mixin(registerd!(0x33BE4024, sceKernelReferMsgPipeStatus));
+		initNids_VTimers();
+		initNids_MsgPipes();
 		
 		mixin(registerd!(0x369ED59D, sceKernelGetSystemTimeLow));
 		mixin(registerd!(0x82BC5777, sceKernelGetSystemTimeWide));
@@ -162,12 +126,6 @@ class ThreadManForUser : ModuleNative {
 		mixin(registerd!(0x623AE665, sceKernelTryAllocateFpl));
 		mixin(registerd!(0xD979E9BF, sceKernelAllocateFpl));
 		
-	    mixin(registerd!(0x034A921F, sceKernelGetVTimerTime));
-	    mixin(registerd!(0xC0B3FFD2, sceKernelGetVTimerTimeWide));
-	    mixin(registerd!(0xC68D9437, sceKernelStartVTimer));
-	    mixin(registerd!(0x20FFF560, sceKernelCreateVTimer));
-	    mixin(registerd!(0x20FFF560, sceKernelSetVTimerHandler));
-	    
 	    mixin(registerd!(0x110DEC9A, sceKernelUSec2SysClock));
 	    mixin(registerd!(0xC8CD158C, sceKernelUSec2SysClockWide));
 	}
@@ -186,106 +144,6 @@ class ThreadManForUser : ModuleNative {
 	ulong sceKernelUSec2SysClockWide(ulong usec) {
 		return usec;
 	}
-	
-	/**
-	 * Get the timer time
-	 *
-	 * @param uid - UID of the vtimer
-	 * @param time - Pointer to a ::SceKernelSysClock structure
-	 *
-	 * @return 0 on success, < 0 on error
-	 */
-	int sceKernelGetVTimerTime(SceUID uid, SceKernelSysClock *time) {
-		unimplemented_notice();
-		VTimer vTimer = uniqueIdFactory().get!VTimer(uid);
-		long v = vTimer.get();
-		*time = *(cast(SceKernelSysClock*)&v);
-		return 0;
-	}
-	
-	/**
-	 * Get the timer time (wide format)
-	 *
-	 * @param uid - UID of the vtimer
-	 *
-	 * @return The 64bit timer time
-	 */
-	SceInt64 sceKernelGetVTimerTimeWide(SceUID uid) {
-		unimplemented_notice();
-		VTimer vTimer = uniqueIdFactory().get!VTimer(uid);
-		return vTimer.get();
-	}
-	
-	/**
-	 * Create a virtual timer
-	 *
-	 * @param name - Name for the timer.
-	 * @param opt  - Pointer to an ::SceKernelVTimerOptParam (pass NULL)
-	 *
-	 * @return The VTimer's UID or < 0 on error.
-	 */
-	SceUID sceKernelCreateVTimer(string name, SceKernelVTimerOptParam *opt) {
-		return uniqueIdFactory().add(new VTimer());
-	}
-	
-	/**
-	 * Start a virtual timer
-	 *
-	 * @param uid - The UID of the timer
-	 *
-	 * @return < 0 on error
-	 */
-	int sceKernelStartVTimer(SceUID uid) {
-		unimplemented_notice();
-		VTimer vTimer = uniqueIdFactory().get!VTimer(uid);
-		vTimer.start();
-		return 0;
-	}
-	
-	/**
-	 * Stop a virtual timer
-	 *
-	 * @param uid - The UID of the timer
-	 *
-	 * @return < 0 on error
-	 */
-	int sceKernelStopVTimer(SceUID uid) {
-		VTimer vTimer = uniqueIdFactory().get!VTimer(uid);
-		vTimer.stop();
-		return 0;
-	}
-	
-	/**
-	 * Set the timer handler
-	 *
-	 * @param uid - UID of the vtimer
-	 * @param time - Time to call the handler?
-	 * @param handler - The timer handler
-	 * @param common  - Common pointer
-	 *
-	 * @return 0 on success, < 0 on error
-	 */
-	int sceKernelSetVTimerHandler(SceUID uid, SceKernelSysClock *time, SceKernelVTimerHandler handler, void *common) {
-		unimplemented();
-		return 0;
-	}
-	
-	/**
-	 * Set the timer handler (wide mode)
-	 *
-	 * @param uid - UID of the vtimer
-	 * @param time - Time to call the handler?
-	 * @param handler - The timer handler
-	 * @param common  - Common pointer
-	 *
-	 * @return 0 on success, < 0 on error
-	 */
-	int sceKernelSetVTimerHandlerWide(SceUID uid, SceInt64 time, SceKernelVTimerHandlerWide handler, void *common) {
-		unimplemented();
-		return 0;
-	}
-
-
 	
 	/**
 	 * Create a fixed pool
@@ -612,117 +470,6 @@ class ThreadManForUser : ModuleNative {
 	uint sceKernelGetSystemTimeLow() {
 		return cast(uint)sceKernelGetSystemTimeWide();
 	}
-	
-	template TemplateMsgPipe() {
-		/**
-		 * Create a message pipe
-		 *
-		 * @param name - Name of the pipe
-		 * @param part - ID of the memory partition
-		 * @param attr - Set to 0?
-		 * @param unk1 - Unknown
-		 * @param opt  - Message pipe options (set to NULL)
-		 *
-		 * @return The UID of the created pipe, < 0 on error
-		 */
-		SceUID sceKernelCreateMsgPipe(string name, int part, int attr, void* unk1, void* opt) {
-			unimplemented();
-			return -1;
-		}
-
-		/**
-		 * Delete a message pipe
-		 *
-		 * @param uid - The UID of the pipe
-		 *
-		 * @return 0 on success, < 0 on error
-		 */
-		int sceKernelDeleteMsgPipe(SceUID uid) {
-			unimplemented();
-			return -1;
-		}
-
-		/**
-		 * Send a message to a pipe
-		 *
-		 * @param uid - The UID of the pipe
-		 * @param message - Pointer to the message
-		 * @param size - Size of the message
-		 * @param unk1 - Unknown
-		 * @param unk2 - Unknown
-		 * @param timeout - Timeout for send
-		 *
-		 * @return 0 on success, < 0 on error
-		 */
-		int sceKernelSendMsgPipe(SceUID uid, void* message, uint size, int unk1, void* unk2, uint* timeout) {
-			unimplemented();
-			return -1;
-		}
-
-		/**
-		 * Try to send a message to a pipe
-		 *
-		 * @param uid - The UID of the pipe
-		 * @param message - Pointer to the message
-		 * @param size - Size of the message
-		 * @param unk1 - Unknown
-		 * @param unk2 - Unknown
-		 *
-		 * @return 0 on success, < 0 on error
-		 */
-		int sceKernelTrySendMsgPipe(SceUID uid, void* message, uint size, int unk1, void* unk2) {
-			unimplemented();
-			return -1;
-		}
-
-		/**
-		 * Receive a message from a pipe
-		 *
-		 * @param uid - The UID of the pipe
-		 * @param message - Pointer to the message
-		 * @param size - Size of the message
-		 * @param unk1 - Unknown
-		 * @param unk2 - Unknown
-		 * @param timeout - Timeout for receive
-		 *
-		 * @return 0 on success, < 0 on error
-		 */
-		int sceKernelReceiveMsgPipe(SceUID uid, void* message, uint size, int unk1, void* unk2, uint* timeout) {
-			unimplemented();
-			return -1;
-		}
-
-		/**
-		 * Receive a message from a pipe
-		 *
-		 * @param uid - The UID of the pipe
-		 * @param message - Pointer to the message
-		 * @param size - Size of the message
-		 * @param unk1 - Unknown
-		 * @param unk2 - Unknown
-		 *
-		 * @return 0 on success, < 0 on error
-		 */
-		int sceKernelTryReceiveMsgPipe(SceUID uid, void* message, uint size, int unk1, void* unk2) {
-			unimplemented();
-			return -1;
-		}
-
-		/**
-		 * Get the status of a Message Pipe
-		 *
-		 * @param uid - The uid of the Message Pipe
-		 * @param info - Pointer to a ::SceKernelMppInfo structure
-		 *
-		 * @return 0 on success, < 0 on error
-		 */
-		int sceKernelReferMsgPipeStatus(SceUID uid, SceKernelMppInfo* info) {
-			unimplemented();
-			return -1;
-		}
-	}
-
-	mixin TemplateMsgPipe;
 }
 
 

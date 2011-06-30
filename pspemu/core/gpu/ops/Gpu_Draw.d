@@ -354,6 +354,9 @@ template Gpu_Draw() {
 		// @TODO: Check which buffers have been updated (using the state).
 		//gpu.impl.test("prim");
 		gpu.markBufferOp(BufferOperation.STORE, BufferType.ALL);
+		
+		gpu.numberOfPrimsTemp++;
+		gpu.numberOfVerticesTemp += vertexCount;
 	}
 
 	/**

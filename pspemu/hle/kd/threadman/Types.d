@@ -116,3 +116,13 @@ enum PspEventFlagWaitTypes
 	/// Clear the wait pattern when it matches
 	PSP_EVENT_WAITCLEAR = 0x20,
 };
+
+
+/*
+alias SceUInt function(SceUID uid, SceKernelSysClock *, SceKernelSysClock *, void *) SceKernelVTimerHandler;
+alias SceUInt function(SceUID uid, SceInt64, SceInt64, void *) SceKernelVTimerHandlerWide;
+*/
+
+alias uint SceKernelVTimerHandler;
+alias uint SceKernelVTimerHandlerWide;
+

@@ -46,6 +46,7 @@ class SysMemUserForUser : ModuleNative {
 		mixin(registerd!(0x13A5ABEF, sceKernelPrintf));
 		mixin(registerd!(0xF77D77CB, sceKernelSetCompilerVersion));
 		mixin(registerd!(0x7591C7DB, sceKernelSetCompiledSdkVersion));
+		mixin(registerd!(0x342061E5, sceKernelSetCompiledSdkVersion370));
 		mixin(registerd!(0xEBD5C3E6, sceKernelSetCompiledSdkVersion395));
 	}
 
@@ -57,6 +58,10 @@ class SysMemUserForUser : ModuleNative {
 	// @TODO: Unknown.
 	void sceKernelSetCompilerVersion(uint param) {
 		logInfo("sceKernelSetCompilerVersion: 0x%08X", param);
+	}
+
+	void sceKernelSetCompiledSdkVersion370(uint param) {
+		logInfo("sceKernelSetCompiledSdkVersion370: 0x%08X", param);
 	}
 	
 	void sceKernelSetCompiledSdkVersion395(uint param) {

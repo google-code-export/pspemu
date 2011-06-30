@@ -241,4 +241,9 @@ template Gpu_Texture() {
 		gpu.state.texture.mapMode     = command.extractEnum!(TextureMapMode          , 0);
 		gpu.state.texture.projMapMode = command.extractEnum!(TextureProjectionMapMode, 8);
 	}
+	
+	auto OP_TBIAS() {
+		gpu.state.texture.levelMode  = command.extractEnum!(TextureLevelMode, 0);
+		gpu.state.texture.mipmapBias = cast(float)command.extract!(int, 16, 8) / 16.0f;
+	}
 }

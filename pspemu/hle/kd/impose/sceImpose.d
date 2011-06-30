@@ -24,9 +24,22 @@ enum PspConfirmButton : int {
 }
 
 class sceImpose : ModuleNative {
+	uint umdPopupStatus;
+	
 	void initNids() {
 		mixin(registerd!(0x8C943191, sceImposeGetBatteryIconStatus));
 		mixin(registerd!(0x36AA6E91, sceImposeSetLanguageMode));
+        mixin(registerd!(0x72189C48, sceImposeSetUMDPopupFunction));
+        mixin(registerd!(0xE0887BC8, sceImposeGetUMDPopupFunction));
+	}
+	
+	uint sceImposeSetUMDPopupFunction(uint umdPopupStatus) {
+		this.umdPopupStatus = umdPopupStatus;
+		return 0;
+	}
+	
+	uint sceImposeGetUMDPopupFunction() {
+		return this.umdPopupStatus; 
 	}
 	
 	/**
