@@ -126,3 +126,44 @@ struct FontInfo {
     ubyte[3] pad;
 }
 
+/*
+ * Char's metrics:
+ *
+ *           Width / Horizontal Advance
+ *           <---------->
+ *      |           000 |
+ *      |           000 |  Ascender
+ *      |           000 |
+ *      |     000   000 |
+ *      | -----000--000-------- Baseline
+ *      |        00000  |  Descender
+ * Height /
+ * Vertical Advance
+ *
+ * The char's bearings represent the difference between the
+ * width and the horizontal advance and/or the difference
+ * between the height and the vertical advance.
+ * In our debug font, these measures are the same (block pixels),
+ * but in real PGF fonts they can vary (italic fonts, for example).
+ */
+struct FontCharInfo {
+	uint bitmapWidth;
+	uint bitmapHeight;
+	uint bitmapLeft;
+	uint bitmapTop;
+
+	// Glyph metrics (in 26.6 signed fixed-point).
+    uint sfp26Width;
+    uint sfp26Height;
+    uint sfp26Ascender;
+    uint sfp26Descender;
+    uint sfp26BearingHX;
+    uint sfp26BearingHY;
+    uint sfp26BearingVX;
+    uint sfp26BearingVY;
+    uint sfp26AdvanceH;
+    uint sfp26AdvanceV;
+    uint padding;
+    
+    static assert(this.sizeof == 4 * 15);
+}

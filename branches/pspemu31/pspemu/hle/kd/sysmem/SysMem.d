@@ -33,7 +33,7 @@ class SysMemUserForUser : ModuleNative {
 		pspMemorySegment.allocByAddr(0x08400000,  4 * 1024 * 1024, "Kernel Memory 2");
 		pspMemorySegment.allocByAddr(0x08800000, 24 * 1024 * 1024, "User Memory");
 		
-		logTrace("pspMemorySegment.allocByAddr:: %s", pspMemorySegment);
+		logTrace("pspMemorySegment.allocByAddr:: %s", pspMemorySegment.toString);
 	}
 
 	void initNids() {

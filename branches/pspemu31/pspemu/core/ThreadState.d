@@ -16,7 +16,9 @@ import pspemu.utils.Logger;
 
 import std.c.windows.windows;
 
+public import pspemu.utils.sync.WaitMultipleObjects;
 public import pspemu.utils.sync.WaitEvent;
+public import pspemu.utils.sync.CriticalSection;
 
 import pspemu.utils.Event;
 
@@ -33,13 +35,79 @@ class ThreadState {
 	public SceUID thid;
 	public SceKernelThreadInfo sceKernelThreadInfo;
 	public Module threadModule;
-	public int wakeUpCount;
 	public Event onDeleteThread;
-	
-	static ThreadState getOneThreadState() {
-		foreach (threadState; threadStatePerThread) return threadState;
-		return null;
+	int sleepingAwakenCount;
+
+	template WakeUp_Template() {
+		CriticalSection sleepingCriticalSection;
+		WaitEvent wakeUpEvent;
+		protected int _wakeUpCount;
+		bool isSleeping;
+		
+		/*
+		@property bool isSleeping() {
+			synchronized (this) {
+				return (_wakeUpCount < 0);
+			}
+		}
+		*/
+		
+		int getWakeUpCount() {
+			synchronized (this) {
+				return _wakeUpCount;
+			}
+		}
+
+		protected void setWakeUpCount(int value) {
+			synchronized (this) {
+				_wakeUpCount = value;
+			}
+		}
+		
+		protected void addWakeUpCount(int increment) {
+			//bool signal;
+			synchronized (this) {
+				int _wakeUpCountPrev = _wakeUpCount; 
+				_wakeUpCount += increment;
+				Logger.log(
+					Logger.Level.INFO, "ThreadState",
+					"  Thread.wakeUp(%s) || %d -> %d (sleeping:%s)",
+					this, _wakeUpCountPrev, _wakeUpCount, (_wakeUpCount < 0)
+				);
+				//if (_wakeUpCount >= 0) signal = true;
+			}
+			/*
+			if (increment > 0) {
+				wakeUpEvent.signal();
+				//Thread.yield();
+				//Thread.sleep(dur!"msecs"(10));
+				
+				// Will enter when sleeping has ended.
+				synchronized (sleepingLock) {
+					sleepingAwakenCount++;
+				}
+			}
+			*/
+		}
+		
+		void resetWakeUpCount() {
+			setWakeUpCount(0);
+		}
+		
+		void decrementWakeUpCount() {
+			addWakeUpCount(-1);
+		}
+		
+		void incrementWakeUpCount() {
+			addWakeUpCount(+1);
+		}
+		
+		static ThreadState getOneThreadState() {
+			foreach (threadState; threadStatePerThread) return threadState;
+			return null;
+		}
 	}
+	mixin WakeUp_Template;
 	
 	static void suspendAllCpuThreadsButThis() {
 		HANDLE thisNativeThreadHandle = GetCurrentThread();
@@ -61,29 +129,13 @@ class ThreadState {
 		}
 	}
 
-	public bool sleeping() {
-		synchronized (this) {
-			return (wakeUpCount < 0);
-		}
-	}
-
-	public bool sleeping(bool set) {
-		synchronized (this) {
-			int wakeUpCountPrev = wakeUpCount; 
-			wakeUpCount += set ? -1 : +1;
-			Logger.log(Logger.Level.INFO, "ThreadState", "  Thread.wakeUp(%s) || %d -> %d (sleeping:%s)", this, wakeUpCountPrev, wakeUpCount, sleeping);
-			return sleeping;
-		}
-	}
-	
-	WaitEvent wakeUpEvent;
-	
 	public this(string name, EmulatorState emulatorState, Registers registers) {
 		//this.onDeleteThread = new Event();
 		this.name = name;
 		this.emulatorState = emulatorState;
 		this.registers = registers;
 		wakeUpEvent = new WaitEvent("WakeUpEvent");
+		sleepingCriticalSection = new CriticalSection();
 	}
 
 	public this(string name, EmulatorState emulatorState) {
@@ -122,10 +174,12 @@ class ThreadState {
 		return nativeThread.isRunning();
 	}
 	
+	/*
 	public bool isSleeping() {
 		return !nativeThreadIsRunning;
 		//if (nativeThread.sleep)
 	}
+	*/
 	
 	static ThreadState getFromThread(Thread thread = null) {
 		if (thread is null) thread = Thread.getThis();
@@ -163,6 +217,6 @@ class ThreadState {
 	}
 	
 	string toString() {
-		return std.string.format("ThreadState(%d:'%s', PC:%08X, waiting:%s'%s')", thid, name, registers.PC, waiting, waitType);
+		return std.string.format("ThreadState(thid=%d:'%s', PC:%08X, waiting:%s'%s')", thid, name, registers.PC, waiting, waitType);
 	}
 }

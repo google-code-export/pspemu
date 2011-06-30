@@ -30,9 +30,14 @@ static string classInfoBaseName(ClassInfo ci) {
 }
 
 abstract class Module {
+	uint modid;
+	uint entryPoint;
+	
 	bool dummyModule = false;
 	public SceModule *sceModule;
 	public ElfDwarf dwarf;
+	
+	abstract public bool isNative();
 
 	class ImportLibrary {
 		string name;

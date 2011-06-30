@@ -43,13 +43,16 @@ class ModuleMgrForUser : ModuleNative {
 	 * @return 0 on success, otherwise one of ::PspKernelErrorCodes.
 	 */
 	int sceKernelQueryModuleInfo(SceUID modid, SceKernelModuleInfo* info) {
-		unimplemented_notice();
+		unimplemented();
 		return 0;
 	}
-	
-	uint sceKernelGetModuleIdByAddress() {
-		unimplemented_notice();
-		return 0;
+
+	/**
+	 * Gets a module by its loaded address.
+	 */
+	SceUID sceKernelGetModuleIdByAddress(uint addr) {
+		logWarning("sceKernelGetModuleIdByAddress(0x%08X)", addr);
+		return hleEmulatorState.moduleManager.getModuleByAddress(addr).modid;
 	}
 
 	/**
@@ -88,6 +91,36 @@ class ModuleMgrForUser : ModuleNative {
 		throw(new HaltException("sceKernelSelfStopUnloadModule"));
 		return 0;
 	}
+	
+	SceUID _sceKernelLoadModule(Stream moduleStream, string path, int flags, SceKernelLMOption* option) {
+		try {
+			Module modulePsp = hleEmulatorState.moduleManager.loadPspModule(moduleStream, path);
+			
+			switch (modulePsp.name) {
+				case "sceMpeg_library":
+					modulePsp = hleEmulatorState.moduleManager.getName("sceMpeg");
+				break;
+				case "sceATRAC3plus_Library":
+					modulePsp = hleEmulatorState.moduleManager.getName("sceAtrac3plus");
+				break;
+				default:
+				break;
+			}
+			
+			//logWarning("Loaded '%s'", modulePsp.name);
+			//switch (modulePsp.name)
+			
+			// Fill the blank imports of the current module with the exports from the loaded module.
+			currentThreadState().threadModule.fillImportsWithExports(currentMemory, modulePsp);
+			
+			Logger.log(Logger.Level.INFO, "ModuleMgrForUser", "sceKernelLoadModule.loaded");
+			return modulePsp.modid;
+		} catch (Throwable o) {
+			logError("Unable to load module sceKernelLoadModule '%s' : %s", path, o);
+			
+			return hleEmulatorState.moduleManager.createDummyModule().modid;
+		}
+	}
 
 	/**
 	 * Load a module from the given file UID.
@@ -100,10 +133,14 @@ class ModuleMgrForUser : ModuleNative {
 	 */
 	SceUID sceKernelLoadModuleByID(SceUID fid, int flags, SceKernelLMOption *option) {
 		FileHandle fileHandle = uniqueIdFactory.get!FileHandle(fid);
-
+		
 		logInfo("sceKernelLoadModuleByID(%d, %d, 0x%08X)", fid, flags, cast(uint)cast(void*)option);
-		unimplemented_notice();
-		return 0;
+		//unimplemented();
+		return _sceKernelLoadModule(
+			fileHandle, "?unknown_path?",
+			flags,
+			option
+		);
 	}
 
 	/**
@@ -118,31 +155,19 @@ class ModuleMgrForUser : ModuleNative {
 	 * @return The UID of the loaded module on success, otherwise one of ::PspKernelErrorCodes.
 	 */
 	SceUID sceKernelLoadModule(string path, int flags, SceKernelLMOption* option) {
+		logInfo("@WARNING FAKED :: sceKernelLoadModule('%s', %d, 0x%08X)", path, flags, cast(uint)option);
+
 		try {
-			Logger.log(Logger.Level.INFO, "ModuleMgrForUser", "@WARNING FAKED :: sceKernelLoadModule('%s', %d, 0x%08X)", path, flags, cast(uint)option);
-			
 			IoFileMgrForKernel ioFileMgrForKernel = hleEmulatorState.moduleManager.get!IoFileMgrForKernel();
-			//writefln("################# %s", path);
-			//writefln("################# %s", ioFileMgrForKernel.locateParentAndUpdateFile(path));
-			//writefln("################# %s", ioFileMgrForKernel.locateParentAndUpdateFile(path).open(path, FileMode.In));
-			Stream moduleStream;
-			moduleStream = ioFileMgrForKernel._open(path, SceIoFlags.PSP_O_RDONLY, octal!777);
-			//writefln("############# %d", moduleStream.size);
-			
-			//ModulePsp modulePsp = hleEmulatorState.moduleLoader.load(path);
-			ModulePsp modulePsp = hleEmulatorState.moduleLoader.load(moduleStream, path);
-			
-			// Fill the blank imports of the current module with the exports from the loaded module.
-			currentThreadState().threadModule.fillImportsWithExports(currentMemory, modulePsp);
-			
-			Logger.log(Logger.Level.INFO, "ModuleMgrForUser", "sceKernelLoadModule.loaded");
-			return uniqueIdFactory.add(modulePsp);
+			return _sceKernelLoadModule(
+				ioFileMgrForKernel._open(path, SceIoFlags.PSP_O_RDONLY, octal!777), path,
+				flags,
+				option
+			);
 		} catch (Throwable o) {
 			logError("Unable to load module sceKernelLoadModule '%s' : %s", path, o);
 			
-			ModulePsp modulePsp = new ModulePsp();
-			modulePsp.dummyModule = true;
-			return uniqueIdFactory.add(modulePsp);
+			return hleEmulatorState.moduleManager.createDummyModule().modid;
 		}
 	}
 
@@ -158,24 +183,39 @@ class ModuleMgrForUser : ModuleNative {
 	 * @return ??? on success, otherwise one of ::PspKernelErrorCodes.
 	 */
 	int sceKernelStartModule(SceUID modid, SceSize argsize, uint argp, int *status, SceKernelSMOption *option) {
-		if (modid == 0) {
+		writefln("[1]");
+		Module modulePsp = uniqueIdFactory.get!Module(modid);
+		writefln("[2]");
+		
+		if (modulePsp.isNative) {
 			return 0;
 		}
-		
-		ModulePsp modulePsp = uniqueIdFactory.get!ModulePsp(modid);
 		
 		if (modulePsp.dummyModule) {
 			return 0;
 		}
+		writefln("[3]");
 		
 		ThreadManForUser threadManForUser = hleEmulatorState.moduleManager.get!ThreadManForUser();
 		
+		writefln("[4]");
+		
 		//SceUID sceKernelCreateThread(string name, SceKernelThreadEntry entry, int initPriority, int stackSize, SceUInt attr, SceKernelThreadOptParam *option)
 		SceUID thid = threadManForUser.sceKernelCreateThread("main_thread", modulePsp.sceModule.entry_addr, 0, 0x1000, modulePsp.sceModule.attribute, null);
+		
+		writefln("[4a]");
+		
 		ThreadState threadState = uniqueIdFactory.get!ThreadState(thid);
+		
+		writefln("[4b]");
+		
 		threadState.threadModule = modulePsp;
 		
+		writefln("[5]");
+		
 		threadManForUser.sceKernelStartThread(thid, argsize, argp);
+		
+		writefln("[6]");
 		
 		return 0;
 	}
@@ -192,7 +232,10 @@ class ModuleMgrForUser : ModuleNative {
 	 * @return ??? on success, otherwise one of ::PspKernelErrorCodes.
 	 */
 	int sceKernelStopModule(SceUID modid, SceSize argsize, void *argp, int *status, SceKernelSMOption *option) {
+		Module pspModule = hleEmulatorState.uniqueIdFactory.get!Module(modid);
+
 		unimplemented_notice();
+		logError("Not implemented sceKernelStopModule!!");
 		return 0;
 	}
 
@@ -204,7 +247,14 @@ class ModuleMgrForUser : ModuleNative {
 	 * @return ??? on success, otherwise one of ::PspKernelErrorCodes.
 	 */
 	int sceKernelUnloadModule(SceUID modid) {
+		Module pspModule = hleEmulatorState.uniqueIdFactory.get!Module(modid);
+
 		unimplemented_notice();
+		logError("Not implemented sceKernelUnloadModule!!");
+		
+		//pspModule.
+		
+		//hleEmulatorState.moduleManager.unloadModu
 		return 0;
 	}
 }

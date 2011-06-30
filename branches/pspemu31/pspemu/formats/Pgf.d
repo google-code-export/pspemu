@@ -138,7 +138,7 @@ class Pgf {
 			readVector(charmapCompressionTable2, headerExtraRevision3.compCharMapLength2);
 		}
 		
-		readVector(charMap         , ((header.charMapLength * header.charMapBpe + 31) & ~31) / 8);
+		readVector(charMap         , (((header.charMapLength     * header.charMapBpe     + 31) & ~31) / 8));
 		readVector(charPointerTable, (((header.charPointerLength * header.charPointerBpe + 31) & ~31) / 8));
 		
 		fontDataStream = new SliceStream(stream, stream.position, stream.size);

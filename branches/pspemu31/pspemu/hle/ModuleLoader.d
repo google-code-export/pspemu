@@ -8,6 +8,7 @@ import pspemu.hle.PspLibDoc;
 import std.stdio;
 import std.stream;
 import std.file;
+import std.conv;
 import std.path;
 
 import pspemu.formats.elf.Elf;
@@ -111,9 +112,24 @@ class ModuleLoader {
 		uint exportsEnd;    ///
 		uint importsStart;  ///
 		uint importsEnd;    ///
+		
+		string _name() {
+			return to!string(name.ptr);
+		}
 
 		// Check the size of the struct.
 		static assert(this.sizeof == 52);
+		
+		string toString() {
+			string r = "";
+			r ~= std.string.format("ModuleInfo(");
+			r ~= std.string.format("name=%s,", _name);
+			r ~= std.string.format("gp=0x%08X,", gp);
+			r ~= std.string.format("exports=[0x%08X..0x%08X],", exportsStart, exportsEnd);
+			r ~= std.string.format("imports=[0x%08X..0x%08X],", importsStart, importsEnd);
+			r ~= std.string.format(")");
+			return r;
+		}
 	}
 
 	Stream memoryStream;
@@ -208,6 +224,10 @@ class ModuleLoader {
 		
 		modulePsp.dwarf = this.dwarf;
 		
+		modulePsp.entryPoint = PC();
+
+		logInfo("Module(%08X): %s: EntryPoint:0x%08X", this.elf.sectionHeadersNamed[".rodata.sceModuleInfo"].offset, moduleInfo, modulePsp.entryPoint);
+
 		return modulePsp;
 	}
 	

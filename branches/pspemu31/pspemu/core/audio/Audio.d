@@ -223,7 +223,9 @@ class Audio {
 		bool isPlaying() {
 			//return samples.readLeft > samples.capacity / 2;
 			//return samples.readLeft > 4410 * 2; // 100ms
+			//return samples.readLeft > 441 * 2; // 10ms
 			return samples.readLeft > bufferSize * 2 * 5;
+			//return samples.readLeft > bufferSize * 2 * 10; // 100ms
 			//return samples.readLeft > bufferSize * 2 * 20;
 		}
 		
@@ -393,7 +395,7 @@ class Audio {
 	void writeWait(int channel, int numchannels, short[] samples, float volumeleft = 1.0, float volumeright = 1.0) {
 		version (VERSION_ONLY_FIRST_CHANNEL) if (channel != 0) return;
 
-		auto cchannel = channels[channel];
+		Channel cchannel = channels[channel];
 		cchannel.write(samples, numchannels, volumeleft, volumeright);
 		cchannel.wait();
 

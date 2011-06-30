@@ -89,7 +89,7 @@ class EmulatorHelper {
 		Logger.log(Logger.Level.INFO, "EmulatorHelper", "Loading module ('%s')...", pspModulePath);
 
 		//emulator.hleEmulatorState.memoryManager.allocHeap(PspPartition.User, "temp", 0x4000);
-
+		
 		emulator.mainCpuThread.threadState.thid = emulator.hleEmulatorState.uniqueIdFactory.set(0, emulator.mainCpuThread.threadState);
 		//writefln("%s", emulator.mainCpuThread.threadState.thid);
 		
@@ -122,10 +122,12 @@ class EmulatorHelper {
 				throw(new Exception(std.string.format("Can't handle type '%s'", detectedFormat)));
 			break;
 		}
-
+		
 		setProgramFirstArg(fsProgramPath);
-		ModulePsp modulePsp = emulator.hleEmulatorState.moduleLoader.load(
-			rootFileSystem.fsroot.open(fsProgramPath, FileOpenMode.In, FileAccessMode.All)
+		
+		ModulePsp modulePsp = emulator.hleEmulatorState.moduleManager.loadPspModule(
+			rootFileSystem.fsroot.open(fsProgramPath, FileOpenMode.In, FileAccessMode.All),
+			fsProgramPath
 		);
 		emulator.hleEmulatorState.mainModule = modulePsp;
 		emulator.mainCpuThread.threadState.threadModule = modulePsp; 
@@ -143,7 +145,8 @@ class EmulatorHelper {
 		
 		//emulator.emulatorState.memory.twrite(0x08810D62, cast(ubyte)0);
 		
-		Logger.log(Logger.Level.INFO, "EmulatorHelper", "Module loaded successfully");
+		Logger.log(Logger.Level.INFO, "EmulatorHelper", "Module '%s':'%s' loaded successfully", fsProgramPath, pspModulePath);
+		//logInfo("Module '%s' loaded successfully", pspModulePath);
 	}
 	
 	public void initComponents() {

@@ -23,6 +23,7 @@ import pspemu.utils.Logger;
 import pspemu.utils.String;
 
 import pspemu.utils.sync.WaitMultipleObjects;
+import pspemu.utils.sync.CriticalSection;
 
 import pspemu.hle.Callbacks;
 

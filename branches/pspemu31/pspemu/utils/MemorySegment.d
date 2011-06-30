@@ -43,14 +43,14 @@ class MemorySegment {
 		this.name  = name;
 	}
 
-	Block[] usedBlocks() {
+	protected Block[] usedBlocks() {
 		Block[] blocks;
 		foreach (child; childs) blocks ~= child.block;
 		sort!((ref Block a, ref Block b){ return a.low < b.low; })(blocks);
 		return blocks;
 	}
 
-	Block[] availableBlocks() {
+	protected Block[] availableBlocks() {
 		Block[] usedBlocks = this.usedBlocks;
 		Block[] blocks;
 
@@ -98,13 +98,15 @@ class MemorySegment {
 	 * @return  A segment
 	 */
 	MemorySegment allocByHigh(uint size, string name = "<unknown>", uint alignment = 1) {
-		foreach (block; availableBlocks.reverse) {
-			uint decrement = previousAlignedDecrement(block.high, alignment);
-			if (block.size >= size + decrement) {
-				return addNewMemorySegment(new MemorySegment(block.high - size - decrement, block.high - decrement, name));
+		synchronized (this) {
+			foreach (block; availableBlocks.reverse) {
+				uint decrement = previousAlignedDecrement(block.high, alignment);
+				if (block.size >= size + decrement) {
+					return addNewMemorySegment(new MemorySegment(block.high - size - decrement, block.high - decrement, name));
+				}
 			}
+			throw(new Exception(std.string.format("Can't allocByHigh size=%d on %s", size, this)));
 		}
-		throw(new Exception(std.string.format("Can't allocByHigh size=%d on %s", size, this)));
 	}
 	
 	/**
@@ -113,56 +115,64 @@ class MemorySegment {
 	 * @param
 	 */
 	MemorySegment allocByLow(uint size, string name = "<unknown>", uint maxDesiredAddress = 0, uint alignment = 1) {
-		foreach (block; availableBlocks) {
-			if (block.low < maxDesiredAddress) continue;
-			uint increment = nextAlignedIncrement(block.low, alignment);
-			if (block.size >= size + increment) {
-				return addNewMemorySegment(new MemorySegment(block.low + increment, block.low + increment + size, name));
+		synchronized (this) {
+			foreach (block; availableBlocks) {
+				if (block.low < maxDesiredAddress) continue;
+				uint increment = nextAlignedIncrement(block.low, alignment);
+				if (block.size >= size + increment) {
+					return addNewMemorySegment(new MemorySegment(block.low + increment, block.low + increment + size, name));
+				}
 			}
+	
+			// Ok. We didn't find an available segment. But we will try without the min check.
+			if (maxDesiredAddress != 0) {
+				return allocByLow(size, name, 0, alignment);
+			}
+			throw(new Exception(std.string.format("Can't allocByLow size=%d on %s", size, this)));
 		}
-
-		// Ok. We didn't find an available segment. But we will try without the min check.
-		if (maxDesiredAddress != 0) {
-			return allocByLow(size, name, 0, alignment);
-		}
-		throw(new Exception(std.string.format("Can't allocByLow size=%d on %s", size, this)));
 	}
 
 	MemorySegment allocByAddr(uint base, uint size, string name = "<unknown>") {
-		auto idealBlock = Block(base, base + size);
-
-		// Not even inside. Check other address.
-		if (!idealBlock.inside(this.block)) {
-			return allocByLow(size, name);
-		}
-
-		foreach (block; usedBlocks) {
-			// Overlaps with other segment. Can't use this address.
-			if (idealBlock.overlap(block)) {
-				return allocByLow(size, name, base);
+		synchronized (this) {
+			auto idealBlock = Block(base, base + size);
+	
+			// Not even inside. Check other address.
+			if (!idealBlock.inside(this.block)) {
+				return allocByLow(size, name);
 			}
+	
+			foreach (block; usedBlocks) {
+				// Overlaps with other segment. Can't use this address.
+				if (idealBlock.overlap(block)) {
+					return allocByLow(size, name, base);
+				}
+			}
+			// Ok. Doesn't overlap with any address.
+			return addNewMemorySegment(new MemorySegment(idealBlock.low, idealBlock.high, name));
 		}
-		// Ok. Doesn't overlap with any address.
-		return addNewMemorySegment(new MemorySegment(idealBlock.low, idealBlock.high, name));
 	}
 
 	uint getFreeMemory() {
-		uint size;
-		foreach (block; availableBlocks) {
-			if (!block.valid) continue;
-			size += block.size;
+		synchronized (this) {
+			uint size;
+			foreach (block; availableBlocks) {
+				if (!block.valid) continue;
+				size += block.size;
+			}
+			return size;
 		}
-		return size;
 	}
 
 	uint getMaxAvailableMemoryBlock() {
-		uint size = 0;
-		foreach (block; availableBlocks) {
-			if (!block.valid) continue;
-			size = std.algorithm.max(size, block.size);
-			//writefln("getMaxAvailableMemoryBlock(%s): %d", block, block.size);
+		synchronized (this) {
+			uint size = 0;
+			foreach (block; availableBlocks) {
+				if (!block.valid) continue;
+				size = std.algorithm.max(size, block.size);
+				//writefln("getMaxAvailableMemoryBlock(%s): %d", block, block.size);
+			}
+			return size;
 		}
-		return size;
 	}
 
 	MemorySegment opIndex(int index) {
@@ -170,20 +180,22 @@ class MemorySegment {
 	}
 
 	void free() {
-		try {
-			if (parent !is null) {
-				synchronized (parent) {
-					foreach (index, child; parent.childs) {
-						if (child is this) {
-							parent.childs = parent.childs[0..index] ~ parent.childs[index + 1..$];
-							parent = null;
-							return;
+		synchronized (this) {
+			try {
+				if (parent !is null) {
+					synchronized (parent) {
+						foreach (index, child; parent.childs) {
+							if (child is this) {
+								parent.childs = parent.childs[0..index] ~ parent.childs[index + 1..$];
+								parent = null;
+								return;
+							}
 						}
 					}
 				}
+			} catch (Throwable o) {
+				writefln("MemorySegment.free: %s", o);
 			}
-		} catch (Throwable o) {
-			writefln("MemorySegment.free: %s", o);
 		}
 	}
 }
