@@ -39,26 +39,34 @@ class UniqueIdTypeFactory {
 	}
 	
 	public UID set(UID uid, Object value) {
-		values[uid] = value;
-		if (last < uid + 1) last = uid + 1; 
-		return uid;
+		synchronized (this) {
+			values[uid] = value;
+			if (last < uid + 1) last = uid + 1; 
+			return uid;
+		}
 	}
 
 	public UID newUid(Object value) {
-		while (true) {
-			UID current = last++;
-			if (current in values) continue;
-			values[current] = value;
-			return current;
+		synchronized (this) {
+			while (true) {
+				UID current = last++;
+				if (current in values) continue;
+				values[current] = value;
+				return current;
+			}
 		}
 	}
 
 	public T get(T)(UID uid) {
-		if (uid !in values) throw(new UniqueIdNotFoundException(std.string.format("Can't find %s:%d(%08X)", type, uid, uid)));
-		return cast(T)values[uid];
+		synchronized (this) {
+			if (uid !in values) throw(new UniqueIdNotFoundException(std.string.format("Can't find %s:%d(%08X)", type, uid, uid)));
+			return cast(T)values[uid];
+		}
 	}
 	
 	public void remove(UID uid) {
-		values.remove(uid);
+		synchronized (this) {
+			values.remove(uid);
+		}
 	}
 }

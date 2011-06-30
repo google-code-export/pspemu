@@ -43,8 +43,11 @@ class sceLibFont : ModuleNative {
 		static string[] fontOrder = ["jpn0.pgf", "ltn0.pgf", "ltn1.pgf", "ltn2.pgf", "ltn3.pgf", "ltn4.pgf", "ltn5.pgf", "ltn6.pgf", "ltn7.pgf", "ltn8.pgf", "ltn9.pgf", "ltn10.pgf", "ltn11.pgf", "ltn11.pgf", "ltn12.pgf", "ltn13.pgf", "ltn14.pgf", "ltn15.pgf", "kr0.pgf"];
 		string[] fontNames;
 		FontStyle[] fontStyles;
+		FontNewLibParams params;
 
 		this(FontNewLibParams* params) {
+			this.params = *params;
+			
 			fontStyles ~= FontStyle(0x288, 0x288, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SANS_SERIF, FontStyle.Style.FONT_STYLE_DB         , 0, FontStyle.Language.FONT_LANGUAGE_JAPANESE, 0, 1, "jpn0.pgf" , "FTT-NewRodin Pro DB"   , 0, 0);
 			fontStyles ~= FontStyle(0x288, 0x288, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SANS_SERIF, FontStyle.Style.FONT_STYLE_REGULAR    , 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn0.pgf" , "FTT-NewRodin Pro Latin", 0, 0);
 			fontStyles ~= FontStyle(0x288, 0x288, 0x2000, 0x2000, 0, 0, FontStyle.Family.FONT_FAMILY_SERIF     , FontStyle.Style.FONT_STYLE_REGULAR    , 0, FontStyle.Language.FONT_LANGUAGE_LATIN   , 0, 1, "ltn1.pgf" , "FTT-Matisse Pro Latin" , 0, 0);
@@ -295,7 +298,13 @@ class sceLibFont : ModuleNative {
 		return 0;
 	}
 	
-    void sceFontGetCharInfo() { unimplemented(); }
+    int sceFontGetCharInfo(FontHandle fontHandle, uint charCode, FontCharInfo* fontCharInfo) {
+    	unimplemented();
+    	
+        return 0;
+    }
+    
+    
 	void sceFontGetCharGlyphImage() { unimplemented(); }
     void sceFontGetCharGlyphImage_Clip() { unimplemented(); }
     void sceFontSetAltCharacterCode() { unimplemented(); }

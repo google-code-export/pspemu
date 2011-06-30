@@ -24,19 +24,13 @@ template ThreadManForUser_Threads() {
 
 	void initNids_Threads() {
 		mixin(registerd!(0x446D8DE6, sceKernelCreateThread));
-		mixin(registerd!(0xF475845D, sceKernelStartThread));
-		mixin(registerd!(0xAA73C935, sceKernelExitThread));
-		mixin(registerd!(0x9ACE131E, sceKernelSleepThread));
-		mixin(registerd!(0x82826F70, sceKernelSleepThreadCB));
+		mixin(registerd!(0xF475845D, sceKernelStartThread ));
+		mixin(registerd!(0xAA73C935, sceKernelExitThread  ));
 		mixin(registerd!(0xEA748E31, sceKernelChangeCurrentThreadAttr));
-		mixin(registerd!(0xCEADEB47, sceKernelDelayThread));
-		mixin(registerd!(0x68DA9E36, sceKernelDelayThreadCB));
-		mixin(registerd!(0x293B45B8, sceKernelGetThreadId));
+		mixin(registerd!(0x293B45B8, sceKernelGetThreadId           ));
 		mixin(registerd!(0x17C1684E, sceKernelReferThreadStatus));
 		mixin(registerd!(0x71BC9871, sceKernelChangeThreadPriority));
 		mixin(registerd!(0x809CE29B, sceKernelExitDeleteThread));
-		mixin(registerd!(0x278C0DF5, sceKernelWaitThreadEnd));
-		mixin(registerd!(0x840E8133, sceKernelWaitThreadEndCB));
 		mixin(registerd!(0x9FA03CD3, sceKernelDeleteThread));
 		mixin(registerd!(0x383F7BCC, sceKernelTerminateDeleteThread));
 		mixin(registerd!(0x94AA61EE, sceKernelGetThreadCurrentPriority));
@@ -45,6 +39,13 @@ template ThreadManForUser_Threads() {
 		mixin(registerd!(0x9944F31F, sceKernelSuspendThread));
 		mixin(registerd!(0x616403BA, sceKernelTerminateThread));
 		mixin(registerd!(0x3B183E26, sceKernelGetThreadExitStatus));
+
+		mixin(registerd!(0x9ACE131E, sceKernelSleepThread,                   FunctionOptions.NoSynchronized));
+		mixin(registerd!(0x82826F70, sceKernelSleepThreadCB,                 FunctionOptions.NoSynchronized));
+		mixin(registerd!(0xCEADEB47, sceKernelDelayThread,                   FunctionOptions.NoSynchronized));
+		mixin(registerd!(0x68DA9E36, sceKernelDelayThreadCB,                 FunctionOptions.NoSynchronized));
+		mixin(registerd!(0x278C0DF5, sceKernelWaitThreadEnd,                 FunctionOptions.NoSynchronized));
+		mixin(registerd!(0x840E8133, sceKernelWaitThreadEndCB,               FunctionOptions.NoSynchronized));
 	}
 	
 	/**
@@ -173,15 +174,22 @@ template ThreadManForUser_Threads() {
 	}
 
 	int _sceKernelSleepThreadCB(bool handleCallbacks) {
-		scope waitMultipleObjects = _getWaitMultipleObjects(handleCallbacks, true);
-		
-		currentCpuThread.threadState.waitingBlock("_sceKernelSleepThreadCB", {
-			currentThreadState.sleeping = true;
-			//logInfo("Thread wakeUpCount=%d", currentCpuThread.threadState.wakeUpCount);
-			while (currentThreadState.sleeping) {
-				waitMultipleObjects.waitAny();
-			}
-			//logInfo("Thread awaken(%s)", currentCpuThread.threadState);
+		currentThreadState.sleepingCriticalSection.lock({
+			scope waitMultipleObjects = _getWaitMultipleObjects(handleCallbacks, true);
+			
+			currentThreadState.waitingBlock("_sceKernelSleepThreadCB", {
+				if (currentThreadState.getWakeUpCount() > 0) {
+					currentThreadState.decrementWakeUpCount();
+				} else {
+					logInfo("@@ Thread sleeping(%s)", currentCpuThread.threadState);
+					currentCpuThread.threadState.isSleeping = true;
+					while (currentThreadState.getWakeUpCount() < 0) {
+						waitMultipleObjects.waitAny();
+					}
+					currentCpuThread.threadState.isSleeping = false;
+					logInfo("@@ Thread awaken(%s)", currentCpuThread.threadState);
+				}
+			});
 		});
 		
 		return 0;
@@ -209,13 +217,14 @@ template ThreadManForUser_Threads() {
 			}
 			
 			stopWatch.stop();
+			//logTrace("Time sleeping %s", stopWatch);
 		});
 
 		return 0;
 	}
 	
 	/**
-	 * Sleep thread forever.
+	 * Sleep thread until sceKernelWakeUp is called.
 	 *
 	 * @return < 0 on error.
 	 */
@@ -454,18 +463,29 @@ template ThreadManForUser_Threads() {
 	 * @return Success if >= 0, an error if < 0.
 	 */
 	int sceKernelWakeupThread(SceUID thid) {
-		logInfo("sceKernelWakeupThread(thid=%d)", thid);
 		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
-		threadState.sleeping = false;
-		threadState.wakeUpEvent.signal();
-		// @TODO: Should check that the thread is awaken. Maybe
-		//while (threadState.waiting)
-		Thread.yield();
 		
+		logInfo("@@ sceKernelWakeupThread(%s) started", threadState);
+		threadState.sleepingCriticalSection.tryLock({
+			threadState.incrementWakeUpCount();
+		}, {
+			threadState.resetWakeUpCount();
+			threadState.wakeUpEvent.signal();
+			threadState.sleepingCriticalSection.waitEnded();
+		});
+		logInfo("@@ sceKernelWakeupThread(%s) completed", threadState);
+
+		/*
 		
-		//threadState.nativeThreadWakeup();
-		//threadState.wakeUpCount++;
-		//return -1;
+		if (!threadState.isSleeping) {
+			threadState.incrementWakeUpCount();
+			threadState.wakeUpEvent.signal();			
+		} else {
+			threadState.resetWakeUpCount();
+			threadState.wakeUpEvent.signal();
+		}
+		
+		*/
 		return 0;
 	}
 

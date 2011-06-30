@@ -10,6 +10,10 @@ class ModulePsp : Module {
 		
 	}
 	
+	override public bool isNative() {
+		return false;
+	}
+	
 	string name() {
 		return to!string(sceModule.modname.ptr);
 	}

@@ -2,6 +2,7 @@ module pspemu.hle.kd.sc_sascore.sceSasCore;
 
 import pspemu.hle.ModuleNative;
 import pspemu.hle.HleEmulatorState;
+import pspemu.utils.BitUtils;
 
 enum WaveformEffectType {
     PSP_SAS_EFFECT_TYPE_OFF   = -1,
@@ -34,12 +35,6 @@ const int PSP_SAS_PITCH_MAX = 0x4000;
 const int PSP_SAS_NOISE_FREQ_MAX = 0x3F;
 const int PSP_SAS_ENVELOPE_HEIGHT_MAX = 0x40000000;
 const int PSP_SAS_ENVELOPE_FREQ_MAX = 0x7FFFFFFF;
-const int PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE = 0;
-const int PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE = 1;
-const int PSP_SAS_ADSR_CURVE_MODE_LINEAR_BENT = 2;
-const int PSP_SAS_ADSR_CURVE_MODE_EXPONENT_REV = 3;
-const int PSP_SAS_ADSR_CURVE_MODE_EXPONENT = 4;
-const int PSP_SAS_ADSR_CURVE_MODE_DIRECT = 5;
 const int PSP_SAS_ADSR_ATTACK = 1;
 const int PSP_SAS_ADSR_DECAY = 2;
 const int PSP_SAS_ADSR_SUSTAIN = 4;
@@ -50,16 +45,44 @@ enum OutputMode : uint {
     PSP_SAS_OUTPUTMODE_MULTICHANNEL = 1,
 }
 
+enum AdsrCurveMode : uint {
+	PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE = 0,
+	PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE = 1,
+	PSP_SAS_ADSR_CURVE_MODE_LINEAR_BENT = 2,
+	PSP_SAS_ADSR_CURVE_MODE_EXPONENT_REV = 3,
+	PSP_SAS_ADSR_CURVE_MODE_EXPONENT = 4,
+	PSP_SAS_ADSR_CURVE_MODE_DIRECT = 5,
+}
+
+
+struct SasEnvelope {
+    int attackRate;
+    int decayRate;
+    int sustainRate;
+    int releaseRate;
+    AdsrCurveMode attackCurveMode;
+    AdsrCurveMode decayCurveMode;
+    AdsrCurveMode sustainCurveMode;
+    AdsrCurveMode releaseCurveMode;
+    int sustainLevel;
+    int height;
+}
 
 struct SasVoice {
+	bool on;
+	
 	bool playing;
 	int  pitch;
-	uint attack;
-	uint decay;
-	uint sustain;
-	uint release;
+	
 	int  leftVolume;
 	int  rightVolume;
+	
+	int noiseFreq;
+
+	ubyte[] data;
+	int loopMode;
+	
+	SasEnvelope envelope;
 	
 	@property bool paused() {
 		return !playing;
@@ -78,7 +101,7 @@ struct SasVoice {
 struct SasCore {
 	int  grainSamples;
 	int  maxVoices;
-	int  outMode;
+	OutputMode  outputMode;
 	int  sampleRate;
 	int  leftVol;
 	int  rightVol;
@@ -86,6 +109,8 @@ struct SasCore {
 	bool waveformEffectIsWet;
 	int  waveformEffectLeftVol;
 	int  waveformEffectRightVol;
+	int  delay;
+	int  feedback;
 	WaveformEffectType waveformEffectType;
 	SasVoice[32] _voices;
 	
@@ -125,24 +150,20 @@ class sceSasCore : ModuleNative {
 	}
 
 	int __sceSasGetGrain(SasCore* sasCore) {
-		unimplemented_notice();
 		return sasCore.grainSamples;
 	}
 	
 	int __sceSasSetGrain(SasCore* sasCore, int grain) {
-		unimplemented_notice();
 		sasCore.grainSamples = grain;
 		return 0;
 	}
 
-	int __sceSasGetOutputmode(SasCore* sasCore) {
-		unimplemented_notice();
-		return sasCore.outMode;
+	OutputMode __sceSasGetOutputmode(SasCore* sasCore) {
+		return sasCore.outputMode;
 	}
 
-	int __sceSasSetOutputmode(SasCore* sasCore, int outMode) {
-		unimplemented_notice();
-		sasCore.outMode = outMode;
+	int __sceSasSetOutputmode(SasCore* sasCore, OutputMode outputMode) {
+		sasCore.outputMode = outputMode;
 		return 0;
 	}
 
@@ -160,7 +181,7 @@ class sceSasCore : ModuleNative {
 	 *
 	 * @return  0 on success
 	 */
-	uint __sceSasInit(SasCore* sasCore, int grainSamples, int maxVoices, OutputMode outMode, int sampleRate) {
+	uint __sceSasInit(SasCore* sasCore, int grainSamples, int maxVoices, OutputMode outputMode, int sampleRate) {
 		try {
 			if (grainSamples > PSP_SAS_GRAIN_SAMPLES) throw(new Exception("Invalid grainSamples"));
 			if (maxVoices    > PSP_SAS_VOICES_MAX   ) throw(new Exception("Invalid maxVoices"));
@@ -169,7 +190,7 @@ class sceSasCore : ModuleNative {
 	
 			sasCore.grainSamples = grainSamples;
 			sasCore.maxVoices    = maxVoices;
-			sasCore.outMode      = outMode;
+			sasCore.outputMode   = outputMode;
 			sasCore.sampleRate   = sampleRate;
 			//*sasCorePtr = uniqueIdFactory.add!SasCore(sasCore);
 			
@@ -214,9 +235,9 @@ class sceSasCore : ModuleNative {
 	/**
 	 * Sets the waveformEffectIsDry and waveformEffectIsWet to the specified sasCore.
 	 *
-	 * @param  sasCore             Core
-	 * @param  waveformEffectIsDry waveformEffectIsDry
-	 * @param  waveformEffectIsWet waveformEffectIsWet
+	 * @param  sasCore              Core
+	 * @param  waveformEffectIsDry  waveformEffectIsDry
+	 * @param  waveformEffectIsWet  waveformEffectIsWet
 	 *
 	 * @return 0 on success.
 	 */
@@ -244,8 +265,12 @@ class sceSasCore : ModuleNative {
 	/**
 	 *
 	 */
-    int __sceSasSetVoice(SasCore* sasCore, int voice, void* vagAddr, int size, int loopmode) {
-    	unimplemented_notice();
+    int __sceSasSetVoice(SasCore* sasCore, int voice, ubyte* vagAddr, int size, int loopmode) {
+    	auto voicePtr = &sasCore.voices[voice];
+    	
+    	voicePtr.data = vagAddr[0..size];
+    	voicePtr.loopMode = loopmode;
+    	
 		return 0;
     }
 
@@ -266,30 +291,6 @@ class sceSasCore : ModuleNative {
     }
 
 	/**
-	 * Sets the ADSR (Attack Decay Sustain Release) for a sasCore.voice.
-	 *
-	 * @param  sasCore  SasCore
-	 * @param  voice    Voice
-	 * @param  flag     Bitfield to set each envelope on or off.
-	 * @param  attack   ADSR Envelope's attack type.
-	 * @param  decay    ADSR Envelope's decay type.
-	 * @param  sustain  ADSR Envelope's sustain type.
-	 * @param  release  ADSR Envelope's release type.
-	 *
-	 * @return 0 on success.
-	 */
-	int __sceSasSetADSR(SasCore* sasCore, int voice, AdsrFlags flag, uint attack, uint decay, uint sustain, uint release) {
-		auto voicePtr = &sasCore.voices[voice];
-		
-		if (flag & AdsrFlags.hasAttack ) voicePtr.attack  = attack;
-		if (flag & AdsrFlags.hasDecay  ) voicePtr.decay   = decay;
-		if (flag & AdsrFlags.hasSustain) voicePtr.sustain = sustain;
-		if (flag & AdsrFlags.hasRelease) voicePtr.release = release;
-
-		return 0;
-	}
-
-	/**
 	 * Sets the stereo volumes for a sasCore.voice.
 	 *
 	 * @param  sasCore     SasCore
@@ -305,41 +306,27 @@ class sceSasCore : ModuleNative {
     	voicePtr.leftVolume  = leftVolume;
     	voicePtr.rightVolume = rightVolume;
         
-    	unimplemented_notice();
     	return 0;
     }
 	
 
 	int __sceSasRevParam(SasCore* sasCore, int delay, int feedback) {
-		unimplemented_notice();
+		sasCore.delay    = delay;
+		sasCore.feedback = feedback;
 		return 0;
 	}
 
-    int __sceSasCoreWithMix(SasCore* sasCore, void* sasInOut, int leftVol, int rightVol) {
-    	unimplemented_notice();
-    	return 0;
-    }
-
     int __sceSasSetSL(SasCore* sasCore, int voice, int sustainLevel) {
-    	unimplemented_notice();
+    	SasVoice* voicePtr = &sasCore.voices[voice];
+    	
+    	voicePtr.envelope.sustainLevel = sustainLevel;
+
     	return 0;
     }
 
     int __sceSasGetEnvelopeHeight(SasCore* sasCore, int voice) {
     	SasVoice* voicePtr = &sasCore.voices[voice];
-    	
-    	//unimplemented_notice();
-    	
-    	//return 0;
-    	return -1;
-    }
-
-    int __sceSasSetKeyOn(SasCore* sasCore, int voice) {
-    	SasVoice* voicePtr = &sasCore.voices[voice];
-    	
-    	unimplemented_notice();
-    	
-    	return 0;
+    	return voicePtr.envelope.height;
     }
 
 	/**
@@ -351,8 +338,6 @@ class sceSasCore : ModuleNative {
 	 * @return 0 on success.
 	 */
     int __sceSasSetPause(SasCore* sasCore, uint voice_bits) {
-    	unimplemented_notice();
-
     	foreach (uint index, SasVoice voice; sasCore.voices) {
     		if ((voice_bits >> index) & 1) {
     			voice.paused = true;
@@ -363,30 +348,90 @@ class sceSasCore : ModuleNative {
     }
 
     int __sceSasGetPauseFlag(SasCore* sasCore) {
+    	uint flags;
+    	foreach (uint index, SasVoice voice; sasCore.voices) {
+    		flags |= ((voice.paused ? 1 : 0) << index);
+    	}
+    	return flags;
+    }
+    
+	/**
+	 * Sets the ADSR (Attack Decay Sustain Release) for a sasCore.voice.
+	 *
+	 * @param  sasCore  SasCore
+	 * @param  voice    Voice
+	 * @param  flags    Bitfield to set each envelope on or off.
+	 * @param  attack   ADSR Envelope's attack type.
+	 * @param  decay    ADSR Envelope's decay type.
+	 * @param  sustain  ADSR Envelope's sustain type.
+	 * @param  release  ADSR Envelope's release type.
+	 *
+	 * @return 0 on success.
+	 */
+	int __sceSasSetADSR(SasCore* sasCore, int voice, AdsrFlags flags, uint attackRate, uint decayRate, uint sustainRate, uint releaseRate) {
+		auto voicePtr = &sasCore.voices[voice];
+		
+		if (flags & AdsrFlags.hasAttack ) voicePtr.envelope.attackRate  = attackRate;
+		if (flags & AdsrFlags.hasDecay  ) voicePtr.envelope.decayRate   = decayRate;
+		if (flags & AdsrFlags.hasSustain) voicePtr.envelope.sustainRate = sustainRate;
+		if (flags & AdsrFlags.hasRelease) voicePtr.envelope.releaseRate = releaseRate;
+
+		return 0;
+	}
+	
+    int __sceSasSetSimpleADSR(SasCore* sasCore, int voice, uint env1Bitfield, uint env2Bitfield) {
+    	auto voicePtr = &sasCore.voices[voice];
+    	
+    	voicePtr.envelope.sustainLevel   = BitUtils.extract!(uint,  0, 4)(env1Bitfield);
+    	voicePtr.envelope.decayRate      = BitUtils.extract!(uint,  4, 4)(env1Bitfield);
+    	voicePtr.envelope.attackRate     = BitUtils.extract!(uint,  8, 7)(env1Bitfield);
+    	voicePtr.envelope.decayCurveMode = cast(AdsrCurveMode)BitUtils.extract!(uint, 15, 2)(env1Bitfield);
+
+    	voicePtr.envelope.releaseRate      = BitUtils.extract!(uint,  0, 5)(env1Bitfield);
+    	voicePtr.envelope.releaseCurveMode = cast(AdsrCurveMode)BitUtils.extract!(uint,  5, 1)(env1Bitfield);
+    	voicePtr.envelope.sustainRate      = BitUtils.extract!(uint,  6, 7)(env1Bitfield);
+    	voicePtr.envelope.sustainCurveMode = cast(AdsrCurveMode)BitUtils.extract!(uint, 13, 3)(env1Bitfield);
+
+    	return 0;
+    }
+    
+    int __sceSasSetADSRmode(SasCore* sasCore, int voice, AdsrFlags flags, AdsrCurveMode attackCurveMode, AdsrCurveMode decayCurveMode, AdsrCurveMode sustainCurveMode, AdsrCurveMode releaseCurveMode) {
+		auto voicePtr = &sasCore.voices[voice];
+		
+		if (flags & AdsrFlags.hasAttack ) voicePtr.envelope.attackCurveMode  = attackCurveMode;
+		if (flags & AdsrFlags.hasDecay  ) voicePtr.envelope.decayCurveMode   = decayCurveMode;
+		if (flags & AdsrFlags.hasSustain) voicePtr.envelope.sustainCurveMode = sustainCurveMode;
+		if (flags & AdsrFlags.hasRelease) voicePtr.envelope.releaseCurveMode = releaseCurveMode;
+
+		return 0;
+    	
     	unimplemented_notice();
     	return 0;
     }
 
-    int __sceSasSetADSRmode(SasCore* sasCore, int voice, uint flags, int attack, int decay, int sustain, int release) {
-    	unimplemented_notice();
+    int __sceSasSetKeyOn(SasCore* sasCore, int voice) {
+    	SasVoice* voicePtr = &sasCore.voices[voice];
+    	voicePtr.on = true;
     	return 0;
     }
 
     int __sceSasSetKeyOff(SasCore* sasCore, int voice) {
-    	unimplemented_notice();
+    	SasVoice* voicePtr = &sasCore.voices[voice];
+    	voicePtr.on = false;
     	return 0;
     }
 
-    int __sceSasSetNoise(SasCore* sasCore, int voice, int freq) {
-    	unimplemented_notice();
+    int __sceSasSetNoise(SasCore* sasCore, int voice, int noiseFreq) {
+    	SasVoice* voicePtr = &sasCore.voices[voice];
+    	voicePtr.noiseFreq = noiseFreq;
     	return 0;
     }
 
-    int __sceSasSetSimpleADSR(SasCore* sasCore, int voice, uint ADSREnv1, uint ADSREnv2) {
-    	unimplemented_notice();
-    	return 0;
-    }
-    
+	int __sceSasCoreWithMix(SasCore* sasCore, void* sasInOut, int leftVol, int rightVol) {
+		unimplemented_notice();
+		return 0;
+	}
+	
 	uint __sceSasCore(SasCore* sasCore, void* sasOut) {
 		// Disabled showing notice because being too annoying.
 		//unimplemented_notice();

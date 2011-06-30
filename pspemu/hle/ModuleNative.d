@@ -27,7 +27,27 @@ public import pspemu.hle.kd.SceKernelErrors;
  */
 static Module.Nid currentExecutingNid;
 
+enum FunctionOptions {
+	None               = 0,
+	
+	/// Functions that doesn't write anything and doesn't need any atomic operation.
+	/// Or functions that will take some time to execute. 
+	NoSynchronized     = 0,
+
+	/// Functions that write values only in that module. And don't allocate any external memory.
+	SynchronizedModule = 1,
+	
+	/// Functions that write external values, allocate external memory or so.
+	SynchronizedGlobal = 3,
+}
+
 abstract class ModuleNative : Module {
+	public Object moduleLock;
+	
+	override public bool isNative() {
+		return true;
+	}
+	
 	// Will avoid obtaining the value from function.
 	/*
 	void returnValue(uint value) {
@@ -37,6 +57,7 @@ abstract class ModuleNative : Module {
 	
 	this() {
 		//Logger.log(Logger.Level.DEBUG, "Module", "Loading '%s'...", typeid(this));
+		moduleLock = new Object();
 	}
 	
 	/*
@@ -121,7 +142,7 @@ abstract class ModuleNative : Module {
 			return "names[\"" ~ name ~ "\"] = nids[" ~ to!string(id) ~ "] = Function(this, " ~ to!string(id) ~ ", \"" ~ name ~ "\", &this." ~ name ~ ");";
 		}
 
-		static string registerd(uint id, alias func)() {
+		static string registerd(uint id, alias func, FunctionOptions options = FunctionOptions.None)() {
 			debug (DEBUG_MODULE_DELEGATE) {
 				pragma(msg, "{{{{");
 				pragma(msg, "");
@@ -130,7 +151,7 @@ abstract class ModuleNative : Module {
 				pragma(msg, "}}}}");
 			}
 
-			return "names[\"" ~ FunctionName!(func) ~ "\"] = nids[" ~ to!string(id) ~ "] = Function(this, " ~ to!string(id) ~ ", \"" ~ FunctionName!(func) ~ "\", " ~ getModuleMethodDelegate!(func, id) ~ ");";
+			return "names[\"" ~ FunctionName!(func) ~ "\"] = nids[" ~ to!string(id) ~ "] = Function(this, " ~ to!string(id) ~ ", \"" ~ FunctionName!(func) ~ "\", " ~ getModuleMethodDelegate!(func, id, options) ~ ");";
 		}
 
 		static string registerModule(string moduleName) {
@@ -201,7 +222,7 @@ string FunctionName(alias f)() { return (&f).stringof[2 .. $]; }
 string FunctionName(T)() { return T.stringof[2 .. $]; }
 string stringOf(T)() { return T.stringof; }
 
-string getModuleMethodDelegate(alias func, uint nid = 0)() {
+string getModuleMethodDelegate(alias func, uint nid = 0, FunctionOptions options = FunctionOptions.None)() {
 	string functionName = FunctionName!(func);
 	string r = "";
 	alias ReturnType!(func) return_type;
@@ -246,50 +267,56 @@ string getModuleMethodDelegate(alias func, uint nid = 0)() {
 	}
 	r ~= "delegate void(CpuThreadBase cpuThread) { ";
 	{
-		r ~= "currentExecutingNid = " ~ to!string(nid) ~ ";";
-		//r ~= "Logger.log(Logger.Level.TRACE, \"Module\", std.string.format(\"%s\", \"" ~ functionName ~ "\"));";
-		r ~= "logLevel(Logger.Level.TRACE, std.string.format(\"%s\", \"" ~ functionName ~ "\"));";
-		r ~= "setReturnValue = true;";
-		r ~= "current_vparam = 0;";
-		string parametersString = _parametersString;
-		string parametersPrototypeString = _parametersPrototypeString;
-		debug (DEBUG_ALL_SYSCALLS) { } else { r ~= "debug (DEBUG_SYSCALL)"; }
+		if (options & FunctionOptions.SynchronizedGlobal) r ~= "synchronized (hleEmulatorState.globalLock)";
+		if (options & FunctionOptions.SynchronizedModule) r ~= "synchronized (hleEmulatorState.moduleLock)";
 		r ~= "{";
-		r ~= ".writef(\"%s; PC=%08X; \", moduleManager.currentThreadName, currentRegisters.PC);";
-		debug (DEBUG_ALL_SYSCALLS) {
-			r ~= ".writef(\"" ~ functionName ~ "()\"); ";
-		} else {
-			if (parametersPrototypeString.length) {
-				r ~= ".writef(\"" ~ functionName ~ "(" ~ _parametersPrototypeString ~ ")\", " ~ parametersString ~ "); ";
-			} else {
+		{
+			r ~= "currentExecutingNid = " ~ to!string(nid) ~ ";";
+			//r ~= "Logger.log(Logger.Level.TRACE, \"Module\", std.string.format(\"%s\", \"" ~ functionName ~ "\"));";
+			r ~= "logLevel(Logger.Level.TRACE, std.string.format(\"%s\", \"" ~ functionName ~ "\"));";
+			r ~= "setReturnValue = true;";
+			r ~= "current_vparam = 0;";
+			string parametersString = _parametersString;
+			string parametersPrototypeString = _parametersPrototypeString;
+			debug (DEBUG_ALL_SYSCALLS) { } else { r ~= "debug (DEBUG_SYSCALL)"; }
+			r ~= "{";
+			r ~= ".writef(\"%s; PC=%08X; \", moduleManager.currentThreadName, currentRegisters.PC);";
+			debug (DEBUG_ALL_SYSCALLS) {
 				r ~= ".writef(\"" ~ functionName ~ "()\"); ";
-			}
-		}
-		r ~= "}";
-		if (return_value) r ~= "auto retval = ";
-		r ~= "this." ~ functionName ~ "(" ~ parametersString ~ ");";
-		if (return_value) {
-			r ~= "if (setReturnValue) {";
-			if (isPointerType!(ReturnType!(func))) {
-				r ~= "currentRegisters.V0 = currentEmulatorState.memory.getPointerReverseOrNull(cast(void *)retval);";
 			} else {
-				r ~= "currentRegisters.V0 = (cast(uint *)&retval)[0];";
-				if (ReturnType!(func).sizeof == 8) {
-					r ~= "currentRegisters.V1 = (cast(uint *)&retval)[1];";
+				if (parametersPrototypeString.length) {
+					r ~= ".writef(\"" ~ functionName ~ "(" ~ _parametersPrototypeString ~ ")\", " ~ parametersString ~ "); ";
+				} else {
+					r ~= ".writef(\"" ~ functionName ~ "()\"); ";
 				}
 			}
 			r ~= "}";
-		}
-		debug (DEBUG_ALL_SYSCALLS) { } else { r ~= "debug (DEBUG_SYSCALL)"; }
-		r ~= "{";
-		if (return_value) {
-			if (isPointerType!(ReturnType!(func)) || isClassType!(ReturnType!(func))) {
-				r ~= ".writefln(\" = 0x%08X\", currentRegisters.V0); ";
-			} else {
-				r ~= ".writefln(\" = %s\", retval); ";
+			if (return_value) r ~= "auto retval = ";
+			r ~= "this." ~ functionName ~ "(" ~ parametersString ~ ");";
+			if (return_value) {
+				r ~= "if (setReturnValue) {";
+				if (isPointerType!(ReturnType!(func))) {
+					r ~= "currentRegisters.V0 = currentEmulatorState.memory.getPointerReverseOrNull(cast(void *)retval);";
+				} else {
+					r ~= "currentRegisters.V0 = (cast(uint *)&retval)[0];";
+					if (ReturnType!(func).sizeof == 8) {
+						r ~= "currentRegisters.V1 = (cast(uint *)&retval)[1];";
+					}
+				}
+				r ~= "}";
 			}
-		} else {
-			r ~= ".writefln(\" = <void>\"); ";
+			debug (DEBUG_ALL_SYSCALLS) { } else { r ~= "debug (DEBUG_SYSCALL)"; }
+			r ~= "{";
+			if (return_value) {
+				if (isPointerType!(ReturnType!(func)) || isClassType!(ReturnType!(func))) {
+					r ~= ".writefln(\" = 0x%08X\", currentRegisters.V0); ";
+				} else {
+					r ~= ".writefln(\" = %s\", retval); ";
+				}
+			} else {
+				r ~= ".writefln(\" = <void>\"); ";
+			}
+			r ~= "}";
 		}
 		r ~= "}";
 	}
