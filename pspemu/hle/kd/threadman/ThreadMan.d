@@ -96,6 +96,15 @@ class VTimer {
 	}
 }
 
+/*
+alias SceUInt function(SceUID uid, SceKernelSysClock *, SceKernelSysClock *, void *) SceKernelVTimerHandler;
+alias SceUInt function(SceUID uid, SceInt64, SceInt64, void *) SceKernelVTimerHandlerWide;
+*/
+
+alias uint SceKernelVTimerHandler;
+alias uint SceKernelVTimerHandlerWide;
+
+
 /**
  * Library imports for the kernel threading library.
  */
@@ -157,6 +166,25 @@ class ThreadManForUser : ModuleNative {
 	    mixin(registerd!(0xC0B3FFD2, sceKernelGetVTimerTimeWide));
 	    mixin(registerd!(0xC68D9437, sceKernelStartVTimer));
 	    mixin(registerd!(0x20FFF560, sceKernelCreateVTimer));
+	    mixin(registerd!(0x20FFF560, sceKernelSetVTimerHandler));
+	    
+	    mixin(registerd!(0x110DEC9A, sceKernelUSec2SysClock));
+	    mixin(registerd!(0xC8CD158C, sceKernelUSec2SysClockWide));
+	}
+	
+	/**
+	 * Converts microseconds to system clock and writes it to the specified pointer.
+	 */
+	int sceKernelUSec2SysClock(uint usec, ulong* sysclock) {
+		*sysclock = cast(ulong)usec;
+		return 0;
+	}
+
+	/**
+	 * Converts microseconds to system clock and returns it.
+	 */
+	ulong sceKernelUSec2SysClockWide(ulong usec) {
+		return usec;
 	}
 	
 	/**
@@ -226,6 +254,38 @@ class ThreadManForUser : ModuleNative {
 		vTimer.stop();
 		return 0;
 	}
+	
+	/**
+	 * Set the timer handler
+	 *
+	 * @param uid - UID of the vtimer
+	 * @param time - Time to call the handler?
+	 * @param handler - The timer handler
+	 * @param common  - Common pointer
+	 *
+	 * @return 0 on success, < 0 on error
+	 */
+	int sceKernelSetVTimerHandler(SceUID uid, SceKernelSysClock *time, SceKernelVTimerHandler handler, void *common) {
+		unimplemented();
+		return 0;
+	}
+	
+	/**
+	 * Set the timer handler (wide mode)
+	 *
+	 * @param uid - UID of the vtimer
+	 * @param time - Time to call the handler?
+	 * @param handler - The timer handler
+	 * @param common  - Common pointer
+	 *
+	 * @return 0 on success, < 0 on error
+	 */
+	int sceKernelSetVTimerHandlerWide(SceUID uid, SceInt64 time, SceKernelVTimerHandlerWide handler, void *common) {
+		unimplemented();
+		return 0;
+	}
+
+
 	
 	/**
 	 * Create a fixed pool

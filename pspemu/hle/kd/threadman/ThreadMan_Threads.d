@@ -151,7 +151,7 @@ template ThreadManForUser_Threads() {
 		return 0;
 	}
 	
-	WaitMultipleObjects _getWaitMultipleObjects(bool handleCallbacks) {
+	WaitMultipleObjects _getWaitMultipleObjects(bool handleCallbacks, bool addWakeup = false) {
 		WaitMultipleObjects waitMultipleObjects = new WaitMultipleObjects();
 
 		// We will listen to the stopping event that will launch a HaltException when triggered.		
@@ -163,7 +163,9 @@ template ThreadManForUser_Threads() {
 			// @TODO
 		}
 		
-		waitMultipleObjects.add(currentThreadState.wakeUpEvent);
+		if (addWakeup) {
+			waitMultipleObjects.add(currentThreadState.wakeUpEvent);
+		}
 		
 		waitMultipleObjects.object = currentThreadState;
 		
@@ -171,13 +173,15 @@ template ThreadManForUser_Threads() {
 	}
 
 	int _sceKernelSleepThreadCB(bool handleCallbacks) {
-		scope waitMultipleObjects = _getWaitMultipleObjects(handleCallbacks);
+		scope waitMultipleObjects = _getWaitMultipleObjects(handleCallbacks, true);
 		
 		currentCpuThread.threadState.waitingBlock("_sceKernelSleepThreadCB", {
 			currentThreadState.sleeping = true;
+			//logInfo("Thread wakeUpCount=%d", currentCpuThread.threadState.wakeUpCount);
 			while (currentThreadState.sleeping) {
 				waitMultipleObjects.waitAny();
 			}
+			//logInfo("Thread awaken(%s)", currentCpuThread.threadState);
 		});
 		
 		return 0;
@@ -452,7 +456,13 @@ template ThreadManForUser_Threads() {
 	int sceKernelWakeupThread(SceUID thid) {
 		logInfo("sceKernelWakeupThread(thid=%d)", thid);
 		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
+		threadState.sleeping = false;
 		threadState.wakeUpEvent.signal();
+		// @TODO: Should check that the thread is awaken. Maybe
+		//while (threadState.waiting)
+		Thread.yield();
+		
+		
 		//threadState.nativeThreadWakeup();
 		//threadState.wakeUpCount++;
 		//return -1;

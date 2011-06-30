@@ -6,6 +6,7 @@ import pspemu.hle.ModuleNative;
 import pspemu.hle.kd.mediaman.Types;
 import pspemu.hle.kd.threadman.Types;
 import pspemu.hle.Callbacks;
+import pspemu.hle.kd.threadman.ThreadMan;
 
 class sceUmdUser : ModuleNative {
 	void initNids() {
@@ -31,6 +32,7 @@ class sceUmdUser : ModuleNative {
 		return 0;
 	}
 	
+	int umdPspCallbackId;
 	PspCallback umdPspCallback;
 	
 	/** 
@@ -60,9 +62,14 @@ class sceUmdUser : ModuleNative {
 		umdPspCallback = uniqueIdFactory.get!PspCallback(cbid);
 		
 		hleEmulatorState.callbacksHandler.register(CallbacksHandler.Type.Umd, umdPspCallback);
-		hleEmulatorState.callbacksHandler.trigger(CallbacksHandler.Type.Umd, [cbid, cast(uint)sceUmdGetDriveStat(), 0], 2);
+		umdPspCallbackId = cbid;
+		triggerUmdStatusChange();
 		
 		return 0;
+	}
+	
+	void triggerUmdStatusChange() {
+		hleEmulatorState.callbacksHandler.trigger(CallbacksHandler.Type.Umd, [umdPspCallbackId, cast(uint)sceUmdGetDriveStat(), 0], 2);
 	}
 	
 	/** 
@@ -127,7 +134,7 @@ class sceUmdUser : ModuleNative {
 	  */
 	int sceUmdActivate(int mode, string drive) {
 		logWarning("Partially implemented: sceUmdActivate(%d, '%s')", mode, drive);
-		//hleEmulatorState.callbacksHandler.trigger(CallbacksHandler.Type.Umd, [cast(uint)sceUmdGetDriveStat()]);
+		//triggerUmdStatusChange();
 		return 0;
 	}
 	
@@ -176,6 +183,8 @@ class sceUmdUser : ModuleNative {
 	  */
 	int sceUmdWaitDriveStatCB(PspUmdState stat, uint timeout) {
 		logWarning("Not implemented: sceUmdWaitDriveStatCB(%s:%d, %d)", to!string(stat), stat, timeout);
+		
+		hleEmulatorState.moduleManager.get!ThreadManForUser.sceKernelCheckCallback();
 		
 		return 0;
 	}

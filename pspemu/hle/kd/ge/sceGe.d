@@ -37,8 +37,14 @@ class sceGe_driver : ModuleNative {
 
 	PspGeCallbackData[] callbackDataList;
 	
-	void sceGeEdramSetAddrTranslation() {
-		unimplemented();
+	uint eDRAMMemoryWidth = 1024;
+	
+	/**
+	 * Set Graphics Engine eDRAM address translation mode
+	 */
+	int sceGeEdramSetAddrTranslation(int width) {
+		scope (exit) eDRAMMemoryWidth = width;
+		return eDRAMMemoryWidth;
 	}
 	
 	/**

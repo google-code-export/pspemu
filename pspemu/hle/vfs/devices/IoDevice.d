@@ -4,6 +4,7 @@ public import pspemu.hle.vfs.ProxyVirtualFileSystem;
 public import pspemu.hle.HleEmulatorState;
 
 enum IoCtlCommand {
+	UmdSeekFile      = 0x01010005,
 	GetUmdFileLength = 0x01020007,
 }
 

@@ -724,15 +724,26 @@ template OpenglUtils() {
 			//glEnable(GL_BLEND);
 			glActiveTexture(GL_TEXTURE0);
 			glMatrixMode(GL_TEXTURE);
-			glLoadIdentity();
 			
 			if (state.vertexType.transform2D) {
 			//if (state.vertexType.transform2D) {
+				glLoadIdentity();
 				glScalef(1.0f / cast(float)state.texture.mipmaps[0].width, 1.0f / cast(float)state.texture.mipmaps[0].height, 1);
 			} else {
-				Logger.log(Logger.Level.WARNING, "GPU", "Not implemented! texture for transform3D!");
-				glTranslatef(state.texture.offset.u, state.texture.offset.v, 0);
-				glScalef(state.texture.scale.u, state.texture.scale.v, 1);
+				final switch (state.texture.mapMode) {
+					case TextureMapMode.GU_TEXTURE_COORDS:
+						glLoadIdentity();
+						glTranslatef(state.texture.offset.u, state.texture.offset.v, 0);
+						glScalef(state.texture.scale.u, state.texture.scale.v, 1);
+					break;
+					case TextureMapMode.GU_TEXTURE_MATRIX:
+						glLoadMatrixf(state.texture.matrix.pointer);
+					break;
+					case TextureMapMode.GU_ENVIRONMENT_MAP:
+						glLoadIdentity();
+						Logger.log(Logger.Level.WARNING, "GPU", "Not implemented! texture for transform3D!");
+					break;
+				}
 			}
 			
 			//writefln("prepareTexture[2]");

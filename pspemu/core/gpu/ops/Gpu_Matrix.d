@@ -27,8 +27,8 @@ template Gpu_Matrix() {
 		auto OP_PMS  () { gpu.state.projectionMatrix.reset(Matrix.WriteMode.M4x4); }
 		auto OP_PROJ () { gpu.state.projectionMatrix.write(command.float1); }
 		
-		auto OP_TMS    () { gpu.state.textureMatrix.reset(Matrix.WriteMode.M4x4); }
-		auto OP_TMATRIX() { gpu.state.textureMatrix.write(command.float1); }
+		auto OP_TMS    () { gpu.state.texture.matrix.reset(Matrix.WriteMode.M4x4); }
+		auto OP_TMATRIX() { gpu.state.texture.matrix.write(command.float1); }
 		
 		/**
 		  * Specify skinning matrix entry

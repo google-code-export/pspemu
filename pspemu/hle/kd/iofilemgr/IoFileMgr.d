@@ -37,6 +37,8 @@ import pspemu.hle.vfs.devices.IoDevice;
 
 import pspemu.hle.kd.sysmem.Types;
 
+import pspemu.hle.kd.mediaman.sceUmd;
+
 class PspVirtualFileSystem : VirtualFileSystem {
 	HleEmulatorState hleEmulatorState;
 	string name;
@@ -344,7 +346,7 @@ class IoFileMgrForKernel : ModuleNative {
 		} catch (Throwable o) {
 			logWarning("sceIoOpen failed to open '%s' for '%d'", file, flags);
 			logWarning("        : '%s'", std.encoding.sanitize(o.toString));
-			return -1;
+			return SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
 		}
 	}
 
@@ -516,7 +518,7 @@ class IoFileMgrForKernel : ModuleNative {
 		FileHandle fileHandle = uniqueIdFactory.get!FileHandle(fd);
 		//logInfo("---%s", fileHandle);
 		logInfo("---%s", fileHandle.virtualFileSystem);
-		fileHandle.virtualFileSystem.ioctl(fileHandle, cmd, (cast(ubyte*)indata)[0..inlen], (cast(ubyte*)outdata)[0..outlen]);
+		int result = fileHandle.virtualFileSystem.ioctl(fileHandle, cmd, (cast(ubyte*)indata)[0..inlen], (cast(ubyte*)outdata)[0..outlen]);
 		
 		/*
 		logWarning("sceIoDevctl('%s', 0x%08X)", dev, cmd);
@@ -527,8 +529,10 @@ class IoFileMgrForKernel : ModuleNative {
 			return -1;
 		}
 		*/
+		
+		//hleEmulatorState.moduleManager.get!sceUmdUser.triggerUmdStatusChange();
 
-		return -1;
+		return result;
 	}
 
 	/**

@@ -1,6 +1,6 @@
-module pspemu.core.cpu.interpreter.ops.Fpu;
+module pspemu.core.cpu.interpreter.ops.Cpu_Fpu;
 
-import pspemu.core.cpu.interpreter.ops.Branch;
+import pspemu.core.cpu.interpreter.ops.Cpu_Branch;
 
 template TemplateCpu_FPU() {
 	// Branch.

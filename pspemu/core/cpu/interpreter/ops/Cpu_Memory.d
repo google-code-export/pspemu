@@ -1,4 +1,4 @@
-module pspemu.core.cpu.interpreter.ops.Memory;
+module pspemu.core.cpu.interpreter.ops.Cpu_Memory;
 
 import std.stdio;
 

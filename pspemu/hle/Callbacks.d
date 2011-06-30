@@ -174,7 +174,7 @@ class CallbacksHandler {
 					auto callback = delegate(ThreadState threadState) {
 						Logger.log(Logger.Level.TRACE, "CallbacksHandler", std.string.format("Executing queued callbacks"));
 						foreach (pspCallback; queuedPspCallbacks) {
-							Logger.log(Logger.Level.INFO, "CallbacksHandler", std.string.format("Executing callback: %s", pspCallback));
+							Logger.log(Logger.Level.TRACE, "CallbacksHandler", std.string.format("Executing callback: %s", pspCallback));
 							if (callbackArgumentOffset >= 0) {
 								arguments[callbackArgumentOffset] = pspCallback.arg;
 							}

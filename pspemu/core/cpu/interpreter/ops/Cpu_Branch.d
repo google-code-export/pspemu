@@ -1,4 +1,4 @@
-module pspemu.core.cpu.interpreter.ops.Branch;
+module pspemu.core.cpu.interpreter.ops.Cpu_Branch;
 
 import std.stdio;
 

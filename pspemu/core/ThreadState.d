@@ -61,15 +61,19 @@ class ThreadState {
 		}
 	}
 
-	@property public bool sleeping() {
-		return (wakeUpCount < 0);
+	public bool sleeping() {
+		synchronized (this) {
+			return (wakeUpCount < 0);
+		}
 	}
 
-	@property public bool sleeping(bool set) {
-		int wakeUpCountPrev = wakeUpCount; 
-		wakeUpCount += set ? -1 : +1;
-		Logger.log(Logger.Level.INFO, "ThreadState", "  Thread.wakeUp(%s) || %d -> %d (sleeping:%s)", this, wakeUpCountPrev, wakeUpCount, sleeping);
-		return sleeping;
+	public bool sleeping(bool set) {
+		synchronized (this) {
+			int wakeUpCountPrev = wakeUpCount; 
+			wakeUpCount += set ? -1 : +1;
+			Logger.log(Logger.Level.INFO, "ThreadState", "  Thread.wakeUp(%s) || %d -> %d (sleeping:%s)", this, wakeUpCountPrev, wakeUpCount, sleeping);
+			return sleeping;
+		}
 	}
 	
 	WaitEvent wakeUpEvent;
@@ -80,9 +84,6 @@ class ThreadState {
 		this.emulatorState = emulatorState;
 		this.registers = registers;
 		wakeUpEvent = new WaitEvent("WakeUpEvent");
-		wakeUpEvent.callback = delegate(Object object) {
-			sleeping = false;
-		};
 	}
 
 	public this(string name, EmulatorState emulatorState) {
