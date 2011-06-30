@@ -229,7 +229,7 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return 0 on success, < 0 on error
 	 */
 	int sceIoDevctl(string dev, int cmd, void* indata, int inlen, void* outdata, int outlen) {
-		logWarning("sceIoDevctl('%s', 0x%08X)", dev, cmd);
+		logWarning("sceIoDevctl(dev='%s', cmd=0x%08X, indata=0x%08X, inlen=%d, outdata=0x%08X, outlen=%d)", dev, cmd, cast(uint)indata, inlen, cast(uint)outdata, outlen);
 		try {
 			return rootFileSystem().getDevice(dev).devctl(dev, cmd, (cast(ubyte*)indata)[0..inlen], (cast(ubyte*)outdata)[0..outlen]);
 		} catch (Throwable o) {

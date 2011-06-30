@@ -98,6 +98,9 @@ class MainForm : Form, IMessageFilter {
 		ctext ~= std.string.format("D PSP Emulator r%d", SvnVersion.revision);
 		ctext ~= std.string.format(" - %s", guiDfl.hleEmulatorState.mainModuleName); 
 		ctext ~= std.string.format(" - %s", guiDfl.hleEmulatorState.rootFileSystem.gameID);
+		ctext ~= std.string.format(" - Gpu: %dms", guiDfl.hleEmulatorState.emulatorState.gpu.lastFrameTime);
+		ctext ~= std.string.format(" - Prims: %d", guiDfl.hleEmulatorState.emulatorState.gpu.numberOfPrims);
+		ctext ~= std.string.format(" - Vertices: %d", guiDfl.hleEmulatorState.emulatorState.gpu.numberOfVertices);
 		this.text = ctext; 
 	}
 
@@ -470,6 +473,9 @@ class GuiDfl : GuiBase {
 		mainForm.setTitle();
 		mainForm.setScale2xVisibility();
 		drawingArea._invalidate();
+
+		//Graphics g = drawingArea.createGraphics();
+		//g.drawText("Hello World", new Font("Arial", 12), Color.fromArgb(255, 255, 255, 255), dfl.drawing.Rect(0, 0, 100, 100));
 		
 		//writefln("[4]");
 		

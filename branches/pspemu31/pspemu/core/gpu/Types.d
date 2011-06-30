@@ -186,6 +186,8 @@ enum Boolean { GU_FALSE = 0, GU_TRUE = 1 }
 
 enum PrimitiveType { GU_POINTS = 0, GU_LINES = 1, GU_LINE_STRIP = 2, GU_TRIANGLES = 3, GU_TRIANGLE_STRIP = 4, GU_TRIANGLE_FAN = 5, GU_SPRITES = 6 }
 
+enum PatchPrimitiveType { PRIM_TRIANGLE_STRIPS = 0, PRIM_LINES_STRIPS = 1, PRIM_POINT = 2 }
+
 // glEnable/glDisable
 enum Stats {
 	GU_ALPHA_TEST = 0,

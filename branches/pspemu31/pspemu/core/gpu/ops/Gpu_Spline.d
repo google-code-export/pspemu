@@ -37,6 +37,10 @@ template Gpu_Spline() {
 		//gpu.logWarning("OP_PSUB(%f, %f)", params[0], params[1]); 
 	}
 	
+	auto OP_PPRIM() {
+		gpu.state.patch.type = command.extract!(PatchPrimitiveType, 0);
+	}
+	
 	auto OP_SPLINE() {
 		auto sp_ucount = command.extract!(uint,  0, 8); 
 		auto sp_vcount = command.extract!(uint,  8, 8);

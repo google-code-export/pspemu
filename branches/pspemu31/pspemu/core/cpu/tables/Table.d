@@ -440,10 +440,12 @@ const PspInstructions_VFPU_IMP = [
 
 	ID("mfvme",       VM("011010--------------------------"), "%t, %i", ADDR_TYPE_NONE, 0),
 	ID("mtvme",       VM("101100--------------------------"), "%t, %i", ADDR_TYPE_NONE, 0),
+
+	ID("sv.s",        VM("111010:rs:vt5:imm14:vt2"), "%Xs, %Y", ADDR_TYPE_NONE, INSTR_TYPE_PSP),
+	
 ];
 
 const PspInstructions_VFPU = [
-	ID("sv.s",        VM("111010:rs:vt5:imm14:vt2"), "%Xs, %Y", ADDR_TYPE_NONE, INSTR_TYPE_PSP),
 	ID("svl.q",       VM("111101:rs:vt5:imm14:0:vt1"), "%Xq, %Y", ADDR_TYPE_NONE, INSTR_TYPE_PSP),
 	ID("svr.q",       VM("111101:rs:vt5:imm14:1:vt1"), "%Xq, %Y", ADDR_TYPE_NONE, INSTR_TYPE_PSP),
 	ID("vbfy1",       VM("110100:00:010:00010:two:vs:one:vd"), "%zp, %yp", ADDR_TYPE_NONE, INSTR_TYPE_PSP),

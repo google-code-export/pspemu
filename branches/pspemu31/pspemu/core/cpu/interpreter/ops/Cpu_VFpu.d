@@ -442,6 +442,16 @@ template TemplateCpu_VFPU() {
 		registers.pcAdvance(4);
 	}
 
+	void OP_SV_S() {
+		uint address = registers.R[instruction.RS] + instruction.IMM14 * 4;
+		
+		threadState.emulatorState.memory.twrite!(float)(address, VT[0]);
+		
+		debug (DEBUG_VFPU_I) writefln("OP_SV_S(%s)", VT[0]);
+		
+		registers.pcAdvance(4);
+	}
+
 	/*
 	+-------------+-----------+---------+----------------------------+-----+-----+
 	|31         26|25       21|20     16|15                        2 |  1  |  0  |
