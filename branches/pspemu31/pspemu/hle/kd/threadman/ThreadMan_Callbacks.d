@@ -63,7 +63,7 @@ template ThreadManForUser_Callbacks() {
 	int sceKernelCheckCallback() {
 		int result = hleEmulatorState.callbacksHandler.executeQueued(currentThreadState) ? 1 : 0;
 		if (result != 0) {
-			logError("sceKernelCheckCallback: %s", result);
+			logError("sceKernelCheckCallback: %d", result);
 		}
 		return result;
 	}

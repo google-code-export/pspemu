@@ -26,7 +26,7 @@ class sceCtrl_driver : ModuleNative {
 		mixin(registerd!(0x3A622550, sceCtrlPeekBufferPositive));
 		mixin(registerd!(0x0B588501, sceCtrlReadLatch));
 		mixin(registerd!(0xB1D0E5CD, sceCtrlPeekLatch));
-		mixin(registerd!(0xA7144800, sceCtrlSetIdleCancelThresholdFunction));
+		mixin(registerd!(0xA7144800, sceCtrlSetIdleCancelThreshold));
 	}
 
 	void readBufferedFrames(SceCtrlData* pad_data, int count = 1, bool positive = true) {
@@ -152,8 +152,21 @@ class sceCtrl_driver : ModuleNative {
 		return _sceCtrlReadLatch(currentLatch);
 	}
 
-	void sceCtrlSetIdleCancelThresholdFunction() {
+	/**
+	 * Set analog threshold relating to the idle timer.
+	 *
+	 * @param idlereset - Movement needed by the analog to reset the idle timer.
+	 * @param idleback - Movement needed by the analog to bring the PSP back from an idle state.
+	 *
+	 * Set to -1 for analog to not cancel idle timer.
+	 * Set to 0 for idle timer to be cancelled even if the analog is not moved.
+	 * Set between 1 - 128 to specify the movement on either axis needed by the analog to fire the event.
+	 *
+	 * @return < 0 on error.
+	 */
+	int sceCtrlSetIdleCancelThreshold(int idlereset, int idleback) {
 		unimplemented_notice();
+		return 0;
 	}
 }
 

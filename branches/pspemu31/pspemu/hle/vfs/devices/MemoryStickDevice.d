@@ -5,6 +5,7 @@ public import pspemu.hle.vfs.devices.IoDevice;
 import pspemu.core.cpu.CpuThreadBase;
 import pspemu.hle.Callbacks;
 import pspemu.utils.Logger;
+import pspemu.hle.kd.SceKernelErrors;
 
 class MemoryStickDevice : IoDevice {
 	bool _inserted = true;
@@ -58,6 +59,9 @@ class MemoryStickDevice : IoDevice {
 			break;
 			case 0x02415821: // MScmRegisterMSInsertEjectCallback
 				Logger.log(Logger.Level.INFO, "Devices", "MScmRegisterMSInsertEjectCallback");
+				
+				if (devname != "fatms0:") return SceKernelErrors.ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+				if (inData.ptr == null || inData.length == 0) return -1;
 
 				uint callbackId = *(cast(uint*)inData.ptr);
 				pspCallback = hleEmulatorState.uniqueIdFactory.get!PspCallback(callbackId);

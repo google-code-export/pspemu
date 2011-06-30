@@ -132,16 +132,16 @@ template IoFileMgrForKernel_FilesAsync() {
 	int _sceIoWaitAsyncCB(SceUID fd, SceInt64* res, bool callbacks) {
 		FileHandle fileHandle = uniqueIdFactory.get!FileHandle(fd);
 		*res = fileHandle.lastOperationResult;
-		return 0;
+		return fd;
 	}
 
 	/**
 	 * Wait for asyncronous completion.
 	 * 
-	 * @param fd - The file descriptor which is current performing an asynchronous action.
+	 * @param fd  - The file descriptor which is current performing an asynchronous action.
 	 * @param res - The result of the async action.
 	 *
-	 * @return < 0 on error.
+	 * @return - The given fd or a negative value on error. 
 	 */
 	int sceIoWaitAsync(SceUID fd, SceInt64* res) {
 		return _sceIoWaitAsyncCB(fd, res, false);

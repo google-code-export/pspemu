@@ -1,4 +1,4 @@
-module pspemu.core.cpu.interpreter.ops.Special;
+module pspemu.core.cpu.interpreter.ops.Cpu_Special;
 
 import std.stdio;
 

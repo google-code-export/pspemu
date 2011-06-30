@@ -1,4 +1,4 @@
-module pspemu.core.cpu.interpreter.ops.VFpu;
+module pspemu.core.cpu.interpreter.ops.Cpu_VFpu;
 
 //debug = DEBUG_VFPU_I;
 
@@ -1525,6 +1525,22 @@ template TemplateCpu_VFPU() {
 		vfpu_regs[%vfpu_rd] <- vfpu_regs[%vfpu_rs] * vfpu_regs[%vfpu_rt] 
 	*/ 
 	void OP_VMUL() { OP_V_INTERNAL_IN_N!(2, "l * r"); }
+	
+	/*
+	void OP_VCMP() {
+		auto vsize = instruction.ONE_TWO;
+		int comp = instruction.IMM4;
+		bool not = ((comp & 4) != 0);
+		int type = (comp & 0b11);
+		
+        bool cc_or = false;
+        bool cc_and = true;
+		
+		if ((comp & 8) == 0) {
+			
+		}
+	}
+	*/
 	
 	/* 
 	+----------------------+--------------+----+--------------+---+--------------+ 

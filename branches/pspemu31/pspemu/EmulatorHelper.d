@@ -153,7 +153,7 @@ class EmulatorHelper {
 	
 	public void waitComponentsInitialized() {
 		emulator.waitDisplayStarted();
-		emulator.waitGpuStarted();		
+		emulator.waitGpuStarted();
 	}
 	
 	public void start() {

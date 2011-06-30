@@ -16,16 +16,18 @@ import pspemu.utils.Logger;
 
 class sceAudio_driver : ModuleNative {
 	struct Channel {
-		bool reserved;
+		bool reserved = false;
 		int  samplecount;
-		int freq;
-		PspAudioFormats format;
-		int leftvol, rightvol; 
+		PspAudioFormats format = PspAudioFormats.PSP_AUDIO_FORMAT_STEREO;
+		int  freq = 44100;
+		int leftvol = PSP_AUDIO_VOLUME_MAX, rightvol = PSP_AUDIO_VOLUME_MAX;
+
 		int numchannels() { return (format == PspAudioFormats.PSP_AUDIO_FORMAT_MONO) ? 1 : 2; }
 		int dataCount() { return samplecount * numchannels; }
 	}
 	
 	Channel channels[8]; // PSP_AUDIO_CHANNEL_MAX
+	Channel srcChannel;
 	int numberOfChannels;
 	Audio audio;
 
@@ -298,7 +300,9 @@ class sceAudio_driver : ModuleNative {
 		if (!validChannelIndex(channel)) return -1;
 
 		// Sets the information of the channel.
-		channels[channel] = Channel(true, samplecount, format);
+		channels[channel].reserved = true;
+		channels[channel].samplecount = samplecount;
+		channels[channel].format = format;
 		
 		logInfo("sceAudioChReserve(channel=%d, samplecount=%d, format=%d)", channel, samplecount, format);
 
@@ -347,28 +351,7 @@ class sceAudio_driver : ModuleNative {
 		return -1;
 	}
 
-	/**
-	  * Reserve the audio output
-	  *
-	  * @param samplecount - The number of samples to output in one output call (min 17, max 4111).
-	  *
-	  * @param freq - The frequency. One of 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11050, 8000.
-	  *
-	  * @param channels - Number of channels. Pass 2 (stereo).
-	  *
-	  * @return 0 on success, an error if less than 0.
-	  */
-	int sceAudioSRCChReserve(int samplecount, int freq, int channels) {
-		logInfo("Partially implemented: sceAudioSRCChReserve(%d, %d, %d)", samplecount, freq, channels);
-		this.numberOfChannels = channels;
-		//for (int channel = 0; channel < channels; channel++) {
-		foreach (channel; 0..channels) {
-			this.channels[channel].samplecount = samplecount;
-			this.channels[channel].freq = freq;
-		}
-		return 0;
-	}
-	
+
 	/**
 	  * Change the volume of a channel
 	  *
@@ -380,19 +363,40 @@ class sceAudio_driver : ModuleNative {
 	  */
 	int sceAudioChangeChannelVolume(int channel, int leftvol, int rightvol) {
 		logWarning("Partially implemented sceAudioChangeChannelVolume(%d, %d, %s)", channel, leftvol, rightvol);
-		this.channels[channel].leftvol = leftvol;
+		this.channels[channel].leftvol  = leftvol;
 		this.channels[channel].rightvol = rightvol;
 		return 0;
 	}
-	
+
+	/**
+	  * Reserve the audio output
+	  *
+	  * @param samplecount - The number of samples to output in one output call (min 17, max 4111).
+	  * @param freq        - The frequency. One of 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11050, 8000.
+	  * @param channels    - Number of channels. Pass 2 (stereo).
+	  *
+	  * @return 0 on success, an error if less than 0.
+	  */
+	int sceAudioSRCChReserve(int samplecount, int freq, PspAudioFormats format) {
+		logInfo("Partially implemented: sceAudioSRCChReserve(%d, %d, %s:%d)", samplecount, freq, to!string(format), format);
+		
+		srcChannel.samplecount = samplecount;
+		srcChannel.freq = freq;
+		srcChannel.format = format;
+		srcChannel.reserved = true;
+		
+		return 0;
+	}
+
 	/**
 	  * Release the audio output
 	  *
 	  * @return 0 on success, an error if less than 0.
 	  */
 	int sceAudioSRCChRelease() {
-		unimplemented();
-		return -1;
+		if (!srcChannel.reserved) return -1;
+		srcChannel.reserved = false;
+		return 0;
 	}
 	
 	/**
@@ -406,6 +410,7 @@ class sceAudio_driver : ModuleNative {
 	int sceAudioSRCOutputBlocking(int vol, void *buf) {
 		logTrace("Not implemented sceAudioSRCOutputBlocking(%d, 0x%08X)", vol, cast(uint)buf);
 		//unimplemented_notice();
+		unimplemented();
 		return -1;
 	}
 

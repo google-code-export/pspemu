@@ -94,7 +94,7 @@ template ThreadManForUser_Semaphores() {
 	 */
 	int sceKernelSignalSema(SceUID semaid, int signal) {
 		auto semaphore = uniqueIdFactory.get!PspSemaphore(semaid); 
-		logTrace("sceKernelSignalSema(%d:'%s', %d) :: %s", semaid, semaphore.name, signal, semaphore);
+		logInfo("sceKernelSignalSema(%d:'%s', %d) :: %s", semaid, semaphore.name, signal, semaphore);
 		semaphore.incrementCount(signal);
 		return 0;
 	}
@@ -108,8 +108,14 @@ template ThreadManForUser_Semaphores() {
 	 */
 	int sceKernelDeleteSema(SceUID semaid) {
 		try {
-			auto semaphore = uniqueIdFactory.get!PspSemaphore(semaid);
-			logTrace("sceKernelDeleteSema(%d:'%s')", semaid, semaphore.name);
+			PspSemaphore pspSemaphore = uniqueIdFactory.get!PspSemaphore(semaid);
+			logTrace("sceKernelDeleteSema(%d:'%s')", semaid, pspSemaphore.name);
+			
+			while (pspSemaphore.info.numWaitThreads > 0) {
+				pspSemaphore.incrementCount(pspSemaphore.info.maxCount);
+				Thread.yield();
+			}
+			
 			uniqueIdFactory.remove!PspSemaphore(semaid);
 			return 0;
 		} catch (UniqueIdNotFoundException) {
@@ -119,11 +125,11 @@ template ThreadManForUser_Semaphores() {
 	
 	int _sceKernelWaitSemaCB(SceUID semaid, int signal, SceUInt *timeout, bool callback) {
 		try {
-			auto semaphore = uniqueIdFactory.get!PspSemaphore(semaid);
-			logInfo("sceKernelWaitSema%s(%d:'%s', %d, %d) :: %s", callback ? "CB" : "", semaid, semaphore.name, signal, (timeout is null) ? 0 : *timeout, semaphore);
+			PspSemaphore pspSemaphore = uniqueIdFactory.get!PspSemaphore(semaid);
+			logInfo("sceKernelWaitSema%s(%d:'%s', %d, %d) :: %s", callback ? "CB" : "", semaid, pspSemaphore.name, signal, (timeout is null) ? 0 : *timeout, pspSemaphore);
 	
 			currentCpuThread.threadState.waitingBlock(std.string.format("_sceKernelWaitSemaCB(%d)", semaid), {
-				semaphore.waitSignal(hleEmulatorState, currentThreadState, signal, (timeout !is null) ? *timeout : uint.max, callback);
+				pspSemaphore.waitSignal(hleEmulatorState, currentThreadState, signal, (timeout !is null) ? *timeout : uint.max, callback);
 			});
 			return 0;
 		} catch (UniqueIdNotFoundException) {
@@ -177,15 +183,15 @@ template ThreadManForUser_Semaphores() {
 	 * @return < 0 on error.
 	 */
 	int sceKernelPollSema(SceUID semaid, int signal) {
-        if (signal <= 0) return SceKernelErrors.ERROR_KERNEL_ILLEGAL_COUNT;
-        
-        try {
+		if (signal <= 0) return SceKernelErrors.ERROR_KERNEL_ILLEGAL_COUNT;
+
+		try {
 			PspSemaphore pspSemaphore = uniqueIdFactory.get!PspSemaphore(semaid);
 			
-	        if (pspSemaphore.info.currentCount - signal < 0) return SceKernelErrors.ERROR_KERNEL_SEMA_ZERO;
+			if (pspSemaphore.info.currentCount - signal < 0) return SceKernelErrors.ERROR_KERNEL_SEMA_ZERO;
 
-            pspSemaphore.info.currentCount -= signal;
-            return 0;
+			pspSemaphore.info.currentCount -= signal;
+			return 0;
 		} catch (UniqueIdNotFoundException) {
 			return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
 		}
@@ -232,13 +238,14 @@ class PspSemaphore {
 
 	public void incrementCount(int count) {
 		this.info.currentCount = min(this.info.maxCount, this.info.currentCount + count);
+		//writefln("Currentcount: %d", );
 		this.waitEvent.signal();
 	}
 	
-	public void waitSignal(HleEmulatorState hleEmulatorState, ThreadState threadState, int signal, uint timeout, bool handleCallbacks) {
-		if (timeout != uint.max) {
-			writefln("Using timeout waiting semaphore");
-			std.c.stdlib.exit(-1);
+	public void waitSignal(HleEmulatorState hleEmulatorState, ThreadState threadState, int signal, uint timeoutMicroseconds, bool handleCallbacks) {
+		uint timeoutMilliseconds = uint.max;
+		if (timeoutMicroseconds != uint.max) {
+			timeoutMilliseconds = timeoutMicroseconds / 1000; 
 		}
 		// @TODO: ignored timeout
 		info.numWaitThreads++; scope (exit) info.numWaitThreads--;
@@ -249,7 +256,7 @@ class PspSemaphore {
 		if (handleCallbacks) waitMultipleObjects.add(hleEmulatorState.callbacksHandler.waitEvent);
 		
 		while (this.info.currentCount < signal) {
-			waitMultipleObjects.waitAny();
+			waitMultipleObjects.waitAny(timeoutMilliseconds);
 		}
 		info.currentCount -= signal;
 		//writefln("*** %d", info.currentCount);

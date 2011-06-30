@@ -173,6 +173,8 @@ abstract class ModuleNative : Module {
 	}
 
 	void unimplemented(string file = __FILE__, int line = __LINE__)() {
+		//logError("Unimplemented '%s' at '%s:%d'", getNidName(currentExecutingNid), file, line);
+		//hleEmulatorState.emulatorState.runningState.stopCpu();
 		throw(new Exception(std.string.format("Unimplemented '%s' at '%s:%d'", getNidName(currentExecutingNid), file, line)));
 	}
 	

@@ -13,13 +13,13 @@ import pspemu.core.cpu.Registers;
 import pspemu.core.exceptions.HaltException;
 import pspemu.core.exceptions.NotImplementedException;
 
-import pspemu.core.cpu.interpreter.ops.Alu;
-import pspemu.core.cpu.interpreter.ops.Memory;
-import pspemu.core.cpu.interpreter.ops.Branch;
-import pspemu.core.cpu.interpreter.ops.Special;
-import pspemu.core.cpu.interpreter.ops.Jump;
-import pspemu.core.cpu.interpreter.ops.Fpu;
-import pspemu.core.cpu.interpreter.ops.VFpu;
+import pspemu.core.cpu.interpreter.ops.Cpu_Alu;
+import pspemu.core.cpu.interpreter.ops.Cpu_Memory;
+import pspemu.core.cpu.interpreter.ops.Cpu_Branch;
+import pspemu.core.cpu.interpreter.ops.Cpu_Special;
+import pspemu.core.cpu.interpreter.ops.Cpu_Jump;
+import pspemu.core.cpu.interpreter.ops.Cpu_Fpu;
+import pspemu.core.cpu.interpreter.ops.Cpu_VFpu;
 
 import pspemu.core.cpu.tables.Table;
 import pspemu.core.cpu.tables.SwitchGen;

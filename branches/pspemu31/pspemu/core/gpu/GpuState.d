@@ -249,6 +249,7 @@ struct TextureState {
 	TextureMapMode mapMode;
 	TextureProjectionMapMode projMapMode; 
 	uint[2]        texShade;
+	Matrix         matrix;
 
 	// Effects
 	TextureEffect  effect;                /// 
@@ -443,7 +444,6 @@ static struct GpuState {
 	TextureTransfer textureTransfer;
 	
 	void reset() {
-		textureMatrix = Matrix();
 		morphWeights = [1, 0, 0, 0, 0, 0, 0, 0];
 	}
 	
@@ -464,7 +464,7 @@ static struct GpuState {
 			LightComponents materialColorComponents;
 			
 			// Matrix.
-			Matrix projectionMatrix, worldMatrix, viewMatrix, textureMatrix;
+			Matrix projectionMatrix, worldMatrix, viewMatrix;
 			Matrix[8] boneMatrix;
 			uint boneMatrixIndex;
 			Patch patch;
@@ -543,7 +543,7 @@ static struct GpuState {
 		}
 		
 		if (flags.hasTexture) {
-			ret ~= format("    textureMatrix           = \n%s\n",  textureMatrix);
+			ret ~= format("    texture.matrix          = \n%s\n",  texture.matrix);
 			ret ~= format("    texture                 = %s\n",    texture);
 		}
 
