@@ -138,11 +138,11 @@ template ThreadManForUser_Threads() {
 	void sceKernelExitThread(int status) {
 		ThreadState threadState = currentCpuThread.threadState; 
 		
-		threadState.sceKernelThreadInfo.status |=  PspThreadStatus.PSP_THREAD_STOPPED;
-		threadState.sceKernelThreadInfo.status &= ~PspThreadStatus.PSP_THREAD_RUNNING;
 		threadState.sceKernelThreadInfo.exitStatus = status;
-		threadState.onDeleteThread();
 		logInfo("sceKernelExitThread(%d)", status);
+
+		sceKernelTerminateThread(threadState.thid);
+
 		//writefln("sceKernelExitThread(%d)", status);
 		throw(new HaltException(std.string.format("sceKernelExitThread(%d)", status)));
 	}
@@ -414,33 +414,37 @@ template ThreadManForUser_Threads() {
 	}
 
 	
-	int _sceKernelWaitThreadEndCB(SceUID thid, SceUInt* timeout, bool callback) {
-		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
-		
-		WaitMultipleObjects waitMultipleObjects = _getWaitMultipleObjects(callback, false);
-		
-		// @TODO: Only one per thread!
-		waitMultipleObjects.add(currentEmulatorState.threadEndedCondition);
-		
-		//writefln("threadState.sceKernelThreadInfo.status: %d", threadState.sceKernelThreadInfo.status);
-		
-		bool mustContinue() {
-			if (threadState.sceKernelThreadInfo.status & PspThreadStatus.PSP_THREAD_STOPPED) return false;
-			if (threadState.sceKernelThreadInfo.status & PspThreadStatus.PSP_THREAD_KILLED) return false;
-			return true;
-		}
-		
-		try {
-			while (mustContinue) {
-				if (timeout is null) {
-					waitMultipleObjects.waitAnyException();
-				} else {
-					waitMultipleObjects.waitAnyException(cast(uint)std.datetime.convert!("usecs", "msecs")(*timeout));
-				}
-			}
-		} catch (WaitObjectTimeoutException) {
+	int _sceKernelWaitThreadEndCB(SceUID thid, SceUInt* timeout, bool handleCallbacks) {
+		currentThreadState.waitingBlock(std.string.format("_sceKernelWaitThreadEndCB%s(thid=%d)", handleCallbacks ? "CB" : "", thid), {
+			logInfo("_sceKernelWaitThreadEndCB");
+
+			ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
 			
-		}
+			WaitMultipleObjects waitMultipleObjects = _getWaitMultipleObjects(handleCallbacks, false);
+			
+			// @TODO: Only one per thread!
+			waitMultipleObjects.add(threadState.endedEvent);
+			
+			//writefln("threadState.sceKernelThreadInfo.status: %d", threadState.sceKernelThreadInfo.status);
+			
+			bool mustContinue() {
+				if (threadState.sceKernelThreadInfo.status & PspThreadStatus.PSP_THREAD_STOPPED) return false;
+				if (threadState.sceKernelThreadInfo.status & PspThreadStatus.PSP_THREAD_KILLED) return false;
+				return true;
+			}
+			
+			try {
+				while (mustContinue) {
+					if (timeout is null) {
+						waitMultipleObjects.waitAnyException();
+					} else {
+						waitMultipleObjects.waitAnyException(cast(uint)std.datetime.convert!("usecs", "msecs")(*timeout));
+					}
+				}
+			} catch (WaitObjectTimeoutException) {
+				
+			}
+		});
 		
 		return 0;
 	}
@@ -481,6 +485,7 @@ template ThreadManForUser_Threads() {
 		threadState.sceKernelThreadInfo.status |=  PspThreadStatus.PSP_THREAD_STOPPED;
 		threadState.sceKernelThreadInfo.status &= ~PspThreadStatus.PSP_THREAD_RUNNING;
 		threadState.onDeleteThread();
+		threadState.endedEvent.signal();
 				
 		return 0;
 	}

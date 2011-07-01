@@ -56,10 +56,64 @@ void testThreads() {
 	eprintf("%d\n", -1);
 }
 
+static int threadEndedFunction1(int args, void* argp) {
+	eprintf("Thread1.Started\n");
+	return 0;
+}
+
+static int threadEndedFunction2(int args, void* argp) {
+	eprintf("Thread2.Started\n");
+	sceKernelExitThread(0);
+	return 0;
+}
+
+static int threadEndedFunction3(int args, void* argp) {
+	eprintf("Thread3.Started\n");
+	sceKernelDelayThread(10 * 1000);
+	eprintf("Thread3.GoingToEnd\n");
+	sceKernelExitThread(0);
+	return 0;
+}
+
+void testThreadsEnded() {
+	int thread1, thread2, thread3, thread4;
+	
+	// Thread1 will stop returning the function and sceKernelWaitThreadEnd will be executed after the thread have ended.
+	thread1 = sceKernelCreateThread("threadEndedFunction1", (void *)&threadEndedFunction1, 0x12, 0x10000, 0, NULL);
+
+	// Thread1 will stop with sceKernelExitThread and sceKernelWaitThreadEnd will be executed after the thread have ended.
+	thread2 = sceKernelCreateThread("threadEndedFunction2", (void *)&threadEndedFunction2, 0x12, 0x10000, 0, NULL);
+
+	// Thread3 will stop after a while so it will allow to execute sceKernelWaitThreadEnd before it ends.
+	thread3 = sceKernelCreateThread("threadEndedFunction3", (void *)&threadEndedFunction3, 0x12, 0x10000, 0, NULL);
+	
+	// Thread4 won't start never, so sceKernelWaitThreadEnd can be executed before thread is started.
+	thread4 = sceKernelCreateThread("threadEndedFunction4", NULL, 0x12, 0x10000, 0, NULL);
+
+	sceKernelStartThread(thread1, 0, NULL);
+	sceKernelStartThread(thread2, 0, NULL);
+	sceKernelStartThread(thread3, 0, NULL);
+	
+	// This waits 5ms and supposes both threads (1 and 2) have ended. Thread 3 should have not ended. Thread 4 is not going to be started.
+	sceKernelDelayThread(2 * 1000);
+
+	eprintf("Threads.EndedExpected\n");
+	
+	sceKernelWaitThreadEnd(thread1, NULL);
+	eprintf("Thread1.Ended\n");
+	sceKernelWaitThreadEnd(thread2, NULL);
+	eprintf("Thread2.Ended\n");
+	sceKernelWaitThreadEnd(thread3, NULL);
+	eprintf("Thread3.Ended\n");
+	sceKernelWaitThreadEnd(thread4, NULL);
+	eprintf("Thread4.NotStartedSoEnded\n");
+}
+
 int main(int argc, char **argv) {
 	pspDebugScreenInit();
 
 	testThreads();
+	testThreadsEnded();
 	
 	return 0;
 }

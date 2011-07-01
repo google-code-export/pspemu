@@ -64,13 +64,15 @@ class EmulatorState {
 	}
 	
 	public void cpuThreadRunningBlock(void delegate() callback) {
-		threadStartedCondition.signal();
 		threadsRunning++;
-		{
-			callback();
+		threadStartedCondition.signal();
+
+		scope (exit) {
+			threadsRunning--;
+			threadEndedCondition.signal();
 		}
-		threadsRunning--;
-		threadEndedCondition.signal();
+
+		callback();
 	}
 
     public void waitSomeCpuThreadsToStart() {
