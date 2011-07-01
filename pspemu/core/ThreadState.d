@@ -37,6 +37,8 @@ class ThreadState {
 	public Module threadModule;
 	public Event onDeleteThread;
 	int sleepingAwakenCount;
+	
+	WaitEvent endedEvent;
 
 	template WakeUp_Template() {
 		CriticalSection sleepingCriticalSection;
@@ -126,6 +128,7 @@ class ThreadState {
 		this.emulatorState = emulatorState;
 		this.registers = registers;
 		wakeUpEvent = new WaitEvent("WakeUpEvent");
+		endedEvent  = new WaitEvent("EndedEvent", true);
 		sleepingCriticalSection = new CriticalSection();
 		
 		this.sceKernelThreadInfo.status |= PspThreadStatus.PSP_THREAD_STOPPED;

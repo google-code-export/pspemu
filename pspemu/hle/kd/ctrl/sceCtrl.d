@@ -7,6 +7,9 @@ import pspemu.hle.kd.ctrl.Types;
 //debug = DEBUG_CONTROLLER;
 
 import std.stdio;
+import std.datetime;
+import core.time;
+import core.thread;
 
 import pspemu.hle.Module;
 
@@ -41,6 +44,12 @@ class sceCtrl_driver : ModuleNative {
 			if (!positive) pad_data[n].Buttons = ~pad_data[n].Buttons;
 		}
 	}
+	
+	void _waitReadFrame() {
+		// @TODO Not exactly? Too slow when enabled. Too fast when disabled. 
+		//currentEmulatorState().display.waitVblank();
+		Thread.sleep(dur!"msecs"(10));
+	}
 
 	/**
 	 * Read buffer positive
@@ -62,9 +71,7 @@ class sceCtrl_driver : ModuleNative {
 	 */
 	// sceCtrlReadBufferPositive () is blocking and waits for vblank (slower).
 	int sceCtrlReadBufferPositive(SceCtrlData* pad_data, int count) {
-		// @TODO Not exactly? Too slow when enabled. Too fast when disabled. 
-		//currentEmulatorState().display.waitVblank();
-		
+		_waitReadFrame();
 		readBufferedFrames(pad_data, count, true);
 		logTrace("sceCtrlReadBufferPositive(%d):%s", count, *pad_data);
 		return count;
@@ -138,6 +145,7 @@ class sceCtrl_driver : ModuleNative {
 	 */
 	int sceCtrlReadLatch(SceCtrlLatch* currentLatch) {
 		//currentEmulatorState().display.waitVblank();
+		_waitReadFrame();
 		logInfo("sceCtrlReadLatch()");
 		return _sceCtrlReadLatch(currentLatch);
 	}

@@ -10,9 +10,9 @@ extern (System) {
 }
 
 class WaitEvent : WaitObject {
-	this(string name = null, bool initiallySignaled = false) {
+	this(string name = null, bool manuallyResetSignal = false, bool initiallySignaled = false) {
 		this.name = name;
-		this.handle = enforce(CreateEventA(null, false, initiallySignaled, toStringz(name)));
+		this.handle = enforce(CreateEventA(null, manuallyResetSignal, initiallySignaled, toStringz(name)));
 	}
 
 	public void signal() {
