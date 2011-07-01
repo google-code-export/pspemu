@@ -64,7 +64,7 @@ class Gpu {
 	
 	EmulatorState emulatorState;
 	Memory   memory;
-	GpuImpl  impl;
+	GpuImplAbstract  impl;
 	GpuState state;
 
 	DisplayList* currentDisplayList;
@@ -83,9 +83,21 @@ class Gpu {
 	bool recordFrameStart = false;
 	
 	// Statistics.
+	StopWatch gpuTimePerFrameStopWatch;
+	StopWatch vertexExtractionStopWatch;
+	StopWatch bufferTransferStopWatch;
+
 	uint lastFrameTime;
+	uint lastSetStateTime;
+	uint lastVertexExtractionTime;
+	uint lastDrawTime;
+	uint lastBufferTransferTime;
+
 	uint numberOfPrims, numberOfPrimsTemp;
 	uint numberOfVertices, numberOfVerticesTemp;
+	
+	bool drawBufferTransferEnabled = true;
+	bool justDrawOnVblank = false;
 	
 	WaitEvent initializedEvent;
 	
@@ -97,7 +109,7 @@ class Gpu {
 	
 	RecordFrameStep recordFrameStep = RecordFrameStep.doNone;
 
-	this(EmulatorState emulatorState, GpuImpl impl) {
+	this(EmulatorState emulatorState, GpuImplAbstract impl) {
 		this.endedExecutingListsEvent = new WaitEvent();
 		this.initializedEvent = new WaitEvent();
 
@@ -211,17 +223,17 @@ class Gpu {
 		debug (DEBUG_GPU_VERBOSE) writefln("<executeList> (%s)", displayList);
 		Command* lastCommandPointer;
 		try {
+			gpuTimePerFrameStopWatch.start();
 			while (displayList.hasMore) {
 				while (displayList.isStalled) {
 					logTrace("  stalled() : %s", displayList);
 					newWaitAndCheck([displayList.displayListNewDataEvent]);
 				}
-				newWaitAndCheck2();
 				lastCommandPointer = displayList.pointer;
-				gpuTimePerFrameStopWatch.start();
 				executeSingleCommand(displayList);
-				gpuTimePerFrameStopWatch.stop();
 			}
+			gpuTimePerFrameStopWatch.stop();
+			newWaitAndCheck2();
 		} catch (Throwable o) {
 			writefln("Last command: %s", *lastCommandPointer);
 			throw(o);
@@ -244,8 +256,6 @@ class Gpu {
 		initializedEvent.wait();
 	}
 	
-	StopWatch gpuTimePerFrameStopWatch;
-
 	protected void run() {
 		while (running) {
 			try {
@@ -305,7 +315,7 @@ class Gpu {
 				newWaitAndCheck([displayList.displayListEndedEvent]);
 			}
 
-			performBufferOp(BufferOperation.STORE);
+			performBufferOp2(BufferOperation.STORE);
 		}
 		
 		void waitVblank() {
@@ -314,6 +324,11 @@ class Gpu {
 			if (lastFrameTimeTemp != 0) {
 				lastFrameTime = lastFrameTimeTemp;
 			}
+			
+			lastSetStateTime = cast(uint)impl.setStateStopWatch.peek().msecs;
+			lastDrawTime = cast(uint)impl.drawStopWatch.peek().msecs;
+			lastVertexExtractionTime = cast(uint)vertexExtractionStopWatch.peek().msecs;
+			lastBufferTransferTime = cast(uint)bufferTransferStopWatch.peek().msecs;
 			
 			if (numberOfPrimsTemp != 0) {
 				numberOfPrims = numberOfPrimsTemp; numberOfPrimsTemp = 0;
@@ -325,6 +340,14 @@ class Gpu {
 
 			//writefln("Frame: %s", lastFrameTime);
 			gpuTimePerFrameStopWatch.reset();
+			vertexExtractionStopWatch.reset();
+			bufferTransferStopWatch.reset();
+			impl.setStateStopWatch.reset();
+			impl.drawStopWatch.reset();
+			
+			if (justDrawOnVblank) {
+				performBufferOp(BufferOperation.STORE);
+			}
 		}
 		
 		/**
@@ -341,7 +364,7 @@ class Gpu {
 				impl.recordFrameEnd();
 			}
 			
-			performBufferOp(BufferOperation.STORE);
+			performBufferOp2(BufferOperation.STORE);
 			if (recordFrameStep == RecordFrameStep.doStart) {
 				recordFrameStep = RecordFrameStep.doEnd;
 				impl.recordFrameStart();
@@ -428,7 +451,17 @@ class Gpu {
 		}
 	}
 	
+	void performBufferOp2(BufferOperation bufferOperation, BufferType bufferType = BufferType.ALL) {
+		if (!justDrawOnVblank) {
+			performBufferOp(bufferOperation, bufferType);
+		}
+	}
+	
 	void performBufferOp(BufferOperation bufferOperation, BufferType bufferType = BufferType.ALL) {
+		bufferTransferStopWatch.start(); scope (exit) bufferTransferStopWatch.stop();
+
+		//if (!drawBufferTransferEnabled) return;
+		
 		if (bufferOperation == BufferOperation.LOAD) {
 			if (state.drawBuffer.storeAddress) logTrace("performBufferOp(LOAD) has state.drawBuffer.mustStore. It wasn't stored yet!");
 			if (bufferType & BufferType.COLOR) loadBuffer(&state.drawBuffer);

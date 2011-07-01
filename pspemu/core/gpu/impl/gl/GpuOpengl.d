@@ -346,6 +346,10 @@ class GpuOpengl : GpuImplAbstract {
 
 		//writefln("draw[1]");
 		drawBegin(flags);
+		
+		drawStopWatch.start();
+		scope (exit) drawStopWatch.stop();
+		
 		//writefln("draw[2]");
 		{
 			switch (type) {
@@ -1059,6 +1063,9 @@ template OpenglUtils() {
 	}
 
 	void drawBegin(PrimitiveFlags flags) {
+		setStateStopWatch.start();
+		scope (exit) setStateStopWatch.stop();
+		
 		version (VERSION_ENABLED_STATE_CORTOCIRCUIT_EX) {
 			// @TODO: To avoid checking the whole struct, we could increment a uint inside the struct, every time we preform an update.
 			// If that value has changed, then check the whole state.

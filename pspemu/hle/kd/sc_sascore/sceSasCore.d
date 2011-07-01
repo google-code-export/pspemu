@@ -3,6 +3,7 @@ module pspemu.hle.kd.sc_sascore.sceSasCore;
 import pspemu.hle.ModuleNative;
 import pspemu.hle.HleEmulatorState;
 import pspemu.utils.BitUtils;
+import pspemu.hle.kd.audio.Types;
 
 enum WaveformEffectType {
     PSP_SAS_EFFECT_TYPE_OFF   = -1,
@@ -429,12 +430,22 @@ class sceSasCore : ModuleNative {
 
 	int __sceSasCoreWithMix(SasCore* sasCore, void* sasInOut, int leftVol, int rightVol) {
 		unimplemented_notice();
+		
+		
 		return 0;
 	}
 	
 	uint __sceSasCore(SasCore* sasCore, void* sasOut) {
-		// Disabled showing notice because being too annoying.
-		//unimplemented_notice();
+		int[] mixedSamples = new int[sasCore.grainSamples * 2];
+		short[] output = (cast(short *)sasOut)[0..sasCore.grainSamples * 2];
+		output[] = 0;
+		
+		foreach (ref voice; sasCore.voices) {
+			if (voice.playing) {
+				
+			}
+		}
+
 		return 0;
     }
 }
