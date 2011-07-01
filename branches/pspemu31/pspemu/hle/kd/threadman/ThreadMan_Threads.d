@@ -181,13 +181,13 @@ template ThreadManForUser_Threads() {
 				if (currentThreadState.getWakeUpCount() > 0) {
 					currentThreadState.decrementWakeUpCount();
 				} else {
-					logInfo("@@ Thread sleeping(%s)", currentCpuThread.threadState);
+					//logInfo("@@ Thread sleeping(%s)", currentCpuThread.threadState);
 					currentCpuThread.threadState.isSleeping = true;
 					while (currentThreadState.getWakeUpCount() < 0) {
 						waitMultipleObjects.waitAny();
 					}
 					currentCpuThread.threadState.isSleeping = false;
-					logInfo("@@ Thread awaken(%s)", currentCpuThread.threadState);
+					//logInfo("@@ Thread awaken(%s)", currentCpuThread.threadState);
 				}
 			});
 		});
@@ -229,7 +229,7 @@ template ThreadManForUser_Threads() {
 	 * @return < 0 on error.
 	 */
 	int sceKernelSleepThread() {
-		logInfo("sceKernelSleepThread()");
+		//logInfo("sceKernelSleepThread()");
 		return _sceKernelSleepThreadCB(false);
 	}
 	

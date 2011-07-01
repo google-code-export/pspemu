@@ -93,14 +93,24 @@ class MainForm : Form, IMessageFilter {
 		drawingArea2x.visible = scale2x;
 	}
 	
+	@property auto gpu() {
+		return guiDfl.hleEmulatorState.emulatorState.gpu;
+	}
+
+	
 	void setTitle() {
 		string ctext = "";
 		ctext ~= std.string.format("D PSP Emulator r%d", SvnVersion.revision);
 		ctext ~= std.string.format(" - %s", guiDfl.hleEmulatorState.mainModuleName); 
 		ctext ~= std.string.format(" - %s", guiDfl.hleEmulatorState.rootFileSystem.gameID);
-		ctext ~= std.string.format(" - Gpu: %dms", guiDfl.hleEmulatorState.emulatorState.gpu.lastFrameTime);
-		ctext ~= std.string.format(" - Prims: %d", guiDfl.hleEmulatorState.emulatorState.gpu.numberOfPrims);
-		ctext ~= std.string.format(" - Vertices: %d", guiDfl.hleEmulatorState.emulatorState.gpu.numberOfVertices);
+		ctext ~= std.string.format(" - Gpu: %dms", gpu.lastFrameTime);
+		ctext ~= std.string.format(" - Prims: %d", gpu.numberOfPrims);
+		ctext ~= std.string.format(" - Vertices: %d", gpu.numberOfVertices);
+		ctext ~= std.string.format(" - GpuVertex: %dms", gpu.lastVertexExtractionTime);
+		ctext ~= std.string.format(" - GpuState: %dms", gpu.lastSetStateTime);
+		ctext ~= std.string.format(" - GpuDraw: %dms", gpu.lastDrawTime);
+		ctext ~= std.string.format(" - GpuBufTrans: %dms", gpu.lastBufferTransferTime);
+		
 		this.text = ctext; 
 	}
 
@@ -197,6 +207,16 @@ class MainForm : Form, IMessageFilter {
 				}, {
 					return guiDfl.display.enableWaitVblank;
 				}),
+				createMenu("Gpu DrawBufferTransfer\tF9", {
+					gpu.drawBufferTransferEnabled = !gpu.drawBufferTransferEnabled;
+				}, {
+					return gpu.drawBufferTransferEnabled;
+				}),
+				createMenu("Gpu Just Transfer buffers on Vblank\tF10", {
+					gpu.justDrawOnVblank = !gpu.justDrawOnVblank;
+				}, {
+					return gpu.justDrawOnVblank;
+				}),
 				createMenu("-"),
 				createMenu("Dump Threads\tF2"),
 				createMenu("-"),
@@ -258,7 +278,7 @@ class MainForm : Form, IMessageFilter {
 	}
 	
 	void clickRecordGpuFrame() {
-		guiDfl.hleEmulatorState.emulatorState.gpu.recordFrame();
+		gpu.recordFrame();
 	}
 	
 	void clickOpen() {
@@ -371,6 +391,15 @@ class MainForm : Form, IMessageFilter {
 						scale2x = !scale2x;
 						return true;
 					} break;
+					case VK_F9:
+						gpu.drawBufferTransferEnabled = !gpu.drawBufferTransferEnabled;
+						return true;
+					break;
+					case VK_F10:
+						gpu.justDrawOnVblank = !gpu.justDrawOnVblank;
+						return true;
+					break;
+
 					default:
 					break;
 				}

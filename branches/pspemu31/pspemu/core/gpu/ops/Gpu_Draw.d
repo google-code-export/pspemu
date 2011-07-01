@@ -326,16 +326,18 @@ template Gpu_Draw() {
 		//vertexListBufferArrays.reserve(vertexCount);
 		
 		uint indexCount = vertexCount;
-		
 		uint maxVertexCount;
-		gpu.impl.readIndexes(indexListBuffer, indexPointerBase, indexCount, maxVertexCount, vertexType);
-		gpu.impl.readVertices(vertexListBuffer, vertexPointerBase, maxVertexCount, vertexType, gpu.state.morphWeights, gpu.state.boneMatrix);
+		
+		gpu.vertexExtractionStopWatch.start();
+		{
+			gpu.impl.readIndexes(indexListBuffer, indexPointerBase, indexCount, maxVertexCount, vertexType);
+			gpu.impl.readVertices(vertexListBuffer, vertexPointerBase, maxVertexCount, vertexType, gpu.state.morphWeights, gpu.state.boneMatrix);
+		}
+		gpu.vertexExtractionStopWatch.stop();
 		
 		// Need to have the framebuffer updated.
 		// @TODO: Check which buffers are going to be used (using the state).
-		gpu.performBufferOp(BufferOperation.LOAD, BufferType.ALL);
-		StopWatch stopWatch;
-		stopWatch.start();
+		if (gpu.drawBufferTransferEnabled) gpu.performBufferOp(BufferOperation.LOAD, BufferType.ALL);
 		try {
 			gpu.impl.draw(
 				indexListBuffer[0..indexCount],
@@ -348,12 +350,12 @@ template Gpu_Draw() {
 			//throw(o);
 		}
 		debug (DEBUG_DRAWING) {
-			writefln("PRIM(0x%08X, %d, %d) : microseconds:%d", gpu.state.drawBuffer.address, primitiveType, vertexCount, stopWatch.time);
+			writefln("PRIM(0x%08X, %d, %d)", gpu.state.drawBuffer.address, primitiveType, vertexCount);
 		}
 		// Now we should store the updated framebuffer when required.
 		// @TODO: Check which buffers have been updated (using the state).
 		//gpu.impl.test("prim");
-		gpu.markBufferOp(BufferOperation.STORE, BufferType.ALL);
+		if (gpu.drawBufferTransferEnabled) gpu.markBufferOp(BufferOperation.STORE, BufferType.ALL);
 		
 		gpu.numberOfPrimsTemp++;
 		gpu.numberOfVerticesTemp += vertexCount;

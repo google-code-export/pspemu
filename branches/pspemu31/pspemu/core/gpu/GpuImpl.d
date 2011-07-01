@@ -6,6 +6,7 @@ import pspemu.core.gpu.GpuState;
 import std.stdio;
 import pspemu.utils.BitUtils;
 import pspemu.utils.MathUtils;
+public import std.datetime;
 
 interface GpuImpl {
 	void setState(GpuState *state);
@@ -30,6 +31,8 @@ interface GpuImpl {
 
 abstract class GpuImplAbstract : GpuImpl {
 	GpuState *state;
+	StopWatch setStateStopWatch;
+	StopWatch drawStopWatch;
 	void setState(GpuState *state) { this.state = state; }
 	
 	void readIndexes(ref ushort[] indexListBuffer, ubyte* indexPointer, uint indexCount, out uint maxVertexCount, VertexType vertexType) {
@@ -70,11 +73,11 @@ abstract class GpuImplAbstract : GpuImpl {
 	 * @TODO Use OpenCL integrated with OpenGL on the GpuOpenGL driver.
 	 */
 	void readVertices(ref VertexState[] vertexListBuffer, ubyte* vertexPointer, int maxVertexCount, VertexType vertexType, float[] morphWeights, Matrix[8] boneMatrix) {
-		void pad(ref ubyte* ptr, ubyte pad) {
+		static void pad(ref ubyte* ptr, ubyte pad) {
 			if ((cast(uint)ptr) % pad) ptr += (pad - ((cast(uint)ptr) % pad));
 		}
 
-		void extractArray(T)(float[] array) {
+		static void extractArray(T)(ref ubyte* vertexPointer, float[] array) {
 			pad(vertexPointer, T.sizeof);
 			foreach (ref value; array) {
 				debug (EXTRACT_PRIM_COMPONENT) writefln("%08X(%s):%s", cast(uint)cast(void *)vertexPointer, typeid(T), *cast(T*)vertexPointer);
@@ -83,7 +86,7 @@ abstract class GpuImplAbstract : GpuImpl {
 			}
 		}
 
-		void extractColor8888(float[] array) {
+		static void extractColor8888(ref ubyte* vertexPointer, float[] array) {
 			pad(vertexPointer, 4);
 			for (int n = 0; n < 4; n++) {
 				array[n] = cast(float)vertexPointer[n] / 255.0;
@@ -91,7 +94,7 @@ abstract class GpuImplAbstract : GpuImpl {
 			vertexPointer += 4;
 		}
 
-		void extractColorInvalidbits (float[] array) {
+		static void extractColorInvalidbits (ref ubyte* vertexPointer, float[] array) {
 			pad(vertexPointer, 1);
 			// palette?
 			writefln("Unimplemented Gpu.OP_PRIM.extractColorInvalidbits");
@@ -99,7 +102,7 @@ abstract class GpuImplAbstract : GpuImpl {
 			vertexPointer += 1;
 		}
 
-		void extractColor5650(float[] array) {
+		static void extractColor5650(ref ubyte* vertexPointer, float[] array) {
 			pad(vertexPointer, 2);
 			ushort data = *cast(ushort*)vertexPointer;
 			array[0] = BitUtils.extractNormalizedFloat!( 0, 5)(data);
@@ -109,7 +112,7 @@ abstract class GpuImplAbstract : GpuImpl {
 			vertexPointer += 2;
 		}
 
-		void extractColor5551(float[] array) {
+		static void extractColor5551(ref ubyte* vertexPointer, float[] array) {
 			pad(vertexPointer, 2);
 			ushort data = *cast(ushort*)vertexPointer;
 			array[0] = BitUtils.extractNormalizedFloat!( 0, 5)(data);
@@ -119,7 +122,7 @@ abstract class GpuImplAbstract : GpuImpl {
 			vertexPointer += 2;
 		}
 		
-		void extractColor4444(float[] array) {
+		static void extractColor4444(ref ubyte* vertexPointer, float[] array) {
 			pad(vertexPointer, 2);
 			ushort data = *cast(ushort*)vertexPointer;
 			array[0] = BitUtils.extractNormalizedFloat!( 0, 4)(data);
@@ -129,8 +132,8 @@ abstract class GpuImplAbstract : GpuImpl {
 			vertexPointer += 2;
 		}
 
-		auto extractTable      = [null, &extractArray!(byte), &extractArray!(short), &extractArray!(float)];
-		auto extractColorTable = [null, &extractColorInvalidbits, &extractColorInvalidbits, &extractColorInvalidbits, &extractColor5650, &extractColor5551, &extractColor4444, &extractColor8888];
+		static auto extractTable      = [null, &extractArray!(byte), &extractArray!(short), &extractArray!(float)];
+		static auto extractColorTable = [null, &extractColorInvalidbits, &extractColorInvalidbits, &extractColorInvalidbits, &extractColor5650, &extractColor5551, &extractColor4444, &extractColor8888];
 
 		auto extractWeights    = extractTable[vertexType.weight  ];
 		auto extractTexture    = extractTable[vertexType.texture ];
@@ -159,29 +162,29 @@ abstract class GpuImplAbstract : GpuImpl {
 			pad(vertexPointer, vertexAlignSize);
 			
 			if (extractWeights) {
-				extractWeights(vertex.weights[0..vertexType.skinningWeightCount]);
+				extractWeights(vertexPointer, vertex.weights[0..vertexType.skinningWeightCount]);
 				debug (EXTRACT_PRIM) writef("| weights(...) ");
 			}
 			if (extractTexture) {
-				extractTexture((&vertex.u)[0..2]);
+				extractTexture(vertexPointer, (&vertex.u)[0..2]);
 				debug (EXTRACT_PRIM) writef("| texture(%f, %f) ", vertex.u, vertex.v);
 			}
 			if (extractColor) {
-				extractColor((&vertex.r)[0..4]);
+				extractColor(vertexPointer, (&vertex.r)[0..4]);
 				debug (EXTRACT_PRIM) writef("| color(%f, %f, %f, %f) ", vertex.r, vertex.g, vertex.b, vertex.a);
 			}
 			if (extractNormal) {
-				extractNormal((&vertex.nx)[0..3]);
+				extractNormal(vertexPointer, (&vertex.nx)[0..3]);
 				debug (EXTRACT_PRIM) writef("| normal(%f, %f, %f) ", vertex.nx, vertex.ny, vertex.nz);
 			}
 			if (extractPosition) {
-				extractPosition((&vertex.px)[0..3]);
+				extractPosition(vertexPointer, (&vertex.px)[0..3]);
 				debug (EXTRACT_PRIM) writef("| position(%f, %f, %f) ", vertex.px, vertex.py, vertex.pz);
 			}
 			debug (EXTRACT_PRIM) writefln("");
 		}
 		
-		void multiplyVectorPerMatrix(bool translate)(out float[3] outf, float[] inf, in Matrix matrix, float weight) {
+		static void multiplyVectorPerMatrix(bool translate)(out float[3] outf, float[] inf, in Matrix matrix, float weight) {
 			for (int i = 0; i < 3; i++) {
 				float f = 0;
 				f += inf[0] * matrix.cells[0 + i]; 
