@@ -377,12 +377,12 @@ class sceAudio_driver : ModuleNative {
 	  *
 	  * @return 0 on success, an error if less than 0.
 	  */
-	int sceAudioSRCChReserve(int samplecount, int freq, PspAudioFormats format) {
+	int sceAudioSRCChReserve(int samplecount, int freq, int channels) {
 		logInfo("Partially implemented: sceAudioSRCChReserve(%d, %d, %s:%d)", samplecount, freq, to!string(format), format);
 		
 		srcChannel.samplecount = samplecount;
 		srcChannel.freq = freq;
-		srcChannel.format = format;
+		srcChannel.format = (channels == 1) ? PspAudioFormats.PSP_AUDIO_FORMAT_MONO : PspAudioFormats.PSP_AUDIO_FORMAT_STEREO;
 		srcChannel.reserved = true;
 		
 		return 0;

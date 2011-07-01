@@ -26,6 +26,16 @@ class WaitMultipleObjects {
 		this.waitObjects ~= waitObject;
 	}
 	
+	public WaitObject waitAnyException(uint timeoutMilliseconds = uint.max) {
+		WaitObject selectedWaitObject = waitAny(timeoutMilliseconds);
+		final switch (this.result) {
+			case WaitResult.ABANDONED: throw(new WaitObjectAbandonedException(""));
+			case WaitResult.TIMEOUT  : throw(new WaitObjectTimeoutException(""));
+			case WaitResult.FAILED   : throw(new WaitObjectFailedException(""));
+			case WaitResult.OBJECT   : return selectedWaitObject;
+		}
+	}
+	
 	public WaitObject waitAny(uint timeoutMilliseconds = uint.max) {
 		if (waitObjects.length) {
 			scope handles = new HANDLE[this.waitObjects .length]; 

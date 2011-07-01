@@ -130,6 +130,9 @@ class Syscall : ISyscall {
 
 			// Special syscalls for this emulator:
 			case 0x1003: { // _pspemuHLECall3
+				//writefln("RESULT: %08X", registers.V0); 
+				//registers.A0 = registers.V0;
+				//callLibrary("ThreadManForUser", "sceKernelExitThread");
 				throw(new TerminateCallbackException("TerminateCallbackException"));
 			} break;
 

@@ -355,7 +355,10 @@ template Gpu_Draw() {
 		// Now we should store the updated framebuffer when required.
 		// @TODO: Check which buffers have been updated (using the state).
 		//gpu.impl.test("prim");
-		if (gpu.drawBufferTransferEnabled) gpu.markBufferOp(BufferOperation.STORE, BufferType.ALL);
+		//if (gpu.drawBufferTransferEnabled)
+		{
+			gpu.markBufferOp(BufferOperation.STORE, BufferType.ALL);
+		}
 		
 		gpu.numberOfPrimsTemp++;
 		gpu.numberOfVerticesTemp += vertexCount;

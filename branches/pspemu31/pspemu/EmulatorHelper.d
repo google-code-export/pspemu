@@ -117,6 +117,8 @@ class EmulatorHelper {
 			case "iso": case "ciso": {
 				fsProgramPath = "umd0:/PSP_GAME/SYSDIR/BOOT.BIN";
 				rootFileSystem.setIsoPath(pspModulePath);
+				emulator.emulatorState.gpu.drawBufferTransferEnabled = false;
+				emulator.emulatorState.gpu.justDrawOnVblank = true;
 			} break;
 			default:
 				throw(new Exception(std.string.format("Can't handle type '%s'", detectedFormat)));

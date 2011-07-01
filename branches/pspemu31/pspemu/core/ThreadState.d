@@ -42,15 +42,6 @@ class ThreadState {
 		CriticalSection sleepingCriticalSection;
 		WaitEvent wakeUpEvent;
 		protected int _wakeUpCount;
-		bool isSleeping;
-		
-		/*
-		@property bool isSleeping() {
-			synchronized (this) {
-				return (_wakeUpCount < 0);
-			}
-		}
-		*/
 		
 		int getWakeUpCount() {
 			synchronized (this) {
@@ -136,6 +127,9 @@ class ThreadState {
 		this.registers = registers;
 		wakeUpEvent = new WaitEvent("WakeUpEvent");
 		sleepingCriticalSection = new CriticalSection();
+		
+		this.sceKernelThreadInfo.status |= PspThreadStatus.PSP_THREAD_STOPPED;
+		this.sceKernelThreadInfo.status |= PspThreadStatus.PSP_THREAD_READY;
 	}
 
 	public this(string name, EmulatorState emulatorState) {
@@ -146,7 +140,10 @@ class ThreadState {
 	public void nativeThreadSet(void delegate() run, string name = "<unknown thread>") {
 		nativeThread = new Thread(delegate() {
 			nativeThreadHandle = GetCurrentThread();
+			sceKernelThreadInfo.status &= ~PspThreadStatus.PSP_THREAD_STOPPED;
+			sceKernelThreadInfo.status |= PspThreadStatus.PSP_THREAD_RUNNING;
 			
+
 			/*
 			final switch (sceKernelThreadInfo.currentPriority) {
 				case 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15:
@@ -174,13 +171,6 @@ class ThreadState {
 		return nativeThread.isRunning();
 	}
 	
-	/*
-	public bool isSleeping() {
-		return !nativeThreadIsRunning;
-		//if (nativeThread.sleep)
-	}
-	*/
-	
 	static ThreadState getFromThread(Thread thread = null) {
 		if (thread is null) thread = Thread.getThis();
 		return threadStatePerThread[thread];
@@ -207,10 +197,12 @@ class ThreadState {
 	public void waitingBlock(string waitType, void delegate() callback) {
 		this.waitType = waitType;
 		this.waiting = true;
+		this.sceKernelThreadInfo.status |= PspThreadStatus.PSP_THREAD_WAITING;
 
 		scope (exit) {
 			this.waitType = "";
 			this.waiting = false;
+			this.sceKernelThreadInfo.status &= ~PspThreadStatus.PSP_THREAD_WAITING;
 		}
 
 		callback();

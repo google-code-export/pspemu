@@ -9,6 +9,8 @@ import std.stdio;
 import std.zlib;
 import std.intrinsic;
 
+import std.datetime;
+
 import pspemu.utils.StructUtils;
 
 //import pspemu.utils.Utils;
@@ -31,24 +33,29 @@ class Texture {
 	bool refreshAnyway;
 	uint textureHash, clutHash;
 	PixelFormats textureFormat, clutFormat;
+	int size;
+	SysTime lastUsedTime;
 	
 	this() {
 		glGenTextures(1, &gltex);
 		markForRecheck = true;
 		refreshAnyway = true;
+		size = 0;
+		lastUsedTime = Clock.currTime;
 	}
 	
 	void free() {
 		if (gltex != 0) {
 			glDeleteTextures(1, &gltex);
 			gltex = 0;
+			size = 0;
 		}
 	}
 
 	~this() {
 		free();
 	}
-
+	
 	void bind() {
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, gltex);
@@ -73,7 +80,13 @@ class Texture {
 		return data;
 	}
 	
+	bool canDelete() {
+		return ((Clock.currTime - lastUsedTime) > dur!"seconds"(4));
+	}
+	
 	void update(Memory memory, ref TextureState texture, ref ClutState clut) {
+		lastUsedTime = Clock.currTime;
+
 		//markForRecheck = true;
 		//refreshAnyway = true;
 		
@@ -190,6 +203,8 @@ class Texture {
 		glPixelStorei(GL_UNPACK_ALIGNMENT, cast(int)glPixelFormat.size);
 		glPixelStorei(GL_UNPACK_ROW_LENGTH, texture.buffer_width);
 		//glPixelStorei(GL_UNPACK_ROW_LENGTH, PixelFormatUnpackSize(texture.format, texture.buffer_width) / 2);
+		
+		this.size = textureData.length; 
 		
 		glTexImage2D(
 			GL_TEXTURE_2D,
