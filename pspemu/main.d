@@ -10,6 +10,8 @@ import std.c.windows.windows;
 
 import core.thread;
 import core.time;
+import core.memory;
+
 import std.stdio;
 import std.conv;
 import std.c.stdlib;
@@ -108,6 +110,8 @@ void init(string[] args) {
 
 
 int main(string[] args) {
+	//core.memory.GC.disable();
+	
 	init(args);
 	
 	//writefln("%d, %d", getLastOnlineVersion, SvnVersion.revision);

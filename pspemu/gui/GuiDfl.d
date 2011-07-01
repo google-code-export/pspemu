@@ -110,6 +110,12 @@ class MainForm : Form, IMessageFilter {
 		ctext ~= std.string.format(" - GpuState: %dms", gpu.lastSetStateTime);
 		ctext ~= std.string.format(" - GpuDraw: %dms", gpu.lastDrawTime);
 		ctext ~= std.string.format(" - GpuBufTrans: %dms", gpu.lastBufferTransferTime);
+		try {
+			ctext ~= std.string.format(" - GpuTexCount: %d", gpu.impl.getTextureCacheCount());
+			ctext ~= std.string.format(" - GpuSizeCount: %.2f MB", cast(float)gpu.impl.getTextureCacheSize() / 1024 / 1024);
+		} catch (Throwable o) {
+			
+		}
 		
 		this.text = ctext; 
 	}

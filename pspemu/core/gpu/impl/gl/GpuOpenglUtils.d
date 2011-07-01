@@ -63,7 +63,9 @@ template OpenglBase() {
 		openglMakeCurrent();
 
 		DerelictGL.loadExtensions();
+		//writefln("Mx available: %d", DerelictGL.findMaxAvailable);
 		DerelictGL.loadClassicVersions(GLVersion.GL21);
+		//DerelictGL.loadClassicVersions(GLVersion.GL15);
 		//glInit();
 		//assert(glActiveTexture !is null);
 

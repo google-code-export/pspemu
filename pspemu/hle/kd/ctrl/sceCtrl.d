@@ -62,7 +62,9 @@ class sceCtrl_driver : ModuleNative {
 	 */
 	// sceCtrlReadBufferPositive () is blocking and waits for vblank (slower).
 	int sceCtrlReadBufferPositive(SceCtrlData* pad_data, int count) {
-		currentEmulatorState().display.waitVblank();
+		// @TODO Not exactly? Too slow when enabled. Too fast when disabled. 
+		//currentEmulatorState().display.waitVblank();
+		
 		readBufferedFrames(pad_data, count, true);
 		logTrace("sceCtrlReadBufferPositive(%d):%s", count, *pad_data);
 		return count;
@@ -135,7 +137,7 @@ class sceCtrl_driver : ModuleNative {
 	 * @return 
 	 */
 	int sceCtrlReadLatch(SceCtrlLatch* currentLatch) {
-		currentEmulatorState().display.waitVblank();
+		//currentEmulatorState().display.waitVblank();
 		logInfo("sceCtrlReadLatch()");
 		return _sceCtrlReadLatch(currentLatch);
 	}

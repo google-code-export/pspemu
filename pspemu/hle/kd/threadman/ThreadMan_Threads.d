@@ -136,6 +136,12 @@ template ThreadManForUser_Threads() {
 	 * @param status - Exit status.
 	 */
 	void sceKernelExitThread(int status) {
+		ThreadState threadState = currentCpuThread.threadState; 
+		
+		threadState.sceKernelThreadInfo.status |=  PspThreadStatus.PSP_THREAD_STOPPED;
+		threadState.sceKernelThreadInfo.status &= ~PspThreadStatus.PSP_THREAD_RUNNING;
+		threadState.sceKernelThreadInfo.exitStatus = status;
+		threadState.onDeleteThread();
 		logInfo("sceKernelExitThread(%d)", status);
 		//writefln("sceKernelExitThread(%d)", status);
 		throw(new HaltException(std.string.format("sceKernelExitThread(%d)", status)));
@@ -174,20 +180,19 @@ template ThreadManForUser_Threads() {
 	}
 
 	int _sceKernelSleepThreadCB(bool handleCallbacks) {
-		currentThreadState.sleepingCriticalSection.lock({
-			scope waitMultipleObjects = _getWaitMultipleObjects(handleCallbacks, true);
-			
-			currentThreadState.waitingBlock("_sceKernelSleepThreadCB", {
-				if (currentThreadState.getWakeUpCount() > 0) {
+		currentThreadState.waitingBlock("_sceKernelSleepThreadCB", {
+			currentThreadState.sleepingCriticalSection.lock({
+				scope waitMultipleObjects = _getWaitMultipleObjects(handleCallbacks, true);
+				
+				logInfo("_sceKernelSleepThreadCB() :: wakeUpCount:%d", currentThreadState.getWakeUpCount());
+
+				if (currentThreadState.getWakeUpCount() >= 0) {
 					currentThreadState.decrementWakeUpCount();
-				} else {
-					//logInfo("@@ Thread sleeping(%s)", currentCpuThread.threadState);
-					currentCpuThread.threadState.isSleeping = true;
-					while (currentThreadState.getWakeUpCount() < 0) {
-						waitMultipleObjects.waitAny();
-					}
-					currentCpuThread.threadState.isSleeping = false;
-					//logInfo("@@ Thread awaken(%s)", currentCpuThread.threadState);
+				}
+				
+				//logInfo("@@ Thread sleeping(%s)", currentCpuThread.threadState);
+				while (currentThreadState.getWakeUpCount() < 0) {
+					waitMultipleObjects.waitAny();
 				}
 			});
 		});
@@ -245,6 +250,38 @@ template ThreadManForUser_Threads() {
 	int sceKernelSleepThreadCB() {
 		logInfo("sceKernelSleepThreadCB()");
 		return _sceKernelSleepThreadCB(true);
+	}
+	
+	/**
+	 * Wake a thread previously put into the sleep state.
+	 *
+	 * @note
+	 * This function increments a wakeUp count and sceKernelSleep(CB) decrements it.
+	 * So when calling sceKernelSleep(CB) if this function have been executed before one or more times,
+	 * the thread won't sleep until Sleeps is executed as many times as sceKernelWakeupThread.
+	 *
+	 * ?? This waits until the thread has been awaken? TO CONFIRM.
+	 *
+	 * @param thid - UID of the thread to wake.
+	 *
+	 * @return Success if >= 0, an error if < 0.
+	 */
+	int sceKernelWakeupThread(SceUID thid) {
+		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
+		
+		logInfo("sceKernelWakeupThread");
+		
+		threadState.sleepingCriticalSection.tryLock({
+			threadState.incrementWakeUpCount();
+		}, {
+			threadState.resetWakeUpCount();
+			threadState.wakeUpEvent.signal();
+			
+			// Must wait until terminated?
+			threadState.sleepingCriticalSection.waitEnded();
+		});
+
+		return 0;
 	}
 	
 	/**
@@ -378,15 +415,31 @@ template ThreadManForUser_Threads() {
 
 	
 	int _sceKernelWaitThreadEndCB(SceUID thid, SceUInt* timeout, bool callback) {
-		if (thid < 0) return -1;
 		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
 		
-		WaitMultipleObjects waitMultipleObjects = _getWaitMultipleObjects(callback);
+		WaitMultipleObjects waitMultipleObjects = _getWaitMultipleObjects(callback, false);
 		
+		// @TODO: Only one per thread!
 		waitMultipleObjects.add(currentEmulatorState.threadEndedCondition);
 		
-		while (!(threadState.sceKernelThreadInfo.status & PspThreadStatus.PSP_THREAD_STOPPED | PspThreadStatus.PSP_THREAD_KILLED)) {
-			waitMultipleObjects.waitAny();
+		//writefln("threadState.sceKernelThreadInfo.status: %d", threadState.sceKernelThreadInfo.status);
+		
+		bool mustContinue() {
+			if (threadState.sceKernelThreadInfo.status & PspThreadStatus.PSP_THREAD_STOPPED) return false;
+			if (threadState.sceKernelThreadInfo.status & PspThreadStatus.PSP_THREAD_KILLED) return false;
+			return true;
+		}
+		
+		try {
+			while (mustContinue) {
+				if (timeout is null) {
+					waitMultipleObjects.waitAnyException();
+				} else {
+					waitMultipleObjects.waitAnyException(cast(uint)std.datetime.convert!("usecs", "msecs")(*timeout));
+				}
+			}
+		} catch (WaitObjectTimeoutException) {
+			
 		}
 		
 		return 0;
@@ -416,6 +469,21 @@ template ThreadManForUser_Threads() {
 		return _sceKernelWaitThreadEndCB(thid, timeout, true);
 	}
 
+	/**
+	 * Terminate a thread.
+	 *
+	 * @param thid - UID of the thread to terminate.
+	 *
+	 * @return Success if >= 0, an error if < 0.
+	 */
+	int sceKernelTerminateThread(SceUID thid) {
+		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
+		threadState.sceKernelThreadInfo.status |=  PspThreadStatus.PSP_THREAD_STOPPED;
+		threadState.sceKernelThreadInfo.status &= ~PspThreadStatus.PSP_THREAD_RUNNING;
+		threadState.onDeleteThread();
+				
+		return 0;
+	}
 	
 	/**
 	 * Delete a thread
@@ -425,7 +493,6 @@ template ThreadManForUser_Threads() {
 	 * @return < 0 on error.
 	 */
 	int sceKernelDeleteThread(SceUID thid) {
-		if (thid < 0) return -1;
 		uniqueIdFactory.remove!(ThreadState)(thid);
 		return 0;
 	}
@@ -438,8 +505,7 @@ template ThreadManForUser_Threads() {
 	 * @return Success if >= 0, an error if < 0.
 	 */
 	int sceKernelTerminateDeleteThread(SceUID thid) {
-		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
-		threadState.onDeleteThread();
+		sceKernelTerminateThread(thid);
 		return sceKernelDeleteThread(thid);
 	}
 
@@ -456,40 +522,6 @@ template ThreadManForUser_Threads() {
 	}
 	
 	/**
-	 * Wake a thread previously put into the sleep state.
-	 *
-	 * @param thid - UID of the thread to wake.
-	 *
-	 * @return Success if >= 0, an error if < 0.
-	 */
-	int sceKernelWakeupThread(SceUID thid) {
-		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
-		
-		logInfo("@@ sceKernelWakeupThread(%s) started", threadState);
-		threadState.sleepingCriticalSection.tryLock({
-			threadState.incrementWakeUpCount();
-		}, {
-			threadState.resetWakeUpCount();
-			threadState.wakeUpEvent.signal();
-			threadState.sleepingCriticalSection.waitEnded();
-		});
-		logInfo("@@ sceKernelWakeupThread(%s) completed", threadState);
-
-		/*
-		
-		if (!threadState.isSleeping) {
-			threadState.incrementWakeUpCount();
-			threadState.wakeUpEvent.signal();			
-		} else {
-			threadState.resetWakeUpCount();
-			threadState.wakeUpEvent.signal();
-		}
-		
-		*/
-		return 0;
-	}
-
-	/**
 	 * Suspend a thread.
 	 *
 	 * @param thid - UID of the thread to suspend.
@@ -501,20 +533,6 @@ template ThreadManForUser_Threads() {
 		return -1;
 	}
 
-
-	/**
-	 * Terminate a thread.
-	 *
-	 * @param thid - UID of the thread to terminate.
-	 *
-	 * @return Success if >= 0, an error if < 0.
-	 */
-	int sceKernelTerminateThread(SceUID thid) {
-		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
-		threadState.onDeleteThread();
-		return 0;
-	}
-
 	/**
 	 * Get the exit status of a thread.
 	 *
@@ -523,7 +541,58 @@ template ThreadManForUser_Threads() {
 	 * @return The exit status
 	 */
 	int sceKernelGetThreadExitStatus(SceUID thid) {
-		unimplemented();
-		return 0;
+		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
+		//unimplemented();
+		return threadState.sceKernelThreadInfo.exitStatus;
 	}
 }
+
+/+
+enum PspThreadStatus {
+	PSP_THREAD_RUNNING = 1,
+	PSP_THREAD_READY   = 2,
+	PSP_THREAD_WAITING = 4,
+	PSP_THREAD_SUSPEND = 8,
+	PSP_THREAD_STOPPED = 16, // Before startThread
+	PSP_THREAD_KILLED  = 32, // Thread manager has killed the thread (stack overflow)
+}
+
+struct SceKernelThreadInfo {
+	/** Size of the structure */
+	SceSize     size;
+	/** Nul terminated name of the thread */
+	char    	name[32];
+	/** Thread attributes */
+	SceUInt     attr;
+	/** Thread status */
+	PspThreadStatus status;
+	/** Thread entry point */
+	SceKernelThreadEntry    entry;
+	/** Thread stack pointer */
+	void *  	stack;
+	/** Thread stack size */
+	int     	stackSize;
+	/** Pointer to the gp */
+	void *  	gpReg;
+	/** Initial priority */
+	int     	initPriority;
+	/** Current priority */
+	int     	currentPriority;
+	/** Wait type */
+	int     	waitType;
+	/** Wait id */
+	SceUID  	waitId;
+	/** Wakeup count */
+	int     	wakeupCount;
+	/** Exit status of the thread */
+	int     	exitStatus;
+	/** Number of clock cycles run */
+	SceKernelSysClock   runClocks;
+	/** Interrupt preemption count */
+	SceUInt     intrPreemptCount;
+	/** Thread preemption count */
+	SceUInt     threadPreemptCount;
+	/** Release count */
+	SceUInt     releaseCount;
+}
++/

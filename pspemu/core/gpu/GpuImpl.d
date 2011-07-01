@@ -25,6 +25,8 @@ interface GpuImpl {
 	void fastTrxKickToFrameBuffer();
 	void recordFrameStart();
 	void recordFrameEnd();
+	int  getTextureCacheCount();
+	int  getTextureCacheSize();
 	void readIndexes(ref ushort[] indexListBuffer, ubyte* indexPointer, uint indexCount, out uint maxVertexCount, VertexType vertexType);
 	void readVertices(ref VertexState[] vertexListBuffer, ubyte* vertexPointer, int maxVertexCount, VertexType vertexType, float[] morphWeights, Matrix[8] boneMatrix);
 }
@@ -34,6 +36,9 @@ abstract class GpuImplAbstract : GpuImpl {
 	StopWatch setStateStopWatch;
 	StopWatch drawStopWatch;
 	void setState(GpuState *state) { this.state = state; }
+	
+	abstract int getTextureCacheCount();
+	abstract int getTextureCacheSize();
 	
 	void readIndexes(ref ushort[] indexListBuffer, ubyte* indexPointer, uint indexCount, out uint maxVertexCount, VertexType vertexType) {
 		alias indexCount vertexCount;

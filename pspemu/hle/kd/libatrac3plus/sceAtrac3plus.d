@@ -101,8 +101,10 @@ class Atrac3Object {
 		string wavFile = ApplicationPaths.exe ~ r"\temp-" ~ md5 ~ ".wav";
 		
 		try {
-			this.writeOma(omaFile);
-			convertOmaToWav(omaFile, wavFile);
+			if (!std.file.exists(wavFile) || (std.file.getSize(wavFile) == 0)) {
+				this.writeOma(omaFile);
+				convertOmaToWav(omaFile, wavFile);
+			}
 			
 			if (std.file.exists(wavFile) && (std.file.getSize(wavFile) > 0)) {
 				WaveProcessor waveProcessor = new WaveProcessor();

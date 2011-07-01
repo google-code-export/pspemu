@@ -102,6 +102,8 @@ class GpuOpengl : GpuImplAbstract {
 
 		//program.use(0);
 		
+		implInit();
+		
 		reset();
 	}
 	
@@ -173,6 +175,14 @@ class GpuOpengl : GpuImplAbstract {
 	void reset() {
 		if (textureCachePool is null) textureCachePool = new TextureCachePool(this);
 		textureCachePool.reset();
+	}
+	
+	int getTextureCacheCount() {
+		return textureCachePool.length;
+	}
+	
+	int getTextureCacheSize() {
+		return textureCachePool.size;
 	}
 
 	void startDisplayList() {
@@ -562,6 +572,7 @@ class TextureCachePool {
 	}
 	GpuOpengl gpuOpengl;
 	Texture[string] textureCache;
+	int textureCacheSize;
 	
 	this(GpuOpengl gpuOpengl) {
 		this.gpuOpengl = gpuOpengl;
@@ -570,6 +581,14 @@ class TextureCachePool {
 	void reset() {
 		foreach (texture; textureCache) texture.free();
 		textureCache = null;
+	}
+
+	int size() {
+		return textureCacheSize;
+	}
+	
+	int length() {
+		return textureCache.length;
 	}
 	
 	Texture get(TextureState textureState, ClutState clutState) {
@@ -590,13 +609,23 @@ class TextureCachePool {
 		} else {
 			texture = textureCache[hash];
 		}
-		texture.update(gpuOpengl.state.memory, textureState, clutState);
+		textureCacheSize -= texture.size;
+		{ 
+			texture.update(gpuOpengl.state.memory, textureState, clutState);
+		}
+		textureCacheSize += texture.size;
 		return texture;
 	}
 	
 	void markForRecheckAll() {
-		foreach (texture; textureCache) {
-			texture.markForRecheck = true;
+		scope textureCacheDup = textureCache.dup;
+		foreach (textureHash, texture; textureCacheDup) {
+			if (texture.canDelete) {
+				texture.free();
+				textureCache.remove(textureHash);
+			} else {
+				texture.markForRecheck = true;
+			}
 		}
 	}
 }
@@ -642,15 +671,17 @@ template OpenglUtils() {
 		return textureCachePool.get(textureState, clutState);
 	}
 	
+	bool lastIsTransform2D = false;
+	
 	void drawBeginCommon() {
 		void prepareMatrix() {
 			if (state.vertexType.transform2D) {
-				glMatrixMode(GL_PROJECTION); glLoadIdentity();
-				//glOrtho(0.0f, 512.0f, 272.0f, 0.0f, -1.0f, 1.0f);
-				//glOrtho(0, 480, 272, 0, 0, -0xFFFF);
-				glOrtho(0, 512, 272, 0, -0x7FFF, +0x7FFF);
-				//glTranslatef(0, 1, 0);
-				glMatrixMode(GL_MODELVIEW); glLoadIdentity();
+				if (!lastIsTransform2D) {
+					glMatrixMode(GL_PROJECTION); glLoadIdentity();
+					glOrtho(0, 512, 272, 0, -0x7FFF, +0x7FFF);
+					glMatrixMode(GL_MODELVIEW); glLoadIdentity();
+					lastIsTransform2D = true;
+				}
 			} else {
 				glMatrixMode(GL_PROJECTION); glLoadIdentity();
 				glMultMatrixf(state.projectionMatrix.pointer);
@@ -658,12 +689,8 @@ template OpenglUtils() {
 				glMatrixMode(GL_MODELVIEW); glLoadIdentity();
 				glMultMatrixf(state.viewMatrix.pointer);
 				glMultMatrixf(state.worldMatrix.pointer);
+				lastIsTransform2D = false;
 			}
-			/*
-			writefln("Projection:\n%s", state.projectionMatrix);
-			writefln("View:\n%s", state.viewMatrix);
-			writefln("World:\n%s", state.worldMatrix);
-			*/
 		}
 
 		prepareMatrix();
@@ -672,11 +699,6 @@ template OpenglUtils() {
 	void drawBeginClear(PrimitiveFlags flags) {
 		bool ccolorMask, calphaMask;
 		
-		//glGetTexEnvfv(GL_TEXTURE_ENV, GL_RGB_SCALE, clearModeRgbScale, 0);
-		//glGetTexEnviv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, clearModeTextureEnvMode, 0);
-		//glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0f);
-		//glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-
 		glDisable(GL_BLEND);
 		glDisable(GL_STENCIL_TEST);
 		glDisable(GL_LIGHTING);
@@ -1025,10 +1047,27 @@ template OpenglUtils() {
 		//glColorMask(cast(bool)state.colorMask[0], cast(bool)state.colorMask[1], cast(bool)state.colorMask[2], cast(bool)state.colorMask[3]);
 		glColorMask(true, true, true, true);
 		glEnableDisable(GL_LINE_SMOOTH, state.lineSmoothEnabled);
-		glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 		glShadeModel(state.shadeModel ? GL_SMOOTH : GL_FLAT);
 		glMaterialf(GL_FRONT, GL_SHININESS, state.lighting.specularPower);
 		glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, state.textureEnviromentColor.ptr);
+		
+		prepareStencil();
+		prepareScissor();
+		prepareBlend();
+		prepareCulling();
+		prepareTexture();
+		prepareLogicOp();
+		prepareAlphaTest();
+		prepareDepth();
+		prepareDepthTest();
+		prepareDepthWrite();
+		prepareFog();
+		prepareLighting();
+		prepareColors();
+	}
+	
+	void implInit() {
+		glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
 		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE);
 		glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
@@ -1038,28 +1077,6 @@ template OpenglUtils() {
 		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_ALPHA, GL_PREVIOUS);
 		glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA);
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
-
-		//writefln("drawBeginNormal[1]");
-		prepareStencil();
-		//writefln("drawBeginNormal[1a]");
-		prepareScissor();
-		//writefln("drawBeginNormal[1b]");
-		prepareBlend();
-		//writefln("drawBeginNormal[2]");
-		prepareCulling();
-		prepareTexture();
-		prepareLogicOp();
-		//writefln("drawBeginNormal[3]");
-		prepareAlphaTest();
-		prepareDepth();
-		prepareDepthTest();
-		prepareDepthWrite();
-		//writefln("drawBeginNormal[4]");
-		prepareFog();
-		prepareLighting();
-		prepareColors();
-		//writefln("drawBeginNormal[5]");
-		//glDisable(GL_COLOR_MATERIAL);
 	}
 
 	void drawBegin(PrimitiveFlags flags) {
