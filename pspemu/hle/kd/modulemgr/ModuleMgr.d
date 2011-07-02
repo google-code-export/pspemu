@@ -7,6 +7,7 @@ import std.stdio;
 
 import pspemu.hle.ModuleNative;
 import pspemu.hle.ModulePsp;
+import pspemu.hle.kd.loadcore.Types;
 import pspemu.hle.kd.modulemgr.Types;
 import pspemu.hle.kd.iofilemgr.Types;
 
@@ -43,7 +44,29 @@ class ModuleMgrForUser : ModuleNative {
 	 * @return 0 on success, otherwise one of ::PspKernelErrorCodes.
 	 */
 	int sceKernelQueryModuleInfo(SceUID modid, SceKernelModuleInfo* info) {
-		unimplemented();
+		unimplemented_notice();
+		
+		Module pspModule = uniqueIdFactory.get!Module(modid);
+		SceModule* sceModule = pspModule.sceModule;
+		// TODO!
+		info.size        = SceKernelModuleInfo.sizeof;
+		info.nsegment    = cast(ubyte)sceModule.nsegment;
+		info.segmentaddr = sceModule.segmentaddr;
+		info.segmentsize = sceModule.segmentsize;
+		info.entry_addr  = sceModule.entry_addr;
+		info.gp_value    = sceModule.gp_value;
+		info.text_addr   = sceModule.text_addr;
+		info.text_size   = sceModule.text_size;
+		info.data_size   = sceModule.data_size;
+		info.bss_size    = sceModule.bss_size;
+		info.attribute   = sceModule.attribute;
+		info._version    = sceModule._version;
+		info.name[] = 0;
+		info.name[0..27] = sceModule.modname[0..27];
+		//info.next = 0xAA007712;
+		//info.
+		//hleEmulatorState.moduleManager.
+		//unimplemented();
 		return 0;
 	}
 
@@ -66,7 +89,7 @@ class ModuleMgrForUser : ModuleNative {
 		
 		ModulePsp modulePsp = new ModulePsp();
 		modulePsp.dummyModule = true;
-		return uniqueIdFactory.add(modulePsp);
+		return uniqueIdFactory.add!Module(modulePsp);
 	}
 
 	uint sceKernelStopUnloadSelfModuleWithStatus() {
@@ -183,9 +206,11 @@ class ModuleMgrForUser : ModuleNative {
 	 * @return ??? on success, otherwise one of ::PspKernelErrorCodes.
 	 */
 	int sceKernelStartModule(SceUID modid, SceSize argsize, uint argp, int *status, SceKernelSMOption *option) {
-		writefln("[1]");
+		logInfo("sceKernelStartModule(modid=%d)", modid);
+		
+		//writefln("[1]");
 		Module modulePsp = uniqueIdFactory.get!Module(modid);
-		writefln("[2]");
+		//writefln("[2]");
 		
 		if (modulePsp.isNative) {
 			return 0;
@@ -194,28 +219,28 @@ class ModuleMgrForUser : ModuleNative {
 		if (modulePsp.dummyModule) {
 			return 0;
 		}
-		writefln("[3]");
+		//writefln("[3]");
 		
 		ThreadManForUser threadManForUser = hleEmulatorState.moduleManager.get!ThreadManForUser();
 		
-		writefln("[4]");
+		//writefln("[4]");
 		
 		//SceUID sceKernelCreateThread(string name, SceKernelThreadEntry entry, int initPriority, int stackSize, SceUInt attr, SceKernelThreadOptParam *option)
 		SceUID thid = threadManForUser.sceKernelCreateThread("main_thread", modulePsp.sceModule.entry_addr, 0, 0x1000, modulePsp.sceModule.attribute, null);
 		
-		writefln("[4a]");
+		//writefln("[4a]");
 		
 		ThreadState threadState = uniqueIdFactory.get!ThreadState(thid);
 		
-		writefln("[4b]");
+		//writefln("[4b]");
 		
 		threadState.threadModule = modulePsp;
 		
-		writefln("[5]");
+		//writefln("[5]");
 		
 		threadManForUser.sceKernelStartThread(thid, argsize, argp);
 		
-		writefln("[6]");
+		//writefln("[6]");
 		
 		return 0;
 	}

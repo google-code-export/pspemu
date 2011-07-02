@@ -82,15 +82,19 @@ class CpuThreadInterpreted : CpuThreadBase {
 			    		//.writef("   ");
 			    		.writef("   %08X", callPC);
 			    		bool printed = false;
-			    		if (threadState.threadModule !is null) {
-			    			if (threadState.threadModule.dwarf !is null) {
-			    				auto state = threadState.threadModule.dwarf.find(callPC);
-			    				if (state !is null) {
-			    					writef(":%s", (*state).toString);
-			    					printed = true;
-			    				}
-			    			}
-			    		}
+			    		try {
+				    		if (threadState.threadModule !is null) {
+				    			if (threadState.threadModule.dwarf !is null) {
+				    				auto state = threadState.threadModule.dwarf.find(callPC);
+				    				if (state !is null) {
+				    					writef(":%s", (*state).toString);
+				    					printed = true;
+				    				}
+				    			}
+				    		}
+				    	} catch {
+				    		.writefln("Error writing threadState");
+				    	}
 			    		if (!printed) {
 			    			//.writef("%08X", callPC);
 			    		}
@@ -117,7 +121,7 @@ class CpuThreadInterpreted : CpuThreadBase {
 		    	.writefln("MODULE: %s", threadState.threadModule);
 			}
 
-			void dumpThreads(Exception exception) {
+			void dumpThreads(Throwable exception) {
 		    	dumpHeader();
 		    	dumpCallstack();
 		    	dumpRegisters();
@@ -126,6 +130,14 @@ class CpuThreadInterpreted : CpuThreadBase {
 		    	.writefln("%s", this);
 		    	
 		    	//cpuThread.threadState.emulatorState.runningState.stop();
+			}
+			
+			bool isUnittesting() {
+				try {
+					return (threadState !is null) && threadState.emulatorState.unittesting;
+				} catch {
+					return false;
+				}
 			}
 			
 	    	try {
@@ -159,20 +171,52 @@ class CpuThreadInterpreted : CpuThreadBase {
 			} catch (TerminateCallbackException terminateCallbackException) {
 				// Do nothing.
 		    } catch (HaltException haltException) {
-				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "halted thread: %s", this);
-				//dumpThreads(haltException);
-				
-				if (!threadState.emulatorState.unittesting) {
-			    	dumpHeader();
-			    	dumpCallstack();
-			    	.writefln("%s", haltException);
-			    }
+		    	try {
+		    		/*
+			    	Logger.exclusiveLock({
+						Logger.log(Logger.Level.INFO, "CpuThreadBase", "halted thread: %s", this);
+						//dumpThreads(haltException);
+						
+						if (!isUnittesting) {
+					    	dumpHeader();
+					    	dumpCallstack();
+					    	Logger.log(Logger.Level.INFO, "CpuThreadBase", haltException);
+					    }
+					});
+		    		*/
+				} catch (Throwable o) {
+					.writefln("REALLY FATAL ERROR: Error on HaltException Error!! '%s'", o);
+				}
 		    	
 		    	//.writefln("%s", this);
 		    	//throw(haltException);
 		    	//running = false;
-		    } catch (Exception exception) {
-		    	dumpThreads(exception);
+		    } catch (HaltAllException haltAllException) {
+		    	try {
+			    	Logger.exclusiveLock({
+						Logger.log(Logger.Level.INFO, "CpuThreadBase", "halted all threads: %s", this);
+						//dumpThreads(haltException);
+						
+						if (!isUnittesting) {
+					    	dumpHeader();
+					    	dumpCallstack();
+					    	Logger.log(Logger.Level.INFO, "CpuThreadBase", haltAllException);
+					    }
+					});
+				} catch (Throwable o) {
+					.writefln("REALLY FATAL ERROR: Error on HaltAllException Error!! '%s'", o);
+				}
+				threadState.emulatorState.runningState.stopCpu();
+		    } catch (Throwable exception) {
+		    	try {
+			    	Logger.exclusiveLock({
+			    		writefln("Fatal Error. Halting all threads :: Exception:'%s'", exception);
+				    	dumpThreads(exception);
+			    	});
+				} catch (Throwable o) {
+					.writefln("REALLY FATAL ERROR: Error on Error '%s'!! :: %s", exception, o);
+				}
+				threadState.emulatorState.runningState.stopCpu();
 		    } finally {
 				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "NATIVE_THREAD: END (%s)", Thread.getThis().name);
 		    }

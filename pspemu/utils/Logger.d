@@ -13,13 +13,30 @@ class Logger {
 		Level  level;
 		string component;
 		string text;
+		
+		void _print() {
+			stdout.writefln("%-8s: %-10d: '%s'::'%s'", to!string(level), time, component, text);
+			stdout.flush();
+		}
+		
 		void print() {
-			synchronized (synchronizationObject) {
-				stdout.writefln("%-8s: %-10d: '%s'::'%s'", to!string(level), time, component, text);
-				stdout.flush();
+			if (inExclusiveLock) {
+				_print();
+			} else {
+				synchronized (synchronizationObject) _print();
 			}
 		}
 	}
+	
+	static void exclusiveLock(void delegate() callback) {
+		synchronized (synchronizationObject) {
+			inExclusiveLock = true;
+			scope (exit) inExclusiveLock = false;
+			callback();
+		}
+	}
+	
+	static bool inExclusiveLock = false;
 	
 	__gshared Object synchronizationObject;
 	static this() {

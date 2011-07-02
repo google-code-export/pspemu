@@ -38,7 +38,7 @@ class ThreadState {
 	public Event onDeleteThread;
 	int sleepingAwakenCount;
 	
-	WaitEvent endedEvent;
+	WaitEvent threadEndedEvent;
 
 	template WakeUp_Template() {
 		CriticalSection sleepingCriticalSection;
@@ -102,6 +102,8 @@ class ThreadState {
 	}
 	mixin WakeUp_Template;
 	
+	/// @TODO!!! It should be static. It should be a method of EmulatorState.
+	/// Being static disallows having several emulators running at once.
 	static void suspendAllCpuThreadsButThis() {
 		HANDLE thisNativeThreadHandle = GetCurrentThread();
 		foreach (threadState; threadStatePerThread) {
@@ -127,8 +129,8 @@ class ThreadState {
 		this.name = name;
 		this.emulatorState = emulatorState;
 		this.registers = registers;
-		wakeUpEvent = new WaitEvent("WakeUpEvent");
-		endedEvent  = new WaitEvent("EndedEvent", true);
+		wakeUpEvent      = new WaitEvent("WakeUpEvent");
+		threadEndedEvent = new WaitEvent("ThreadEndedEvent", true);
 		sleepingCriticalSection = new CriticalSection();
 		
 		this.sceKernelThreadInfo.status |= PspThreadStatus.PSP_THREAD_STOPPED;

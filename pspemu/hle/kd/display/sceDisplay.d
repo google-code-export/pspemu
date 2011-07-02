@@ -39,7 +39,7 @@ class sceDisplay_driver : ModuleNative { // Flags: 0x00010000
 	}
 	
 	int sceDisplaySetHoldMode() {
-		unimplemented();
+		unimplemented_notice();
 		return 0;
 	}
 

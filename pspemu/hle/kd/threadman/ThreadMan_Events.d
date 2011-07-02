@@ -107,7 +107,10 @@ template ThreadManForUser_Events() {
 	int _sceKernelWaitEventFlagCB(int evid, u32 bits, PspEventFlagWaitTypes wait, u32 *outBits, SceUInt *timeout, bool callback) {
 		try {
 			PspWaitEvent pspWaitEvent = uniqueIdFactory.get!PspWaitEvent(evid);
-			logInfo("_sceKernelWaitEventFlagCB('%s':%d, %032b, %s, %s, %08X)", pspWaitEvent.name, evid, bits, to!string(wait), to!string(callback), cast(uint)timeout);
+			logInfo("_sceKernelWaitEventFlagCB('%s':%d, %032b, %s, %s, %08X)", pspWaitEvent.name, evid, bits, toSet(wait), to!string(callback), cast(uint)timeout);
+			
+			// Thrown an exception in some cases! But maintain until fixed other things!
+			//logInfo("_sceKernelWaitEventFlagCB('%s':%d, %032b, %s, %s, %08X)", pspWaitEvent.name, evid, bits, to!string(wait), to!string(callback), cast(uint)timeout);
 			
 			bool matched;
 			uint matchedBits;

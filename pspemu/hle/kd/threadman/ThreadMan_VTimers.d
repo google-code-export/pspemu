@@ -54,7 +54,7 @@ template ThreadManForUser_VTimers() {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
-	int sceKernelSetVTimerHandler(SceUID uid, SceKernelSysClock *time, SceKernelVTimerHandler handler, void *common) {
+	int sceKernelSetVTimerHandler(SceUID uid, SceKernelSysClock *time, SceKernelVTimerHandler handler, void* common) {
 		unimplemented();
 		return 0;
 	}

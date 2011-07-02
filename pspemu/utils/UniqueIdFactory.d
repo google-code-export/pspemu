@@ -8,24 +8,30 @@ class UniqueIdException : Exception { this(string msg, string file = __FILE__, s
 class UniqueIdNotFoundException : UniqueIdException { this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null) { super(msg, file, line, next); } }
 
 class UniqueIdFactory {
-	UniqueIdTypeFactory[string] factoryPerType;
+	private UniqueIdTypeFactory[string] _factoryPerType;
+	
+	protected UniqueIdTypeFactory factoryPerType(T)(bool createIfNotExists) {
+		//if (createIfNotExists)
+		{
+			if ((T.stringof in _factoryPerType) is null) _factoryPerType[T.stringof] = new UniqueIdTypeFactory(T.stringof);
+		}
+		return _factoryPerType[T.stringof];
+	}
 	
 	public UID add(T)(T value) {
-		if ((T.stringof in factoryPerType) is null) factoryPerType[T.stringof] = new UniqueIdTypeFactory(T.stringof);
-		return factoryPerType[T.stringof].newUid(value);
+		return factoryPerType!T(true).newUid(value);
 	}
 
 	public UID set(T)(UID uid, T value) {
-		if ((T.stringof in factoryPerType) is null) factoryPerType[T.stringof] = new UniqueIdTypeFactory(T.stringof);
-		return factoryPerType[T.stringof].set(uid, value);
+		return factoryPerType!T(true).set(uid, value);
 	}
 	
 	public T get(T)(UID uid) {
-		return factoryPerType[T.stringof].get!(T)(uid);
+		return factoryPerType!T(false).get!(T)(uid);
 	}
 	
 	public void remove(T)(UID uid) {
-		factoryPerType[T.stringof].remove(uid);
+		factoryPerType!T(false).remove(uid);
 	}
 }
 

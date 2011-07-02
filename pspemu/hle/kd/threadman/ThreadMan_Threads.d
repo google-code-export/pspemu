@@ -129,6 +129,14 @@ template ThreadManForUser_Threads() {
 		
 		return 0;
 	}
+	
+	void _sceKernelTerminateThread(ThreadState threadState) {
+		logInfo("_sceKernelTerminateThread(%s)", threadState);
+		threadState.sceKernelThreadInfo.status |=  PspThreadStatus.PSP_THREAD_STOPPED;
+		threadState.sceKernelThreadInfo.status &= ~PspThreadStatus.PSP_THREAD_RUNNING;
+		threadState.onDeleteThread();
+		threadState.threadEndedEvent.signal();
+	}
 
 	/**
 	 * Exit a thread
@@ -141,7 +149,7 @@ template ThreadManForUser_Threads() {
 		threadState.sceKernelThreadInfo.exitStatus = status;
 		logInfo("sceKernelExitThread(%d)", status);
 
-		sceKernelTerminateThread(threadState.thid);
+		_sceKernelTerminateThread(threadState);
 
 		//writefln("sceKernelExitThread(%d)", status);
 		throw(new HaltException(std.string.format("sceKernelExitThread(%d)", status)));
@@ -423,7 +431,7 @@ template ThreadManForUser_Threads() {
 			WaitMultipleObjects waitMultipleObjects = _getWaitMultipleObjects(handleCallbacks, false);
 			
 			// @TODO: Only one per thread!
-			waitMultipleObjects.add(threadState.endedEvent);
+			waitMultipleObjects.add(threadState.threadEndedEvent);
 			
 			//writefln("threadState.sceKernelThreadInfo.status: %d", threadState.sceKernelThreadInfo.status);
 			
@@ -482,11 +490,7 @@ template ThreadManForUser_Threads() {
 	 */
 	int sceKernelTerminateThread(SceUID thid) {
 		ThreadState threadState = uniqueIdFactory.get!(ThreadState)(thid);
-		threadState.sceKernelThreadInfo.status |=  PspThreadStatus.PSP_THREAD_STOPPED;
-		threadState.sceKernelThreadInfo.status &= ~PspThreadStatus.PSP_THREAD_RUNNING;
-		threadState.onDeleteThread();
-		threadState.endedEvent.signal();
-				
+		_sceKernelTerminateThread(threadState);
 		return 0;
 	}
 	

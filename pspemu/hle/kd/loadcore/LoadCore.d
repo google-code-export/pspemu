@@ -28,10 +28,9 @@ class LoadCoreForKernel : ModuleNative {
 	 * @return Pointer to the ::SceModule structure if found, otherwise NULL.
 	 */
 	SceModule* sceKernelFindModuleByUID(SceUID modid) {
-		//unimplemented();
-		Logger.log(Logger.Level.WARNING, "LoadCoreForKernel", "Not implemented sceKernelFindModuleByUID(%d)", modid);
+		logWarning("Not implemented sceKernelFindModuleByUID(%d)", modid);
 		
-		return uniqueIdFactory.get!ModulePsp(modid).sceModule;
+		return uniqueIdFactory.get!Module(modid).sceModule;
 	}
 
 	/**

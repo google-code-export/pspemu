@@ -93,10 +93,15 @@ template ThreadManForUser_Semaphores() {
 	 * @return < 0 On error.
 	 */
 	int sceKernelSignalSema(SceUID semaid, int signal) {
-		auto semaphore = uniqueIdFactory.get!PspSemaphore(semaid); 
-		logInfo("sceKernelSignalSema(%d:'%s', %d) :: %s", semaid, semaphore.name, signal, semaphore);
-		semaphore.incrementCount(signal);
-		return 0;
+		try {
+			auto semaphore = uniqueIdFactory.get!PspSemaphore(semaid); 
+			logInfo("sceKernelSignalSema(%d:'%s', %d) :: %s", semaid, semaphore.name, signal, semaphore);
+			semaphore.incrementCount(signal);
+			return 0;
+		} catch (UniqueIdNotFoundException) {
+			logWarning("Semaphore(semaid=%d) Not Found!", semaid);
+			return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
+		}
 	}
 	
 	/**
@@ -119,6 +124,7 @@ template ThreadManForUser_Semaphores() {
 			uniqueIdFactory.remove!PspSemaphore(semaid);
 			return 0;
 		} catch (UniqueIdNotFoundException) {
+			logWarning("Semaphore(semaid=%d) Not Found!", semaid);
 			return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
 		}
 	}

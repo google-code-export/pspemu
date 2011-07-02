@@ -125,6 +125,12 @@ class Display {
 	}
 	
 	int lastWaitedVblank = -1;
+
+	public void waitVblankReadCtrlFrame() {
+		if (enableWaitVblank) {
+			Thread.sleep(dur!"msecs"(10));
+		}
+	}	
 	
 	public void waitVblank(bool processCallbacks = false) {
 		//writefln("***************************************** [1]");

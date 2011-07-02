@@ -48,7 +48,7 @@ class sceCtrl_driver : ModuleNative {
 	void _waitReadFrame() {
 		// @TODO Not exactly? Too slow when enabled. Too fast when disabled. 
 		//currentEmulatorState().display.waitVblank();
-		Thread.sleep(dur!"msecs"(10));
+		currentEmulatorState().display.waitVblankReadCtrlFrame();
 	}
 
 	/**

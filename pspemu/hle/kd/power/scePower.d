@@ -58,12 +58,30 @@ class scePower : ModuleNative {
 		
 		mixin(registerd!(0xEBD177D6, scePowerSetClockFrequency));
 	}
+	
+	// PLL clock:
+	// Operates at fixed rates of 148MHz, 190MHz, 222MHz, 266MHz, 333MHz.
+	// Starts at 222MHz.
+	int pllClock = 222;
+	// CPU clock:
+	// Operates at variable rates from 1MHz to 333MHz.
+	// Starts at 222MHz.
+	// Note: Cannot have a higher frequency than the PLL clock's frequency.
+	int cpuClock = 222;
+	// BUS clock:
+	// Operates at variable rates from 37MHz to 166MHz.
+	// Starts at 111MHz.
+	// Note: Cannot have a higher frequency than 1/2 of the PLL clock's frequency
+	// or lower than 1/4 of the PLL clock's frequency.
+	int busClock = 111;
 
 	/**
 	 * Get Bus fequency as Integer
 	 * @return frequency as int
 	 */
-	int scePowerGetBusClockFrequencyInt() { unimplemented(); return -1; }
+	int scePowerGetBusClockFrequencyInt() {
+		return busClock;
+	}
 
 	/**
 	 * Get CPU Frequency as Float

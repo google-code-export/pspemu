@@ -37,7 +37,7 @@ template IoFileMgrForKernel_FilesAsync() {
 		SceUID fd = sceIoOpen(file, flags, mode);
 		auto fileHandle = uniqueIdFactory.get!FileHandle(fd);
 		//fileHandle.lastOperationResult = cast(long)fd;
-		fileHandle.lastOperationResult = 0;
+		fileHandle.lastOperationResult = fd;
 		return cast(SceUID)fd;
 		/*
 		logWarning("sceIoOpenAsync('%s':%d, %d, %d)", file, file !is null, flags, mode);
@@ -130,8 +130,13 @@ template IoFileMgrForKernel_FilesAsync() {
 	}
 	
 	int _sceIoWaitAsyncCB(SceUID fd, SceInt64* res, bool callbacks) {
+		logInfo("_sceIoWaitAsyncCB(fd=%d, callbacks=%d)", fd, callbacks);
 		FileHandle fileHandle = uniqueIdFactory.get!FileHandle(fd);
 		*res = fileHandle.lastOperationResult;
+		if (callbacks) {
+			hleEmulatorState.callbacksHandler.executeQueued(currentThreadState);
+		}
+		currentRegisters.LO = fd;
 		return fd;
 	}
 
@@ -159,16 +164,18 @@ template IoFileMgrForKernel_FilesAsync() {
 	 *
 	 * @return < 0 on error.
 	 */
-	int sceIoPollAsync(SceUID fd, SceInt64 *res) {
+	int sceIoPollAsync(SceUID fd, SceInt64* res) {
 		logWarning("Not implemented sceIoPollAsync(%d, %s)", fd, res);
 		try {
 			FileHandle fileHandle = uniqueIdFactory.get!FileHandle(fd);
 			logWarning("     result: %d", fileHandle.lastOperationResult);
 			*res = fileHandle.lastOperationResult;
+			
+			// Return 1 on busy. Return 0 on ready.
 			return 0;
 		} catch (Throwable o) {
 			logWarning("sceIoPollAsync: %s", o);
-			return 0;
+			return -1;
 		}
 	}
 

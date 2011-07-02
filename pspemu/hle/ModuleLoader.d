@@ -236,19 +236,19 @@ class ModuleLoader {
 	public void dumpUnimplemented() {
 		if (unimplementedNids.length > 0) {
 			int count = 0;
-			writefln("unimplementedNids {");
+			logInfo("unimplementedNids {");
 			foreach (moduleName, nids; unimplementedNids) {
-				writefln("  %s // %s:", moduleName, DPspLibdoc.singleton.getPrxInfo(moduleName));
+				logInfo("  %s // %s:", moduleName, DPspLibdoc.singleton.getPrxInfo(moduleName));
 				foreach (nid; nids) {
 					if (auto symbol = DPspLibdoc.singleton.locate(nid, moduleName)) {
-						writefln("    mixin(registerd!(0x%08X, %s));", nid, symbol.name);
+						logInfo("    mixin(registerd!(0x%08X, %s));", nid, symbol.name);
 					} else {
-						writefln("    0x%08X:<Not found!>", nid);
+						logInfo("    0x%08X:<Not found!>", nid);
 					}
 				}
 				count += nids.length;
 			}
-			writefln("}");
+			logInfo("}");
 			//writefln("%s", DPspLibdoc.singleton.prxs);
 			version (ALLOW_UNIMPLEMENTED_NIDS) {
 			} else {

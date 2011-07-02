@@ -94,26 +94,43 @@ class Atrac3Object {
 	}
 	
 	void getWave() {
-		ubyte[16] digest;
-		std.md5.sum(digest, buf);
-		string md5 = std.md5.digestToString(digest);
-		string omaFile = ApplicationPaths.exe ~ r"\temp-" ~ md5 ~ ".oma";
-		string wavFile = ApplicationPaths.exe ~ r"\temp-" ~ md5 ~ ".wav";
+		string md5;
+		
+		if (buf.length) {
+			ubyte[16] digest;
+			std.md5.sum(digest, buf);
+			md5 = std.md5.digestToString(digest);
+		} else {
+			return;
+		}
+		
+		string omaFile = ApplicationPaths.exe ~ r"\pspfs\temp\temp-" ~ md5 ~ ".oma";
+		string wavFile = ApplicationPaths.exe ~ r"\pspfs\temp\temp-" ~ md5 ~ ".wav";
 		
 		try {
 			if (!std.file.exists(wavFile) || (std.file.getSize(wavFile) == 0)) {
+				//writefln("[1]");
 				this.writeOma(omaFile);
+				//writefln("[2]");
 				convertOmaToWav(omaFile, wavFile);
+				//writefln("[3]");
 			}
 			
 			if (std.file.exists(wavFile) && (std.file.getSize(wavFile) > 0)) {
+				//writefln("[4]");
 				WaveProcessor waveProcessor = new WaveProcessor();
+				//writefln("[5]");
 				waveProcessor.process(new BufferedFile(wavFile));
+				//writefln("[6]");
 				auto stream = waveProcessor.chunksByType["data"].getStream();
+				//writefln("[7]");
 				samples.length = cast(uint)(stream.size / short.sizeof);
+				//writefln("[8]");
 				stream.read(cast(ubyte[])samples);
+				//writefln("[9]");
 				//writefln("%s", samples);
 			} else {
+				//writefln("[10]");
 				samples.length = 0;
 			}
 		} catch (Throwable o) {
@@ -282,8 +299,10 @@ class sceAtrac3plus : ModuleNative {
 		return 0;
 	}
 	
-	int sceAtracSetData(int atracID, u8 *pucBufferAddr, u32 uiBufferByte) {
-		unimplemented();
+	int sceAtracSetData(int atracID, u8* bufferPtr, u32 bufferSizeInBytes) {
+		u8[] buffer = bufferPtr[0..bufferSizeInBytes];
+		//unimplemented();
+		unimplemented_notice();
 		return 0;
 	}
 	

@@ -6,15 +6,19 @@ import std.xml;
 import pspemu.utils.ExceptionUtils;
 import pspemu.utils.Expression;
 
-static const string psplibdoc_xml = import("psplibdoc.xml");
+__gshared const string psplibdoc_xml = import("psplibdoc.xml");
 
+/**
+ * One singleton per all threads.
+ */
 template LazySingleton() {
-	static typeof(this) _singleton;
+	//static typeof(this) _singleton;
+	__gshared typeof(this) _singleton;
 	static typeof(this) singleton() {
 		if (_singleton is null) {
-			writefln("Building...");
+			//writefln("Building...");
 			_singleton = new typeof(this);
-			writefln("Ok");
+			//writefln("Building...OK");
 		}
 		return _singleton;
 	}
