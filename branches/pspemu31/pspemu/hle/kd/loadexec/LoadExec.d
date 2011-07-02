@@ -23,13 +23,14 @@ class LoadExecForUser : ModuleNative {
 	/** 
 	  * Execute a new game executable, limited when not running in kernel mode.
 	  * 
-	  * @param file - The file to execute.
+	  * @param file  - The file to execute.
 	  * @param param - Pointer to a ::SceKernelLoadExecParam structure, or NULL.
 	  *
 	  * @return < 0 on error, probably.
 	  *
 	  */
 	int sceKernelLoadExec(string file, SceKernelLoadExecParam *param) {
+		logInfo("sceKernelLoadExec('%s')", file);
 		unimplemented();
 		return -1;
 	}

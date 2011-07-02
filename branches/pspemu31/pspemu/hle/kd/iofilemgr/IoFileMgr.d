@@ -365,14 +365,21 @@ class IoFileMgrForKernel : ModuleNative {
 	 * @return The number of bytes read
 	 */
 	int sceIoRead(SceUID fd, void* data, SceSize size) {
-		logInfo("sceIoRead(%d, %d)", fd, size);
-		if (fd < 0) return -1;
-		if (data is null) return -1;
 		try {
-			return fsroot().read(uniqueIdFactory.get!FileHandle(fd), (cast(ubyte *)data)[0..size]);
-		} catch (Throwable o) {
-			logError("sceIoRead: %s", o);
-			return -1;
+			FileHandle fileHandle = uniqueIdFactory.get!FileHandle(fd);
+			logInfo("sceIoRead(%d, %08X, %d) : %d", fd, cast(uint)data, size, fileHandle.position);
+			if (data is null) return -1;
+			try {
+				int readed = fsroot().read(fileHandle, (cast(ubyte *)data)[0..size]);
+				if (readed == 0) return -1;
+				return readed;
+			} catch (Throwable o) {
+				logError("ERROR: sceIoRead: %s", o);
+				return -1;
+			}
+		} catch (UniqueIdNotFoundException) {
+			// @TODO: Check this error. 
+			return SceKernelErrors.ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
 		}
 	}
 

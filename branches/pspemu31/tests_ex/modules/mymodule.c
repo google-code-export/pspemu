@@ -29,7 +29,7 @@ int main(int argc, char **argv)
 		printf("Arg %d: %s\n", i, argv[i]);
 	}
 
-	sceKernelSleepThread();
+	//sceKernelSleepThread();
 
 	return 0;
 }

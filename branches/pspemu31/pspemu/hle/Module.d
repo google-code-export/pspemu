@@ -30,6 +30,23 @@ static string classInfoBaseName(ClassInfo ci) {
 }
 
 abstract class Module {
+	static struct Function {
+		Module pspModule;
+		uint nid;
+		string name;
+		void delegate(CpuThreadBase cpuThread) func;
+		string toString() {
+			return std.string.format("0x%08X:'%s.%s'", nid, pspModule.baseName, name);
+		}
+	}
+
+	alias uint Nid;
+	ImportLibrary[string] importLibraries;
+	ExportLibrary[string] exportLibraries;
+	Function[Nid] nids;
+	Function[string] names;
+	bool setReturnValue;
+
 	uint modid;
 	uint entryPoint;
 	
@@ -51,25 +68,29 @@ abstract class Module {
 		public void fillImportsWithExports(Memory memory, ExportLibrary exportLibrary) {
 			//writefln("%s", currentEmulatorState());
 			//writefln("%s", currentMemory());
-			writefln("    FUNCS:");
+			logInfo("    FUNCS:");
 			foreach (nid, importAddr; funcImports) {
 				uint funcAddr = exportLibrary.funcExports[nid];
 				
-				writefln("      (%08X) %s:%08X <- %s:%08X", nid, this.name, importAddr, exportLibrary.name, funcAddr);
+				logInfo("      (%08X) %s:%08X <- %s:%08X", nid, this.name, importAddr, exportLibrary.name, funcAddr);
 				
 				memory.twrite!(uint)(importAddr + 0, 0x_08000000 | ((funcAddr >> 2) & 0x3FFFFFF));
 				memory.twrite!(uint)(importAddr + 4, 0x_00000000);
-				writefln("           %08X:%08X", memory.tread!(uint)(importAddr + 0), memory.tread!(uint)(importAddr + 4));
+				logInfo("           %08X:%08X", memory.tread!(uint)(importAddr + 0), memory.tread!(uint)(importAddr + 4));
 			}
 
-			writefln("    VARS:");
+			logInfo("    VARS:");
 			foreach (nid, importAddr; varImports) {
 				uint varAddr = exportLibrary.varExports[nid];
 				
-				writefln("      (%08X) %s:%08X <- %s:%08X", nid, this.name, importAddr, exportLibrary.name, varAddr);
+				logInfo("      (%08X) %s:%08X <- %s:%08X", nid, this.name, importAddr, exportLibrary.name, varAddr);
 				memory.twrite(importAddr + 0, varAddr);
 			}
 		}
+	}
+	
+	void logInfo(T...)(T args) {
+		Logger.log(Logger.Level.INFO, "Module", "nPC(%08X) :: Thread(%d:%s) :: %s", currentThreadState().registers.RA, currentThreadState().thid, currentThreadState().name, std.string.format(args));
 	}
 	
 	class ExportLibrary {
@@ -82,19 +103,16 @@ abstract class Module {
 		}
 	}
 	
-	ImportLibrary[string] importLibraries;
-	ExportLibrary[string] exportLibraries;
-	
 	public void fillImportsWithExports(Memory memory, Module moduleWithExports) {
 		foreach (importLibrary; moduleWithExports.importLibraries) {
-			writefln("Import library '%s'", importLibrary.name);
+			logInfo("Import library '%s'", importLibrary.name);
 		}
 		foreach (exportLibrary; moduleWithExports.exportLibraries) {
 			if (exportLibrary.name is null) continue;
 			if (exportLibrary.name == "<null>") continue;
-			writefln("Trying to inject '%s'...", exportLibrary.name);
+			logInfo("Trying to inject '%s'...", exportLibrary.name);
 			if (exportLibrary.name in this.importLibraries) {
-				writefln("   Injecting '%s'...", exportLibrary.name);
+				logInfo("   Injecting '%s'...", exportLibrary.name);
 				this.importLibraries[exportLibrary.name].fillImportsWithExports(memory, exportLibrary);
 			}
 		}
@@ -157,20 +175,6 @@ abstract class Module {
 		return currentEmulatorState;
 	}
 	*/
-	
-	static struct Function {
-		Module pspModule;
-		uint nid;
-		string name;
-		void delegate(CpuThreadBase cpuThread) func;
-		string toString() {
-			return std.string.format("0x%08X:'%s.%s'", nid, pspModule.baseName, name);
-		}
-	}
-	alias uint Nid;
-	Function[Nid] nids;
-	Function[string] names;
-	bool setReturnValue;
 	
 	Function* getFunctionByName(string functionName) {
 		return functionName in names;

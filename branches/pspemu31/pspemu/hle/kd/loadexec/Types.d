@@ -11,5 +11,6 @@ struct SceKernelLoadExecParam {
 	/** Pointer to the arg string */
 	void *  argp;
 	/** Encryption key ? */
-	const char *    key;
+	//const char *    key;
+	char *    key;
 }

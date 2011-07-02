@@ -1,7 +1,9 @@
 module pspemu.core.EmulatorState;
 
 import std.stdio;
+import std.datetime;
 import core.thread;
+import core.time;
 
 import pspemu.core.Memory;
 import pspemu.core.cpu.ISyscall;
@@ -23,6 +25,7 @@ import pspemu.core.battery.Battery;
 import pspemu.utils.sync.WaitEvent;
 
 class EmulatorState {
+	public SysTime       startTime; 
 	public Memory        memory;
 	public Battery       battery;
 	public Display       display;
@@ -50,6 +53,7 @@ class EmulatorState {
 		this.display                = new Display(this.runningState, this.memory);
 		this.controller             = new Controller();
 		this.gpu                    = new Gpu(this, new GpuOpengl());
+		this.startTime              = Clock.currTime;
 	}
 	
 	public void reset() {
@@ -61,6 +65,7 @@ class EmulatorState {
 		this.runningState.reset();
 		this.threadsRunning = 0;
 		this.enabledInterrupts = true;
+		this.startTime = Clock.currTime;
 	}
 	
 	public void cpuThreadRunningBlock(void delegate() callback) {

@@ -103,6 +103,7 @@ void init(string[] args) {
 	requireDirectory("pspfs/flash0/kd");
 	requireDirectory("pspfs/flash0/vsh");
 	requireDirectory("pspfs/flash1");
+	requireDirectory("pspfs/temp");
 	requireDirectory("pspfs/ms0/PSP/GAME/virtual");
 	requireDirectory("pspfs/ms0/PSP/PHOTO");
 	requireDirectory("pspfs/ms0/PSP/SAVEDATA");

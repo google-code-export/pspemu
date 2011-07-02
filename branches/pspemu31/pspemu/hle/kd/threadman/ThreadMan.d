@@ -283,7 +283,7 @@ class ThreadManForUser : ModuleNative {
 	/**
 	 * Try to allocate from the pool 
 	 *
-	 * @param uid - The UID of the pool
+	 * @param uid  - The UID of the pool
 	 * @param size - The size to allocate
 	 * @param data - Receives the address of the allocated data
 	 *

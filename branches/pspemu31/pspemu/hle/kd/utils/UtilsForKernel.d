@@ -21,6 +21,9 @@ import std.c.time;
 import std.md5;
 import std.c.windows.windows;
 
+import std.datetime;
+import core.time;
+
 public import pspemu.hle.kd.utils.Types;
 
 class UtilsForUser : ModuleNative {
@@ -159,8 +162,13 @@ class UtilsForUser : ModuleNative {
 	 */
 	clock_t sceKernelLibcClock() {
 		// @TODO: It's the thread CLOCK not the global CLOCK!
-		Logger.log(Logger.Level.WARNING, "UtilsForUser", "Not fully implemented sceKernelLibcClock");
-		return cast(uint)currentCpuThread().registers.EXECUTED_INSTRUCTION_COUNT_THIS_THREAD;
+		//auto result = cast(uint)currentCpuThread().registers.EXECUTED_INSTRUCTION_COUNT_THIS_THREAD;
+		Duration duration = (Clock.currTime - hleEmulatorState.emulatorState.startTime);
+		//clock_t result = cast(clock_t)duration.total!"msecs";
+		//clock_t result = cast(clock_t)duration.total!"usecs" / 10;
+		clock_t result = cast(clock_t)duration.total!"usecs";
+		//Logger.log(Logger.Level.WARNING, "UtilsForUser", "Not fully implemented sceKernelLibcClock(%d)", result);
+		return result;
 	}
 
 	/**

@@ -34,10 +34,10 @@ struct SceModuleInfo {
 
 struct SceKernelModuleInfo {
 	SceSize size;
-	char    nsegment;
+	ubyte   nsegment;
 	char    reserved[3];
-	int     segmentaddr[4];
-	int     segmentsize[4];
+	uint    segmentaddr[4];
+	uint    segmentsize[4];
 	uint    entry_addr;
 	uint    gp_value;
 	uint    text_addr;

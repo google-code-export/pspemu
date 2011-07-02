@@ -25,39 +25,6 @@ PSP_MAIN_THREAD_ATTR(0);
 //#define printf	pspDebugScreenPrintf
 #define printf	Kprintf
 
-/* Exit callback */
-int exit_callback(int arg1, int arg2, void *arg)
-{
-	sceKernelExitGame();
-
-	return 0;
-}
-
-/* Callback thread */
-void CallbackThread(void *arg)
-{
-	int cbid;
-
-	cbid = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
-	sceKernelRegisterExitCallback(cbid);
-
-	sceKernelSleepThreadCB();
-}
-
-/* Sets up the callback thread and returns its thread id */
-int SetupCallbacks(void)
-{
-	int thid = 0;
-
-	thid = sceKernelCreateThread("update_thread", (void*) CallbackThread, 0x11, 0xFA0, 0xa0000000, 0);
-	if(thid >= 0)
-	{
-		sceKernelStartThread(thid, 0, 0);
-	}
-
-	return thid;
-}
-
 SceUID load_module(const char *path, int flags, int type)
 {
 	SceKernelLMOption option;
@@ -101,13 +68,13 @@ int main(void)
 	pspDebugInstallStdoutHandler(pspDebugScreenPrintData);
 	pspSdkInstallNoPlainModuleCheckPatch();
 	*/
-	SetupCallbacks();
+	//SetupCallbacks();
 
 	/* Start mymodule.prx and dump its information */
-	printf("\nStart my module\n");
+	printf("Start my module\n");
 	//modid = load_module("ms0:/mymodule.prx", 0, 0);
 	modid = load_module("mymodule.prx", 0, 0);
-	printf("Module ID %08X\n", modid);
+	printf("Module ID %08X\n", (modid != 0));
 	mod = sceKernelFindModuleByUID(modid);
 	printf("mod %p\n", mod);
 	if(mod != NULL)
