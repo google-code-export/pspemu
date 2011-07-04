@@ -297,7 +297,7 @@ class Audio {
 		}
 	}
 	
-	Channel[8] channels;
+	Channel[10] channels;
 	Buffer[4] buffers;
 	int[bufferSize * 2] bufferTemp;
 	short[bufferSize * 2] bufferTemp2;

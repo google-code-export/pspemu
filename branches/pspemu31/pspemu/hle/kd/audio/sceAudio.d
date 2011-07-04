@@ -16,6 +16,7 @@ import pspemu.utils.Logger;
 
 class sceAudio_driver : ModuleNative {
 	struct Channel {
+		int index;
 		bool reserved = false;
 		int  samplecount;
 		PspAudioFormats format = PspAudioFormats.PSP_AUDIO_FORMAT_STEREO;
@@ -61,6 +62,9 @@ class sceAudio_driver : ModuleNative {
 		currentEmulatorState.runningState.onStop += delegate(...) {
 			audio.stop();
 		};
+		
+		foreach (n, ref channel; channels) channel.index = n;
+		srcChannel.index = 8;
 	}
 
 	void shutdownModule() {
@@ -141,7 +145,6 @@ class sceAudio_driver : ModuleNative {
 			}
 
 			Channel cchannel = channels[channel];
-			bool playing = true;
 
 			logTrace(
 				"sceAudioOutputPannedBlocking(channel=%d, channel.format=%s, channel.samplecount=%d, channel.freq=%d, leftvol=%d, rightvol=%d, buf=%08X, buf_length=%d)",
@@ -167,7 +170,6 @@ class sceAudio_driver : ModuleNative {
 				} catch (Throwable o) {
 					Logger.log(Logger.Level.ERROR, "sceAudio_driver", "_sceAudioOutputPannedBlocking: %s", o);
 				}
-				playing = false;
 			};
 	
 			if (blocking) {
@@ -408,10 +410,17 @@ class sceAudio_driver : ModuleNative {
 	  * @return 0 on success, an error if less than 0.
 	  */
 	int sceAudioSRCOutputBlocking(int vol, void *buf) {
-		logTrace("Not implemented sceAudioSRCOutputBlocking(%d, 0x%08X)", vol, cast(uint)buf);
-		//unimplemented_notice();
-		unimplemented();
-		return -1;
+		auto writeDelegate = delegate() {
+			try {
+				audio.writeWait(srcChannel.index, srcChannel.numchannels, (cast(short*)buf)[0..srcChannel.samplecount * srcChannel.numchannels], volumef(vol), volumef(vol));
+			} catch (Throwable o) {
+				Logger.log(Logger.Level.ERROR, "sceAudio_driver", "_sceAudioOutputPannedBlocking: %s", o);
+			}
+		};
+
+		currentThreadState().waitingBlock("_sceAudioOutputPannedBlocking", writeDelegate);
+
+		return 0;
 	}
 
 }

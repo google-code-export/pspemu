@@ -6,13 +6,36 @@ import pspemu.utils.StructUtils;
 import pspemu.utils.MathUtils;
 
 class WaveProcessor {
-	static struct WaveFormat {
+	static struct RiffHeader {
+		char[4] riffMagic = "RIFF";
+		uint size;
+		char[4] waveMagic = "WAVE";
+		
+		static assert(RiffHeader.sizeof == 12);
+	}
+
+	align (2) static struct WaveFormat {
 		ushort  compressionCode;    // 01 00       - For Uncompressed PCM (linear quntization)
 		ushort  numberOfChannels;   // 02 00       - Stereo
 		uint    sampleRate;         // 44 AC 00 00 - 44100
 		uint    bytesPerSecond;     // Should be on uncompressed PCM : sampleRate * short.sizeof * numberOfChannels 
 		ushort  blockAlignment;     // short.sizeof * numberOfChannels
-		ushort  bytesPersample;     // ???
+		ushort  bitsPerSample;      // ???
+		ushort  padding;
+		
+		static WaveFormat getByInfo(ushort numberOfChannels, ushort sampleRate) {
+			WaveFormat waveFormat;
+			{
+				waveFormat.compressionCode  = 1;
+				waveFormat.numberOfChannels = numberOfChannels;
+				waveFormat.sampleRate       = sampleRate;
+				waveFormat.bytesPerSecond   = cast(uint)(short.sizeof * numberOfChannels * sampleRate);
+				waveFormat.blockAlignment   = cast(ushort)(short.sizeof * numberOfChannels);
+				//waveFormat.bytesPersample   = cast(ushort)(0x8 * numberOfChannels);
+				waveFormat.bitsPerSample    = short.sizeof * 8;
+			}
+			return waveFormat;
+		}
 	}
 
 	static struct ChunkHeader {
@@ -49,15 +72,29 @@ class WaveProcessor {
 	this() {
 	}
 	
-	public void process(Stream stream) {
-		static struct RiffHeader {
-			char[4] riffMagic = "RIFF";
-			uint size;
-			char[4] waveMagic = "WAVE";
-			
-			static assert(RiffHeader.sizeof == 12);
-		}
+	static ubyte[] getBytes(short[] samples, WaveFormat format) {
+		auto memoryStream = new MemoryStream();
+		write(samples, format, memoryStream);
+		return memoryStream.data;
+	}
+	
+	static void write(short[] samples, WaveFormat format, Stream outStream) {
+		RiffHeader riffHeader;
 		
+		riffHeader.size  = 4;
+		riffHeader.size += ChunkHeader.sizeof;
+		riffHeader.size += format.sizeof;
+		riffHeader.size += ChunkHeader.sizeof;
+		riffHeader.size += samples.length * samples[0].sizeof;
+		
+		outStream.write(TA(riffHeader));
+		outStream.write(TA(ChunkHeader("fmt ", format.sizeof)));
+		outStream.write(TA(format));
+		outStream.write(TA(ChunkHeader("data", samples.length * samples[0].sizeof)));
+		outStream.write(cast(ubyte[])samples);
+	}
+	
+	public void process(Stream stream) {
 		RiffHeader riffHeader;
 		stream.read(TA(riffHeader));
 		if (riffHeader.riffMagic != RiffHeader.init.riffMagic) throw(new Exception("Not a RIFF file"));

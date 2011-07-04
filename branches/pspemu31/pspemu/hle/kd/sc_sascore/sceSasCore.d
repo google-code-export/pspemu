@@ -2,8 +2,13 @@ module pspemu.hle.kd.sc_sascore.sceSasCore;
 
 import pspemu.hle.ModuleNative;
 import pspemu.hle.HleEmulatorState;
-import pspemu.utils.BitUtils;
 import pspemu.hle.kd.audio.Types;
+
+import pspemu.utils.BitUtils;
+
+import pspemu.formats.audio.Vag;
+
+import std.c.stdlib;
 
 enum WaveformEffectType {
     PSP_SAS_EFFECT_TYPE_OFF   = -1,
@@ -71,9 +76,45 @@ struct SasEnvelope {
 
 struct SasVoice {
 	bool on;
-	
 	bool playing;
+	bool paused;
+	VAG  vag;
+	
+	void setOn(bool set) {
+    	on        = set;
+    	setPlaying(set);
+    }
+	
+	void setPlaying(bool set) {
+    	playing   = set;
+    	playOffset = 0;
+	}
+	
+	void onVoiceChanged() {
+		if (on && !playing) {
+			setPlaying(true);
+		}
+	}
+	
+	bool onAndPlaying() {
+		return on && playing;
+	}
+	
+	short getSample() {
+		if (playOffset < vag.decodedSamples.length) {
+			if (playOffset >= vag.decodedSamples.length - 1) {
+				setPlaying(false);
+			}
+			return vag.decodedSamples[playOffset++];
+		} else{
+			setPlaying(false);
+			return 0;
+		}
+	}
+	
 	int  pitch;
+	
+	int  playOffset;
 	
 	int  leftVolume;
 	int  rightVolume;
@@ -84,18 +125,24 @@ struct SasVoice {
 	int loopMode;
 	
 	SasEnvelope envelope;
-	
-	@property bool paused() {
-		return !playing;
-	}
 
-	@property bool paused(bool set) {
-		playing = !set;
-		return paused;
-	}
-	
 	bool ended() {
 		return !playing;
+	}
+	
+	string toString() {
+		string s = "";
+		s ~= "SasVoice(";
+		s ~= std.string.format("on=%d,", on);
+		s ~= std.string.format("playing=%d,", playing);
+		s ~= std.string.format("pitch=%d,", pitch);
+		s ~= std.string.format("playOffset=%d/%d,", playOffset, vag.decodedSamples.length);
+		s ~= std.string.format("volumes=%d/%d,", leftVolume, rightVolume);
+		s ~= std.string.format("noiseFreq=%d,", noiseFreq);
+		s ~= std.string.format("loopMode=%d,", loopMode);
+		s ~= std.string.format("envelope=...,");
+		s ~= ")";
+		return s;
 	}
 }
 
@@ -193,6 +240,10 @@ class sceSasCore : ModuleNative {
 			sasCore.maxVoices    = maxVoices;
 			sasCore.outputMode   = outputMode;
 			sasCore.sampleRate   = sampleRate;
+			
+			if (sampleRate != 44100 || outputMode != OutputMode.PSP_SAS_OUTPUTMODE_STEREO) {
+				throw(new Exception(std.string.format("Unsupported __sceSasInit outputMode(%d)/sampleRate(%d)", outputMode, sampleRate)));
+			}
 			//*sasCorePtr = uniqueIdFactory.add!SasCore(sasCore);
 			
 			return 0;
@@ -211,12 +262,9 @@ class sceSasCore : ModuleNative {
 	 */
     uint __sceSasGetEndFlag(SasCore* sasCore) {
 		uint endFlags;
-		/*
-		foreach (k, ref voice; sasCore.voices) {
-			if (voice.ended) endFlags |= (1 << k); 
+		foreach (uint index, ref voice; sasCore.voices) {
+			if (voice.ended) endFlags |= (1 << index); 
 		}
-		*/
-		endFlags = 0xFFFFFFFF;
 		return endFlags;
     }
 
@@ -264,13 +312,29 @@ class sceSasCore : ModuleNative {
     }
 
 	/**
+	 * Sets the Voice (VAG pointer).
 	 *
+	 * 4-bit ADPCM, mono sound format.
+	 * 4-bit compressed sound format used by PlayStation and PlayStation Portable games;
+	 * compressed using ADPCM (Adaptive Differential Pulse Code Modulation) encoding.
+	 *
+	 * @param  sasCore   Core
+	 * @param  voice     Voice
+	 * @param  vagArg    Pointer to the wave data
+	 * @param  size      Size in bytes?? (to confirm)
+	 * @param  loopmode  Number of times the voice should play
 	 */
     int __sceSasSetVoice(SasCore* sasCore, int voice, ubyte* vagAddr, int size, int loopmode) {
     	auto voicePtr = &sasCore.voices[voice];
     	
     	voicePtr.data = vagAddr[0..size];
     	voicePtr.loopMode = loopmode;
+    	
+    	voicePtr.vag = new VAG;
+    	voicePtr.vag.load(vagAddr[0..size]);
+    	voicePtr.onVoiceChanged();
+    	
+    	//std.c.stdlib.exit(-1);
     	
 		return 0;
     }
@@ -280,7 +344,7 @@ class sceSasCore : ModuleNative {
 	 *
 	 * @param  sasCore  SasCore
 	 * @param  voice    Voice
-	 * @param  pitch    Pitch to set
+	 * @param  pitch    Pitch to set. A value between 1 and 16384. The default value is 4096.
 	 *
 	 * @return 0 on success
 	 */
@@ -288,6 +352,7 @@ class sceSasCore : ModuleNative {
     	auto voicePtr = &sasCore.voices[voice];
     	
     	voicePtr.pitch = pitch;
+    	voicePtr.onVoiceChanged();
 		return 0;
     }
 
@@ -351,7 +416,9 @@ class sceSasCore : ModuleNative {
     int __sceSasGetPauseFlag(SasCore* sasCore) {
     	uint flags;
     	foreach (uint index, SasVoice voice; sasCore.voices) {
-    		flags |= ((voice.paused ? 1 : 0) << index);
+    		if (voice.paused) {
+    			flags |= (1 << index);
+    		}
     	}
     	return flags;
     }
@@ -412,39 +479,87 @@ class sceSasCore : ModuleNative {
 
     int __sceSasSetKeyOn(SasCore* sasCore, int voice) {
     	SasVoice* voicePtr = &sasCore.voices[voice];
-    	voicePtr.on = true;
+    	voicePtr.setOn(true);
     	return 0;
     }
 
     int __sceSasSetKeyOff(SasCore* sasCore, int voice) {
     	SasVoice* voicePtr = &sasCore.voices[voice];
-    	voicePtr.on = false;
+    	voicePtr.setOn(false);
     	return 0;
     }
 
     int __sceSasSetNoise(SasCore* sasCore, int voice, int noiseFreq) {
     	SasVoice* voicePtr = &sasCore.voices[voice];
     	voicePtr.noiseFreq = noiseFreq;
+    	voicePtr.onVoiceChanged();
     	return 0;
     }
 
 	int __sceSasCoreWithMix(SasCore* sasCore, void* sasInOut, int leftVol, int rightVol) {
 		unimplemented_notice();
-		
-		
 		return 0;
 	}
 	
-	uint __sceSasCore(SasCore* sasCore, void* sasOut) {
-		int[] mixedSamples = new int[sasCore.grainSamples * 2];
-		short[] output = (cast(short *)sasOut)[0..sasCore.grainSamples * 2];
-		output[] = 0;
+	/*
+	static void audioConvert(short[] inSamples, int inChannels, int inSampleRate, short[] outSamples, int outChannels, int outSampleRate) {
 		
-		foreach (ref voice; sasCore.voices) {
-			if (voice.playing) {
-				
-			}
+	}
+	*/
+	
+	static void audioConvert_Mono22050_Stereo44100(short[] inSamples, short[] outSamples) {
+		int m = 0;
+		foreach (n, inSample; inSamples) {
+			outSamples[m + 0] = inSample;
+			outSamples[m + 2] = inSample;
+			m += 4;
 		}
+		for (int n = 1; n < outSamples.length - 1; n += 4) {
+			short sample = cast(short)((cast(int)outSamples[n - 1] + cast(int)outSamples[n + 1]) / 2);
+			outSamples[n + 0] = sample;
+			outSamples[n + 2] = sample; 
+		}
+	}
+	
+	uint __sceSasCore(SasCore* sasCore, void* sasOut) {
+		//writefln("[1]");
+		int[] mixedSamples = new int[sasCore.grainSamples * 2];
+		scope short[] outputStereo44100 = (cast(short *)sasOut)[0..sasCore.grainSamples * 2];
+		scope int[]   tempMixer         = new int  [outputStereo44100.length / 4]; 
+		scope short[] tempMono22050     = new short[outputStereo44100.length / 4];
+		int divideCount;
+		tempMixer[] = 0;
+		//writefln("[2]");
+		
+		try {
+			foreach (index, ref SasVoice voice; sasCore.voices) {
+				if (voice.on) {
+					logTrace("SasCore:: Voice(%d):%s", index, voice.toString);
+				}
+				if (voice.onAndPlaying) {
+					foreach (ref sample; tempMixer) sample = voice.getSample; 
+					divideCount++;
+				}
+			}
+		} catch (Throwable o) {
+			writefln("Error! : %s", o);
+		}
+		
+		//writefln("[3]");
+		
+		if (divideCount == 0) {
+			outputStereo44100[] = 0;
+		} else {
+			foreach (n, ref outSample; tempMixer) tempMono22050[n] = cast(short)(outSample / divideCount);
+		}
+		
+		audioConvert_Mono22050_Stereo44100(tempMono22050, outputStereo44100);
+		
+		//writefln("[4]");
+		
+		//output[] = cast(short)(outputMix[] / divideCount);
+		
+		//writefln("%s", output);
 
 		return 0;
     }

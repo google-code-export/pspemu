@@ -193,7 +193,7 @@ class CpuThreadInterpreted : CpuThreadBase {
 		    	//running = false;
 		    } catch (HaltAllException haltAllException) {
 		    	try {
-			    	Logger.exclusiveLock({
+			    	//Logger.exclusiveLock({
 						Logger.log(Logger.Level.INFO, "CpuThreadBase", "halted all threads: %s", this);
 						//dumpThreads(haltException);
 						
@@ -202,17 +202,17 @@ class CpuThreadInterpreted : CpuThreadBase {
 					    	dumpCallstack();
 					    	Logger.log(Logger.Level.INFO, "CpuThreadBase", haltAllException);
 					    }
-					});
+					//});
 				} catch (Throwable o) {
 					.writefln("REALLY FATAL ERROR: Error on HaltAllException Error!! '%s'", o);
 				}
 				threadState.emulatorState.runningState.stopCpu();
 		    } catch (Throwable exception) {
 		    	try {
-			    	Logger.exclusiveLock({
+			    	//Logger.exclusiveLock({
 			    		writefln("Fatal Error. Halting all threads :: Exception:'%s'", exception);
 				    	dumpThreads(exception);
-			    	});
+			    	//});
 				} catch (Throwable o) {
 					.writefln("REALLY FATAL ERROR: Error on Error '%s'!! :: %s", exception, o);
 				}
