@@ -48,7 +48,7 @@ class LoadCoreForKernel : ModuleNative {
 	 * @return Pointer to the ::SceModule structure if found, otherwise NULL.
 	 */
 	SceModule* sceKernelFindModuleByName(string modname) {
-		logWarning("sceKernelFindModuleByName not implemented");
+		logWarning("sceKernelFindModuleByName('%s') not implemented", modname);
 		//unimplemented();
 		return null;
 	}
