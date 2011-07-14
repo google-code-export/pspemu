@@ -7,7 +7,7 @@ import dfl.ext.DrawingArea;
 
 import std.stdio;
 import core.thread;
-import derelict.sdl.sdl;
+import core.memory;
 import std.process;
 
 import pspemu.EmulatorHelper;
@@ -235,6 +235,7 @@ class MainForm : Form, IMessageFilter {
 			]),
 			createMenu("&Help", [
 				createMenu("Oficial &Website", { ShellExecuteA(null, "open", "http://pspemu.soywiz.com/", null, null, SW_SHOWNORMAL); }),
+				createMenu("&Compatibility Table", { ShellExecuteA(null, "open", "http://pspemu.soywiz.com/p/compatibility.html", null, null, SW_SHOWNORMAL); }),
 				createMenu("Check for &updates...", {
 					UpdateChecker.tryCheckBackground(delegate(bool result) {
 						if (!result) {
@@ -403,6 +404,11 @@ class MainForm : Form, IMessageFilter {
 					break;
 					case VK_F10:
 						gpu.justDrawOnVblank = !gpu.justDrawOnVblank;
+						return true;
+					break;
+					case VK_F12:
+						//core.memory.GC.minimize();
+						core.memory.GC.collect();
 						return true;
 					break;
 

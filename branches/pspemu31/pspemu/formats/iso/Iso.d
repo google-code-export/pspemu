@@ -205,7 +205,7 @@ class Iso {
 		protected IsoNode accessChild(string childName) {
 			if (childName == "" || childName == ".") return this;
 			if (childName == "..") return (parent !is null) ? parent : this;
-			childName = std.string.toupper(childName);
+			childName = std.string.toUpper(childName);
 			if (childName !in _childsByNameUpperCase) {
 				throw(new Exception(std.string.format("Can't find '%s' on '%s'", childName, this)));
 			}
@@ -358,7 +358,7 @@ class Iso {
 			IsoNode childIsoNode = new IsoNode(*directoryRecord, name, parent);
 			parent._childs ~= childIsoNode;
 			parent._childsByName[childIsoNode.name] = childIsoNode;
-			parent._childsByNameUpperCase[std.string.toupper(childIsoNode.name)] = childIsoNode;
+			parent._childsByNameUpperCase[std.string.toUpper(childIsoNode.name)] = childIsoNode;
 		}
 		
 		foreach (child; parent._childs) {

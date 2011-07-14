@@ -58,8 +58,8 @@ class UpdateChecker {
 	}
 	
 	public static bool isANewerVersionAvailable() {
-		lastestVersion = SvnVersion.getLastOnlineVersion;
 		currentVersion = SvnVersion.revision;
+		lastestVersion = SvnVersion.getLastOnlineVersion;
 		return (lastestVersion > currentVersion);
 	}
 	

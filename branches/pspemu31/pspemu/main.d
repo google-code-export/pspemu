@@ -145,6 +145,7 @@ int main(string[] args) {
 	bool doTestsEx;
 	bool showHelp;
 	bool nolog, log, trace;
+	bool forceCheckForUpdates = false;
 	
 	void disableLogComponent(string opt, string component) { Logger.disableLogComponent(component); }
 	void enableLogComponent(string opt, string component) { Logger.enableLogComponent(component); }
@@ -194,7 +195,8 @@ int main(string[] args) {
 		"cheat16", &addCheat16,
 		"cheat8", &addCheat8,
 		"trace_thread", &addTraceThread,
-		"associate_extensions", &associateExtensions
+		"associate_extensions", &associateExtensions,
+		"check_for_updates", &forceCheckForUpdates
 	);
 	
 	void displayHelp() {
@@ -216,6 +218,7 @@ int main(string[] args) {
 		writefln("  --cheat32=ADDR:VAL  - Adds a memory write every frame (addresses are relative to 0x08000000, the memory.dump start).");
 		writefln("  --isolist           - Allow to list an iso file and (optionally) to extract a single file");
 		writefln("  --loadgpu=folder    - Loads a gpu dump and displays it");
+		writefln("  --check_for_updates - Forces checking for updates");
 		writefln("");
 		writefln("Examples:");
 		writefln("  pspemu.exe --help");
@@ -362,7 +365,7 @@ int main(string[] args) {
 		Logger.setLevel(Logger.Level.WARNING);
 	}
 
-	UpdateChecker.tryCheckBackground();
+	UpdateChecker.tryCheckBackground(null, forceCheckForUpdates);
 	
 	//displayHelp();
 	writefln("No specified file to execute");

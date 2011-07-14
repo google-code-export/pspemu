@@ -297,7 +297,7 @@ public class Diff {
 			}
 			
 			if (ignoreCase) {
-				line = std.string.tolower(line);
+				line = std.string.toLower(line);
 			}
 			
 			if ((line in hashes) is null) {

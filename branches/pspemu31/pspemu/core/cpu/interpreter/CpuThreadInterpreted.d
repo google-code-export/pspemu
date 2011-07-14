@@ -52,6 +52,11 @@ class CpuThreadInterpreted : CpuThreadBase {
 	
 	version (FASTER_INTERPRETED_CPU) {
 		void execute(bool trace = false) {
+			TerminateCallbackException terminateCallbackExceptionCopy;
+			HaltException haltExceptionCopy;
+			HaltAllException haltAllExceptionCopy;
+			Throwable throwableExceptionCopy;
+			
 			CpuThreadBase cpuThread = this.cpuThread;
     		Instruction instruction;
     		ThreadState threadState = this.threadState;
@@ -168,9 +173,12 @@ class CpuThreadInterpreted : CpuThreadBase {
 			    	registers.EXECUTED_INSTRUCTION_COUNT_THIS_THREAD++;
 			    }
 				Logger.log(Logger.Level.TRACE, "CpuThreadBase", "!running: %s", this);
-			} catch (TerminateCallbackException terminateCallbackException) {
+			} catch (TerminateCallbackException _terminateCallbackException) {
+				terminateCallbackExceptionCopy = _terminateCallbackException;
 				// Do nothing.
-		    } catch (HaltException haltException) {
+		    } catch (HaltException _haltException) {
+		    	haltExceptionCopy = _haltException;
+
 		    	try {
 		    		/*
 			    	Logger.exclusiveLock({
@@ -191,30 +199,34 @@ class CpuThreadInterpreted : CpuThreadBase {
 		    	//.writefln("%s", this);
 		    	//throw(haltException);
 		    	//running = false;
-		    } catch (HaltAllException haltAllException) {
+		    } catch (HaltAllException _haltAllException) {
+		    	haltAllExceptionCopy = _haltAllException;
+		    	
 		    	try {
-			    	//Logger.exclusiveLock({
+			    	Logger.exclusiveLock({
 						Logger.log(Logger.Level.INFO, "CpuThreadBase", "halted all threads: %s", this);
 						//dumpThreads(haltException);
 						
 						if (!isUnittesting) {
 					    	dumpHeader();
 					    	dumpCallstack();
-					    	Logger.log(Logger.Level.INFO, "CpuThreadBase", haltAllException);
+					    	Logger.log(Logger.Level.INFO, "CpuThreadBase", haltAllExceptionCopy);
 					    }
-					//});
+					});
 				} catch (Throwable o) {
 					.writefln("REALLY FATAL ERROR: Error on HaltAllException Error!! '%s'", o);
 				}
 				threadState.emulatorState.runningState.stopCpu();
-		    } catch (Throwable exception) {
+		    } catch (Throwable _throwableException) {
+		    	throwableExceptionCopy = _throwableException;
+
 		    	try {
-			    	//Logger.exclusiveLock({
-			    		writefln("Fatal Error. Halting all threads :: Exception:'%s'", exception);
-				    	dumpThreads(exception);
-			    	//});
+			    	Logger.exclusiveLock({
+			    		writefln("Fatal Error. Halting all threads :: Exception:'%s'", throwableExceptionCopy);
+				    	dumpThreads(throwableExceptionCopy);
+			    	});
 				} catch (Throwable o) {
-					.writefln("REALLY FATAL ERROR: Error on Error '%s'!! :: %s", exception, o);
+					.writefln("REALLY FATAL ERROR: Error on Error '%s'!! :: %s", throwableExceptionCopy, o);
 				}
 				threadState.emulatorState.runningState.stopCpu();
 		    } finally {

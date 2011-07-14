@@ -151,10 +151,10 @@ class sceMpeg : ModuleNative {
 	/**
 	 * sceMpegAvcDecodeStop
 	 *
-	 * @param Mpeg - SceMpeg handle
+	 * @param Mpeg        - SceMpeg handle
 	 * @param iFrameWidth - output buffer width, set to 512 if writing to framebuffer
-	 * @param pBuffer - buffer that will contain the decoded frame
-	 * @param iStatus - frame number
+	 * @param pBuffer     - buffer that will contain the decoded frame
+	 * @param iStatus     - frame number
 	 *
 	 * @return 0 if success.
 	 */
@@ -351,11 +351,11 @@ class sceMpeg : ModuleNative {
 	/**
 	 * sceMpegAvcDecode
 	 *
-	 * @param Mpeg - SceMpeg handle
-	 * @param pAu - video Au
+	 * @param Mpeg        - SceMpeg handle
+	 * @param pAu         - video Au
 	 * @param iFrameWidth - output buffer width, set to 512 if writing to framebuffer
-	 * @param pBuffer - buffer that will contain the decoded frame
-	 * @param iInit - will be set to 0 on first call, then 1
+	 * @param pBuffer     - buffer that will contain the decoded frame
+	 * @param iInit       - will be set to 0 on first call, then 1
 	 *
 	 * @return 0 if success.
 	 */

@@ -429,7 +429,7 @@ class sceAtrac3plus : ModuleNative {
 			if (atrac3Object.nloops != 0) {
 				endedStream = false;
 				atrac3Object.samplesOffset = 0;
-				logWarning("sceAtracDecodeData :: reset");
+				logTrace("sceAtracDecodeData :: reset");
 			}
 			if (atrac3Object.nloops > 0) atrac3Object.nloops--;
 		}
