@@ -5,8 +5,6 @@ import pspemu.core.cpu.tables.Utils;
 
 import std.stdio, std.traits;
 
-//version = AA_CTFE;
-
 // Here is the magic of the instruction decoding.
 // OLD OLD:   http://pspemu.googlecode.com/svn/branches/old/util/gen/cpu_switch.back.d
 // OLD:       http://pspemu.googlecode.com/svn/branches/old/util/gen/cpu_gen.php
@@ -22,11 +20,6 @@ uint getCommonMask(const InstructionDefinition[] ilist, uint _mask = 0x_FFFFFFFF
 	uint mask = _mask;
 	foreach (i; ilist) mask &= i.opcode.mask;
 	return mask;
-}
-
-bool inArray(uint[] l, uint v) {
-	foreach (c; l) if (c == v) return true;
-	return false;
 }
 
 /**
@@ -71,26 +64,15 @@ string genSwitch(const InstructionDefinition[] ilist, string processor = "callFu
 	} if (ilist.length > 1) {
 		InstructionDefinition[512] ci; int ci_len;
 
-		version (AA_CTFE) {
-			bool aa_initialized = false;
-			bool[uint] cvalues_aa;
-		} else {
-			uint[] cvalues;
-		}
+		bool[uint] cvalues_aa;
 
 		uint mask = getCommonMask(cast(InstructionDefinition[])ilist, _mask);
 		r ~= indent_level ~ "switch (instruction.v & " ~ getString(mask) ~ ") {\n";
 		foreach (i; ilist) {
 			uint cvalue = i.opcode.value & mask;
-			version (AA_CTFE) {
-				if (aa_initialized) {
-					if (cast(bool)(cvalue in cvalues_aa)) {
-						//if (cvalues_aa[cvalue] == true) continue;
-						continue;
-					}
-				}
-			} else {
-				if (inArray(cvalues, cvalue)) continue;
+			if (cast(bool)(cvalue in cvalues_aa)) {
+				//if (cvalues_aa[cvalue] == true) continue;
+				continue;
 			}
 
 			r ~= indent_level ~ "\tcase " ~ getString(cvalue) ~ ":\n";
@@ -101,12 +83,7 @@ string genSwitch(const InstructionDefinition[] ilist, string processor = "callFu
 			r ~= genSwitch(ci[0..ci_len], processor, ~mask, level + 2);
 			r ~= indent_level ~ "\tbreak;\n";
 			
-			version (AA_CTFE) {
-				cvalues_aa[cvalue] = true;
-				aa_initialized = true;
-			} else {
-				cvalues ~= cvalue;
-			}
+			cvalues_aa[cvalue] = true;
 		}
 		//r ~= indent_level ~ "\tdefault:{mixin(" ~ processor ~ "(\"unk\"));}\n";
 		//r ~= indent_level ~ "\tdefault:{this.OP_UNK();}\n";

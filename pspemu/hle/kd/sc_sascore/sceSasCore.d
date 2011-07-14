@@ -101,9 +101,13 @@ struct SasVoice {
 	}
 	
 	short getSample() {
+		if (vag is null) return 0;
 		if (playOffset < vag.decodedSamples.length) {
-			if (playOffset >= vag.decodedSamples.length - 1) {
-				setPlaying(false);
+			scope (exit) {
+				if (playOffset >= vag.decodedSamples.length) {
+					//setPlaying(false);
+					setPlaying(loopMode ? true : false);
+				}
 			}
 			return vag.decodedSamples[playOffset++];
 		} else{
@@ -136,7 +140,7 @@ struct SasVoice {
 		s ~= std.string.format("on=%d,", on);
 		s ~= std.string.format("playing=%d,", playing);
 		s ~= std.string.format("pitch=%d,", pitch);
-		s ~= std.string.format("playOffset=%d/%d,", playOffset, vag.decodedSamples.length);
+		s ~= std.string.format("playOffset=%d/%d,", playOffset, (vag !is null) ? vag.decodedSamples.length : 0);
 		s ~= std.string.format("volumes=%d/%d,", leftVolume, rightVolume);
 		s ~= std.string.format("noiseFreq=%d,", noiseFreq);
 		s ~= std.string.format("loopMode=%d,", loopMode);
@@ -327,14 +331,19 @@ class sceSasCore : ModuleNative {
     int __sceSasSetVoice(SasCore* sasCore, int voice, ubyte* vagAddr, int size, int loopmode) {
     	auto voicePtr = &sasCore.voices[voice];
     	
-    	voicePtr.data = vagAddr[0..size];
-    	voicePtr.loopMode = loopmode;
-    	
-    	voicePtr.vag = new VAG;
-    	voicePtr.vag.load(vagAddr[0..size]);
-    	voicePtr.onVoiceChanged();
-    	
-    	//std.c.stdlib.exit(-1);
+    	try {
+	    	voicePtr.data = vagAddr[0..size];
+	    	voicePtr.loopMode = loopmode;
+	    	
+	    	voicePtr.vag = new VAG;
+	    	voicePtr.vag.load(vagAddr[0..size]);
+	    	//voicePtr.vag.load(vagAddr[0..size].dup);
+	    	voicePtr.onVoiceChanged();
+	    	
+	    	//std.c.stdlib.exit(-1);
+	    } catch (Throwable o) {
+	    	logError("__sceSasSetVoice error: %s", o);
+	    }
     	
 		return 0;
     }

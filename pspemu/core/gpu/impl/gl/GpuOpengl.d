@@ -621,6 +621,7 @@ class TextureCachePool {
 		scope textureCacheDup = textureCache.dup;
 		foreach (textureHash, texture; textureCacheDup) {
 			if (texture.canDelete) {
+				textureCacheSize -= texture.size;
 				texture.free();
 				textureCache.remove(textureHash);
 			} else {

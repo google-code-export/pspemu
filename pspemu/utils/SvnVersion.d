@@ -6,6 +6,7 @@ import std.xml;
 import std.conv;
 import pspemu.utils.net.SimpleHttp;
 import std.regex;
+import std.stdio;
 
 class SvnVersion {
 	__gshared string svnversionString = import("svn_version.txt");
@@ -20,9 +21,21 @@ class SvnVersion {
 	}
 	
 	static int getLastOnlineVersion() {
-		auto data = SimpleHttp.downloadFile("http://code.google.com/p/pspemu/");
-		auto m = match(cast(char[])data, regex("Current version is <a href=\"(.*)\">r(\\d+)</a>"));
-		return to!int(m.captures[2]);
+		try {
+			auto data = SimpleHttp.downloadFile("http://code.google.com/p/pspemu/");
+			//writefln("[b] : %s", cast(string)data);
+			RegexMatch!(char[]) m = match(cast(char[])data, regex("Current version is <a href=\"([^\"]*?)\">r(\\d+)</a>"));
+			
+			if (m.empty) {
+				throw(new Exception("Can't find the 'Current version' sequence"));
+			}
+			// Current version is <a href="/p/pspemu/source/detail?r=235">r235</a>
+			//writefln("[c] : %s", m);
+			return to!int(m.captures[2]);
+		} catch (Throwable o) {
+			writefln("There was an error retrieving the online version :: '%s'", o);
+			return -1;
+		}
 	}
 
 	

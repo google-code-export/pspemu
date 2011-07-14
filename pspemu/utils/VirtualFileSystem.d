@@ -110,14 +110,14 @@ class VFS {
 		//writefln("[1]");
 		//writefln(" ** %s (%d)", index, caseInsensitive);
 		if (caseInsensitive) {
-			string singleComponentLower = std.string.tolower(index);
+			string singleComponentLower = std.string.toLower(index);
 			foreach (key; childrenMounted.keys) {
-				if (std.string.tolower(key) == singleComponentLower) {
+				if (std.string.toLower(key) == singleComponentLower) {
 					//writefln("GET_MOUNTED :: %s", childrenMounted[key]);
 					return childrenMounted[key];
 				}
 			}
-			foreach (key; children.keys) if (std.string.tolower(key) == singleComponentLower) return children[key];
+			foreach (key; children.keys) if (std.string.toLower(key) == singleComponentLower) return children[key];
 		} else {
 			VFS* node;
 			if ((node = (index in childrenMounted)) !is null) return *node;

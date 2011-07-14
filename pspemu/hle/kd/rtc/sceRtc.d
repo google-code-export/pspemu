@@ -156,7 +156,7 @@ class sceRtc : ModuleNative {
 	 * @return # of days in month, <0 on error (?)
 	 */
 	int sceRtcGetDaysInMonth(int year, int month) {
-		return Date(year, month, 1).endOfMonthDay;
+		return Date(year, month, 1).daysInMonth;
 	}
 
 	/**

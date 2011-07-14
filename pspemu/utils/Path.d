@@ -5,16 +5,32 @@ import std.c.windows.windows;
 import std.windows.registry;
 import std.string;
 import std.process;
+import std.utf;
+import std.uni;
+import std.conv;
+import std.stdio;
 
 //import dfl.all;
+
+extern (System) {
+	DWORD GetModuleFileNameW(HMODULE hModule, LPWSTR lpFilename, DWORD nSize);
+}
 
 class ApplicationPaths {
 	__gshared string executablePath;
 	__gshared string startupPath;
 	
 	@property static void initialize(string[] args) {
-		ApplicationPaths.executablePath = args[0];
+		scope wchar strExePath[MAX_PATH];
+		GetModuleFileNameW(null, strExePath.ptr, MAX_PATH);
+		
+		ApplicationPaths.executablePath = to!string(std.utf.toUTF8(strExePath).ptr);
 		ApplicationPaths.startupPath = current();
+		
+		writefln("ApplicationPaths.exeFile: %s", executablePath);
+		writefln("ApplicationPaths.exePath: %s", exe);
+		writefln("ApplicationPaths.current: %s", current);
+		writefln("ApplicationPaths.startup: %s", startup);
 	}
 	
 	@property static string exe() {

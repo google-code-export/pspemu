@@ -469,7 +469,8 @@ else // Phobos
 		}
 	}
 	
-	alias std.string.find charFindInString;
+	//alias std.string.find charFindInString;
+	alias std.string.indexOf charFindInString;
 	
 	alias std.string.toStringz stringToStringz;
 	
@@ -478,7 +479,7 @@ else // Phobos
 		return std.string.format("%X", num);
 	}
 	
-	alias std.string.splitlines stringSplitLines;
+	alias std.string.splitLines stringSplitLines;
 	
 	
 	private import std.path;
@@ -567,9 +568,15 @@ else // Phobos
 	}
 	
 	
-	private import std.ctype;
+	private import std.ascii;
 	
-	alias std.ctype.isxdigit charIsHexDigit;
+	alias std.ascii.isHexDigit charIsHexDigit;
+	
+	/*
+	bool charIsHexDigit(char c) {
+		return ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
+	}
+	*/
 	
 	
 	private import std.stream;

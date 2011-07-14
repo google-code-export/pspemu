@@ -2,7 +2,7 @@ module pspemu.utils.String;
 
 import std.conv;
 import std.traits;
-import std.ctype;
+import std.ascii;
 import std.c.stdio;
 import std.stdio;
 
@@ -58,10 +58,10 @@ string stringInterpolate2(string base, char[] chars, string[] map) {
 	assert(chars.length == map.length);
 	for (int n = 0; n < base.length; n++) {
 		char c = base[n];
-		if (isalnum(c)) {
+		if (isAlphaNum(c)) {
 			if (
-				((n == 0) || !isalnum(base[n - 1])) &&
-				((n == base.length - 1) || !isalnum(base[n + 1]))
+				((n == 0) || !isAlphaNum(base[n - 1])) &&
+				((n == base.length - 1) || !isAlphaNum(base[n + 1]))
 			) {
 				bool found = false;
 				foreach (k, c2; chars) {

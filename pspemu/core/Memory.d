@@ -12,9 +12,10 @@ module pspemu.core.Memory;
 import std.stdio;
 import std.stream;
 import std.string;
-import std.ctype;
+import std.ascii;
 import std.metastrings;
 import std.conv;
+import core.memory;
 
 import std.c.windows.windows;
 
@@ -121,6 +122,7 @@ class Memory : Stream {
 		} else {
 			string alloc(string name) {
 				return "this." ~ name ~ " = new ubyte[Segments." ~ name ~ ".size];";
+				//return "this." ~ name ~ " = new ubyte[Segments." ~ name ~ ".size]; core.memory.GC.removeRoot(this." ~ name ~ ".ptr);";
 			}
 		}
 		
@@ -167,7 +169,7 @@ class Memory : Stream {
 			.writef("%08X: ", address);
 			foreach (value; this[address + 0x00..address + 0x10]) .writef("%02X ", value);
 			.writef("| ");
-			foreach (value; this[address + 0x00..address + 0x10]) .writef("%s", isprint(cast(dchar)value) ? cast(dchar)value : cast(dchar)'.');
+			foreach (value; this[address + 0x00..address + 0x10]) .writef("%s", isPrintable(cast(dchar)value) ? cast(dchar)value : cast(dchar)'.');
 			.writefln("");
 		}
 	}
