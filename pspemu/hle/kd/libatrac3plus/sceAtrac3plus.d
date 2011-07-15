@@ -41,6 +41,7 @@ static struct OMA {
 	
 	ubyte[60] pad;
 	
+	static assert (OMA.init.magic.v == 0x01334145);
 	static assert (OMA.sizeof == 0x60); 
 }
 
