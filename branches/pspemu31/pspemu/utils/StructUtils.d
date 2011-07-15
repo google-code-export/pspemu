@@ -22,7 +22,8 @@ struct be(T) {
 	T v;
 	
 	this(T that) {
-		opAssign(that);
+		//opAssign(that); // Regression on v2.054
+		v = swap(that);
 	}
 	
 	static T swap(T)(T v) {
