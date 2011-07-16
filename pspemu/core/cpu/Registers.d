@@ -90,6 +90,8 @@ final class Registers {
 		struct { float[8][4 * 4]  VF_MATRIX; } // matrix,cell
 		struct { float[8][4][4]   VF_CELLS ; } // matrix,column,row
 	}
+	//bool VF_CC[8];
+	bool VF_CC[6];
 
 	struct VfpuPrefix {
 		/*

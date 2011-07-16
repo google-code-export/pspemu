@@ -61,10 +61,15 @@ abstract class GuiBase {
 	void dumpMemory() {
 		Memory memory = hleEmulatorState.emulatorState.memory;
 		std.file.write("memory.dump", memory.mainMemory);
+		std.file.write("memory-vram.dump", memory.frameBuffer);
 	}
 	
 	void dumpThreads() {
 		emulatorState.dumpThreads();
+	}
+
+	void dumpDisplayMode() {
+		emulatorState.dumpDisplayMode();
 	}
 
 	abstract protected void init();

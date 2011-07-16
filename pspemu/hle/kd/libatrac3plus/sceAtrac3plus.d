@@ -424,7 +424,7 @@ class sceAtrac3plus : ModuleNative {
 		*outN = numReadedSamples / 2;
 		*outRemainFrame = -1;
 		
-		logInfo("sceAtracDecodeData(atracID=%d, outN=%d, outEnd=%d, outRemainFrame=%d, offset=%d)", atracID, *outN, *outEnd, *outRemainFrame, atrac3Object.samplesOffset);
+		logTrace("sceAtracDecodeData(atracID=%d, outN=%d, outEnd=%d, outRemainFrame=%d, offset=%d)", atracID, *outN, *outEnd, *outRemainFrame, atrac3Object.samplesOffset);
 
 		if (endedStream) {
 			if (atrac3Object.nloops != 0) {

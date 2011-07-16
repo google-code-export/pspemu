@@ -110,7 +110,7 @@ void init(string[] args) {
 }
 
 
-int main(string[] args) {
+int main2(string[] args) {
 	//core.memory.GC.disable();
 	
 	init(args);
@@ -207,8 +207,8 @@ int main(string[] args) {
 		writefln("Arguments:");
 		writefln("  --help              - Show this help");
 		writefln("  --sandbox_tests     - Run test sandbox code (only for developers)");
-		writefln("  --unit_tests        - Run unittests (only for developers)");
-		writefln("  --extended_tests    - Run tests on 'tests_ex' folder (only for developers)");
+		writefln("  --unit_tests        - Run unittestson 'tests_ex' folder (only for developers)");
+		writefln("  --extended_tests    - Run unittestson 'tests_ex' folder (only for developers)");
 		writefln("  --trace             - Enables cpu tracing at start");
 		writefln("  --log               - Enables logging");
 		writefln("  --nolog             - Disables logging");
@@ -350,15 +350,15 @@ int main(string[] args) {
 		emulatorHelper.emulator.hleEmulatorState.kPrint.outputKprint = true;
 	}
 	emulatorHelper.initComponents();
+	emulatorHelper.waitComponentsInitialized();
+
 	//GuiBase gui = new GuiSdl(emulatorHelper.emulator.hleEmulatorState);
 	GuiBase gui = new GuiDfl(emulatorHelper);
 	gui.start();
 	emulatorHelper.emulator.mainCpuThread.trace = trace;
 	
-	emulatorHelper.waitComponentsInitialized();
-	
 	if (args.length > 1) {
-		emulatorHelper.loadModule(args[1]);
+		emulatorHelper.loadMainModule(args[1]);
 		emulatorHelper.start();
 		return 0;
 	} else {
@@ -372,3 +372,13 @@ int main(string[] args) {
 	return -1;
 }
 
+
+int main(string[] args) {
+	try {
+		return main2(args);
+	} catch (Throwable o) {
+		writefln("FATAL ERROR");
+		writefln("FATAL ERROR: %s", o);
+		return -1;
+	}
+}

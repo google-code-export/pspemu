@@ -1038,10 +1038,19 @@ template OpenglUtils() {
 			if (!glEnableDisable(GL_FOG, state.fog.enabled)) {
 				version (VERSION_ENABLED_STATE_CORTOCIRCUIT) return;
 			}
+			
+			glFogi(GL_FOG_MODE, GL_LINEAR);
+			//glFogf(GL_FOG_DENSITY, 0.35);
+			glHint(GL_FOG_HINT, GL_DONT_CARE);
 
 			glFogfv(GL_FOG_COLOR, state.fog.color.pointer);
-			glFogf(GL_FOG_START, state.fog.end - (1 / state.fog.dist));
-			glFogf(GL_FOG_END, state.fog.end);
+			
+			if (state.fog.dist != 0.0) {
+				glFogf(GL_FOG_START, state.fog.end - (1 / state.fog.dist));
+				glFogf(GL_FOG_END, state.fog.end);
+			}
+				
+			//writefln("%f, %f", state.fog.end - (1 / state.fog.dist), state.fog.end);
 		}
 
 		//glEnable(GL_NORMALIZE);

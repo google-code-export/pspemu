@@ -63,6 +63,10 @@ abstract class CpuThreadBase : InstructionHandler {
 	
 	public void delegate() executeBefore;
 	
+	public CpuThreadBase createCpuThread() {
+		return createCpuThread(threadState.clone);
+	}
+
 	abstract public CpuThreadBase createCpuThread(ThreadState threadState);
 	
 	protected void run() {

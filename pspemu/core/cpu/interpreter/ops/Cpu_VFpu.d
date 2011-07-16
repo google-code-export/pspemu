@@ -1,5 +1,7 @@
 module pspemu.core.cpu.interpreter.ops.Cpu_VFpu;
 
+import std.math;
+
 //debug = DEBUG_VFPU_I;
 
 // http://forums.ps2dev.org/viewtopic.php?t=6929 
@@ -1437,7 +1439,20 @@ template TemplateCpu_VFPU() {
 
 		vfpu_regs[%vfpu_rd] <- (int) (2^scale * vfpu_regs[%vfpu_rs])
 	*/
-	//void OP_VF2IZ() { }
+	void OP_VF2IZ() {
+		auto vsize = instruction.ONE_TWO;
+		auto imm5 = cast(float)instruction.IMM5;
+        loadVs(vsize);
+
+        for (int n = 0; n < vsize; n++) {
+            float value = VS[n] * (2.0 ^^ imm5);
+            *(cast(int *)&VD[n]) = (VS[n] >= 0) ? cast(int)floor(value) : cast(int)ceil(value);
+        }
+
+        saveVd(vsize);
+        
+        registers.pcAdvance(4);
+	}
 
 	/*
 	+----------------------+--------------+----+--------------+---+--------------+
@@ -1536,21 +1551,104 @@ template TemplateCpu_VFPU() {
 	*/ 
 	void OP_VMUL() { OP_V_INTERNAL_IN_N!(2, "l * r"); }
 	
-	/*
+	void _OP_VCMOV_FT(bool expected) {
+		auto vsize = instruction.ONE_TWO;
+		auto imm3 = instruction.IMM3;
+
+		// On a flag value lesser than 6 will copy VS to VD if the flag is on.
+        if (imm3 < 6) {
+            if (registers.VF_CC[imm3] == expected) {
+				loadVs(vsize);
+				VD[] = VS[];
+				saveVd(vsize);
+            } else {
+				// Clear the PFXS flag and process the PFXD transformation
+				// @TODO
+            	//loadVd(vsize);
+            	//saveVd(vsize);
+            }
+        }
+        // On a flag value equals to6 will copy the VS components to VD components if the index of the flag of that component is set.
+        else if (imm3 == 6) {
+            loadVs(vsize);
+            loadVt(vsize);
+            for (int n = 0; n < vsize; n++) {
+                if (registers.VF_CC[n] == expected) VD[n] = VS[n];
+            }
+            saveVd(vsize);
+        } else {
+			// Never copy (checked on a PSP)
+        }
+        
+        registers.pcAdvance(4);
+	}
+	
+	/**
+	 * Move on FALSE
+	 */
+	void OP_VCMOVF() {
+		_OP_VCMOV_FT(false);
+	}
+	
+	/**
+	 * Move on TRUE
+	 */
+	void OP_VCMOVT() {
+		_OP_VCMOV_FT(true);
+	}
+	
 	void OP_VCMP() {
 		auto vsize = instruction.ONE_TWO;
-		int comp = instruction.IMM4;
-		bool not = ((comp & 4) != 0);
-		int type = (comp & 0b11);
+		int cond = instruction.IMM4;
+		//bool not = ((comd & 4) != 0);
+		//int type = (comd & 0b11);
 		
         bool cc_or = false;
         bool cc_and = true;
+        bool cc = false;
 		
-		if ((comp & 8) == 0) {
-			
-		}
+		if ((cond & 8) == 0) {
+            bool not = ((cond & 4) == 4);
+
+            loadVs(vsize);
+            loadVt(vsize);
+
+            for (int n = 0; n < vsize; n++) {
+                switch (cond & 3) {
+                    case 0: cc = not; break;
+                    case 1: cc = not ? (VS[n] != VT[n]) : (VS[n] == VT[n]); break;
+                    case 2: cc = not ? (VS[n] >= VT[n]) : (VS[n] <  VT[n]); break;
+                    case 3: cc = not ? (VS[n] >  VT[n]) : (VS[n] <= VT[n]); break;
+                }
+
+                registers.VF_CC[n] = cc;
+
+                cc_or  = cc_or  || cc;
+                cc_and = cc_and && cc;
+            }
+
+        } else {
+            loadVs(vsize);
+
+            for (int n = 0; n < vsize; n++) {
+                if ((cond & 3) == 0) {
+                    cc = ((cond & 4) == 0) ? (VS[n] == 0.0f) : (VS[n] != 0.0f);
+                } else {
+                    cc = (((cond & 1) == 1) && isNaN(VS[n])) || (((cond & 2) == 2) && !isFinite(VS[n]));
+                    if ((cond & 4) == 4) cc = !cc;
+                }
+                registers.VF_CC[n] = cc;
+
+                cc_or  = cc_or  || cc;
+                cc_and = cc_and && cc;
+            }
+        }
+
+        registers.VF_CC[4] = cc_or;
+        registers.VF_CC[5] = cc_and;
+        
+        registers.pcAdvance(4);
 	}
-	*/
 	
 	/* 
 	+----------------------+--------------+----+--------------+---+--------------+ 
@@ -1917,7 +2015,7 @@ template TemplateCpu_VFPU_Utils() {
 			}
 			prefix.enabled = false;
 		} else {
-			foreach (i, ref value; dst) value = *src[i];
+			foreach (n, ref value; dst) value = *src[n];
 		}
 	}
 	

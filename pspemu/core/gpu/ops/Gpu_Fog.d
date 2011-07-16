@@ -11,7 +11,9 @@ template Gpu_Fog() {
 	// void sceGuFog(float near, float far, unsigned int color); // OP_FCOL + OP_FFAR + OP_FDIST
 
 	// Fog enable (GU_FOG)
-	auto OP_FGE() { gpu.state.fog.enabled = command.bool1; /* fogMode = GL_LINEAR; fogHint = GL_DONT_CARE; fogDensity = 0.1; */ }
+	auto OP_FGE() {
+		gpu.state.fog.enabled = command.bool1;
+	}
 
 	// Fog COLor
 	auto OP_FCOL() {
@@ -22,10 +24,12 @@ template Gpu_Fog() {
 	// Fog FAR
 	auto OP_FFAR() {
 		gpu.state.fog.end = command.float1;
+		//writefln("OP_FFAR: %f", gpu.state.fog.end);
 	}
 
 	// Fog DISTance
 	auto OP_FDIST() {
 		gpu.state.fog.dist = command.float1;
+		//writefln("OP_FDIST: %f", gpu.state.fog.end);
 	}
 }

@@ -418,7 +418,7 @@ class Gpu {
 		}
 	}
 
-	void storeBuffer(ScreenBuffer* buffer) {
+	void storeBuffer(ScreenBuffer* buffer, bool isDepthBuffer = false) {
 		if (buffer.storeAddress) {
 			uint storeAddress = buffer.storeAddress;
 			buffer.storeAddress = 0;
@@ -469,7 +469,7 @@ class Gpu {
 		} else {
 			if (state.drawBuffer.loadAddress) logTrace("performBufferOp(STORE) has state.drawBuffer.mustLoad. It wasn't stored yet!");
 			if (bufferType & BufferType.COLOR) storeBuffer(&state.drawBuffer);
-			if (bufferType & BufferType.DEPTH) storeBuffer(&state.depthBuffer);
+			if (bufferType & BufferType.DEPTH) storeBuffer(&state.depthBuffer, /*isDepthBuffer=*/true);
 		}
 	}
 	

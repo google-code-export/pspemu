@@ -84,7 +84,12 @@ class Memory : Stream {
 
 	static struct Segments {
 		const scratchPad  = Segment(0x00_010000, 0x00004000);
-		const frameBuffer = Segment(0x04_000000, 0x00200000);
+		//const frameBuffer = Segment(0x04_000000, 0x00200000);
+		const frameBuffer = Segment(0x04_000000, 0x00800000); // http://hitmen.c02.at/files/yapspd/psp_doc/chap10.html#sec10
+		// 0x04_00_00_00 = VRAM 
+		// 0x04_20_00_00 = SWIZZLED ZBUFFER
+		// 0x04_40_00_00 = VRAM MIRRORED
+		// 0x04_80_00_00 = UNSWIZZLED ZBUFFER
 		const mainMemory  = Segment(0x08_000000, 0x02000000);
 		const hwVectors   = Segment(0x1f_c00000, 0x00100000);
 	}
@@ -215,9 +220,13 @@ class Memory : Stream {
 			address &= 0x1FFFFFFF; // Ignore last 3 bits (cache / kernel)
 			switch (address >> 24) {
 				/////// hp
-				case 0b_00000: mixin(CheckAndReturnSegment("scratchPad")); break;
+				case 0b_00000:
+					mixin(CheckAndReturnSegment("scratchPad"));
+				break;
 				/////// hp
-				case 0b_00100: mixin(CheckAndReturnSegment("frameBuffer")); break;
+				case 0b_00100:
+					mixin(CheckAndReturnSegment("frameBuffer"));
+				break;
 				/////// hp
 				case 0b_01000:
 				case 0b_01001:

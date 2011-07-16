@@ -269,6 +269,7 @@ class sceSasCore : ModuleNative {
 		foreach (uint index, ref voice; sasCore.voices) {
 			if (voice.ended) endFlags |= (1 << index); 
 		}
+		//logInfo("__sceSasGetEndFlag::%032b", endFlags);
 		return endFlags;
     }
 
@@ -543,7 +544,7 @@ class sceSasCore : ModuleNative {
 		try {
 			foreach (index, ref SasVoice voice; sasCore.voices) {
 				if (voice.on) {
-					logTrace("SasCore:: Voice(%d):%s", index, voice.toString);
+					//logTrace("SasCore:: Voice(%d):%s", index, voice.toString);
 				}
 				if (voice.onAndPlaying) {
 					foreach (ref sample; tempMixer) sample = voice.getSample; 
