@@ -293,16 +293,16 @@ class MainForm : Form, IMessageFilter {
 		openFileDialog.filter = "All compatible files EBOOT.PBP, ELF and ISO Files|EBOOT.PBP;*.elf;*.iso;*.cso|All files (*.*)|*.*";
 		if (openFileDialog.showDialog() == DialogResult.OK) {
 			Thread thread = new Thread({
-				writefln("[1]");
+				//writefln("[1]");
 				guiDfl.emulatorHelper.reset();
 				//guiDfl.emulatorHelper.emulator.emulatorState.runningState.stopCpu();
-				writefln("[2]");
+				//writefln("[2]");
 				//guiDfl.emulatorHelper.emulator.emulatorState.waitForAllCpuThreadsToTerminate();
-				writefln("[3]");
-				guiDfl.emulatorHelper.loadModule(openFileDialog.fileName);
-				writefln("[4]");
+				//writefln("[3]");
+				guiDfl.emulatorHelper.loadMainModule(openFileDialog.fileName);
+				//writefln("[4]");
 				guiDfl.emulatorHelper.start();
-				writefln("[5]");
+				//writefln("[5]");
 			});
 			thread.name = "GuiOpen";
 			thread.start();
@@ -380,6 +380,7 @@ class MainForm : Form, IMessageFilter {
 					break;
 					case VK_F2:
 						guiDfl.dumpThreads();
+						guiDfl.dumpDisplayMode();
 						return true;
 					break;
 					case VK_F3:

@@ -30,9 +30,20 @@ class LoadExecForUser : ModuleNative {
 	  *
 	  */
 	int sceKernelLoadExec(string file, SceKernelLoadExecParam *param) {
+		//hleEmulatorState.moduleLoader.load
+		//public ModulePsp loadModuleFromVfs(string fsProgramPath, uint argc, uint argv, string pspModulePath = null) {
+		uint argc, argv;
+
+		if (param is null) {
+			argc = cast(uint)param.args;
+			argv = cast(uint)param.argp;
+		}
+		
 		logInfo("sceKernelLoadExec('%s')", file);
-		unimplemented();
-		return -1;
+		hleEmulatorState.moduleManager.loadModuleFromVfs(file, argc, argv);
+		
+		//unimplemented();
+		return 0;
 	}
 
 	/**

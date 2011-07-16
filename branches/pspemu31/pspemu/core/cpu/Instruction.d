@@ -151,6 +151,8 @@ struct Instruction {
 			~ bitslice!("v", uint, "IMM5", 16, 5)
 			
 			~ bitslice!("v", uint, "IMM4",  0, 4)
+			
+			~ bitslice!("v", uint, "IMM3",  16, 3)
 
 			~ bitslice!("v", uint, "VD",  0, 7)
 			~ bitslice!("v", uint, "ONE", 7, 1)

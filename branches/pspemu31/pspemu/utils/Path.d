@@ -26,11 +26,13 @@ class ApplicationPaths {
 		
 		ApplicationPaths.executablePath = to!string(std.utf.toUTF8(strExePath).ptr);
 		ApplicationPaths.startupPath = current();
-		
+
+		/*
 		writefln("ApplicationPaths.exeFile: %s", executablePath);
 		writefln("ApplicationPaths.exePath: %s", exe);
 		writefln("ApplicationPaths.current: %s", current);
 		writefln("ApplicationPaths.startup: %s", startup);
+		*/
 	}
 	
 	@property static string exe() {

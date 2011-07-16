@@ -1,9 +1,16 @@
 module pspemu.hle.vfs.devices.UmdDevice;
 
 import pspemu.hle.vfs.devices.IoDevice;
+import pspemu.hle.vfs.IsoFileSystem;
 
 import pspemu.utils.Logger;
 import pspemu.hle.kd.SceKernelErrors;
+
+enum IoUmdCtlCommand {
+	UmdSeekFile           = 0x01010005,
+	GetUmdFileStartSector = 0x01020006,
+	GetUmdFileLength      = 0x01020007,
+}
 
 class UmdDevice : IoDevice {
 	this(HleEmulatorState hleEmulatorState, VirtualFileSystem parentVirtualFileSystem) {
@@ -11,15 +18,26 @@ class UmdDevice : IoDevice {
 	}
 
 	override int ioctl(FileHandle fileHandle, uint cmd, ubyte[] indata, ubyte[] outdata) {
-		IoCtlCommand command = cast(IoCtlCommand)cmd;
+		IoUmdCtlCommand command = cast(IoUmdCtlCommand)cmd;
 		switch (command) {
-			case IoCtlCommand.UmdSeekFile: {
+			case IoUmdCtlCommand.UmdSeekFile: {
 				uint seekOffset = *(cast(uint*)indata.ptr);
 				fileHandle.position = seekOffset;
 				Logger.log(Logger.Level.INFO, "UmdDevice", "Seek: %d", seekOffset);
 				return 0;
 			} break;
-			case IoCtlCommand.GetUmdFileLength: {
+			case IoUmdCtlCommand.GetUmdFileStartSector: {
+				if (outdata.length < 4) return SceKernelErrors.ERROR_INVALID_ARGUMENT;
+				if (fileHandle is null) return SceKernelErrors.ERROR_INVALID_ARGUMENT;
+				
+				IsoFileHandle isoFileHandle = cast(IsoFileHandle)fileHandle;
+				
+				uint sector = cast(uint)isoFileHandle.isoNode.directoryRecord.extent;
+				*(cast(uint*)outdata.ptr) = sector;
+				Logger.log(Logger.Level.INFO, "UmdDevice", "Sector: %d", sector);
+				return 0;
+			} break;
+			case IoUmdCtlCommand.GetUmdFileLength: {
 				if (outdata.length < 8) return SceKernelErrors.ERROR_INVALID_ARGUMENT;
 				if (fileHandle is null) return SceKernelErrors.ERROR_INVALID_ARGUMENT;
 				*(cast(ulong*)outdata.ptr) = cast(ulong)fileHandle.size;

@@ -14,25 +14,20 @@ import pspemu.core.cpu.Instruction;
 import pspemu.core.cpu.Registers;
 
 string genSwitchAll() {
-	//static if (false) {
-	static if (true) {
-		const string str = q{
-			genSwitch(
-				PspInstructions_ALU ~
-				PspInstructions_BCU ~
-				PspInstructions_LSU ~
-				PspInstructions_FPU ~
-				PspInstructions_COP0 ~
-				PspInstructions_VFPU_IMP ~
-				//PspInstructions_VFPU ~
-				PspInstructions_SPECIAL
-			)
-		};
-		//pragma(msg, mixin(str));
-		return mixin(str);
-	} else {
-		return import("cached_switch_all.dcode");
-	} 
+	const string str = q{
+		genSwitch(
+			PspInstructions_ALU ~
+			PspInstructions_BCU ~
+			PspInstructions_LSU ~
+			PspInstructions_FPU ~
+			PspInstructions_COP0 ~
+			PspInstructions_VFPU_IMP ~
+			//PspInstructions_VFPU ~
+			PspInstructions_SPECIAL
+		)
+	};
+	//pragma(msg, mixin(str));
+	return mixin(str);
 }
 
 class InstructionHandler {

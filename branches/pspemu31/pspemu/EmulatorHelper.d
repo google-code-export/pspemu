@@ -23,6 +23,7 @@ import pspemu.hle.HleEmulatorState;
 import pspemu.hle.ModuleNative;
 import pspemu.hle.ModuleLoader;
 import pspemu.hle.ModulePsp;
+import pspemu.hle.ModuleManager;
 
 import pspemu.gui.GuiBase;
 
@@ -38,11 +39,11 @@ import pspemu.hle.vfs.MountableVirtualFileSystem;
 import pspemu.utils.Diff;
 
 class EmulatorHelper {
-	const uint CODE_PTR_EXIT_THREAD = 0x08000000;
-	const uint CODE_PTR_END_CALLBACK = 0x08000004;
-	const uint CODE_PTR_ARGUMENTS = 0x08000100;
-	
 	Emulator emulator;
+	
+	@property HleEmulatorState hleEmulatorState() {
+		return emulator.hleEmulatorState;
+	}
 	
 	this(Emulator emulator) {
 		this.emulator = emulator;
@@ -51,12 +52,12 @@ class EmulatorHelper {
 	
 	public void init() {
 		emulator.hleEmulatorState.memoryManager.allocHeap(PspPartition.Kernel0, "KernelFunctions", 1024);
-		emulator.emulatorState.memory.twrite!uint(CODE_PTR_EXIT_THREAD, 0x0000000C | (0x2071 << 6));
-		emulator.emulatorState.memory.twrite!uint(CODE_PTR_END_CALLBACK, 0x0000000C | (0x1003 << 6));
-		//emulator.emulatorState.memory.twrite!uint(CODE_PTR_END_CALLBACK, 0x0000000C | (0x1002 << 6));
+		emulator.emulatorState.memory.twrite!uint(ModuleManager.CODE_PTR_EXIT_THREAD, 0x0000000C | (0x2071 << 6));
+		emulator.emulatorState.memory.twrite!uint(ModuleManager.CODE_PTR_END_CALLBACK, 0x0000000C | (0x1003 << 6));
+		//emulator.emulatorState.memory.twrite!uint(ModuleLoader.CODE_PTR_END_CALLBACK, 0x0000000C | (0x1002 << 6));
 		
 		with (emulator.emulatorState) {
-			memory.position = CODE_PTR_ARGUMENTS;
+			memory.position = ModuleManager.CODE_PTR_ARGUMENTS;
 			memory.write(cast(uint)(memory.position + 4));
 		}
 		
@@ -70,7 +71,7 @@ class EmulatorHelper {
 	public void setProgramFirstArg(string programPath) {
 		Logger.log(Logger.Level.INFO, "EmulatorHelper", "setProgramFirstArg('%s')", programPath);
 		with (emulator.emulatorState) {
-			memory.position = CODE_PTR_ARGUMENTS;
+			memory.position = ModuleManager.CODE_PTR_ARGUMENTS;
 			memory.write(cast(uint)(memory.position + 4));
 			memory.writeString(programPath ~ "\0");
 		}
@@ -84,8 +85,8 @@ class EmulatorHelper {
 	public void stop() {
 		emulator.emulatorState.runningState.stop();
 	}
-	
-	public void loadModule(string pspModulePath) {
+
+	public void loadMainModule(string pspModulePath) {
 		Logger.log(Logger.Level.INFO, "EmulatorHelper", "Loading module ('%s')...", pspModulePath);
 
 		//emulator.hleEmulatorState.memoryManager.allocHeap(PspPartition.User, "temp", 0x4000);
@@ -106,6 +107,7 @@ class EmulatorHelper {
 				} else if (std.file.exists(pspModulePath ~ "/PSP_GAME/SYSDIR/BOOT.BIN")) {
 					pspModulePath = testPath;
 				} else {
+					writefln("Can't find any suitable PSP executable on '%s'", pspModulePath);
 					throw(new Exception(std.string.format("Can't find any suitable PSP executable on '%s'", pspModulePath)));
 				}
 			}
@@ -127,28 +129,18 @@ class EmulatorHelper {
 		
 		setProgramFirstArg(fsProgramPath);
 		
-		ModulePsp modulePsp = emulator.hleEmulatorState.moduleManager.loadPspModule(
-			rootFileSystem.fsroot.open(fsProgramPath, FileOpenMode.In, FileAccessMode.All),
-			fsProgramPath
+		//ModulePsp modulePsp = emulator.hleEmulatorState.moduleLoader.loadModuleFromVfs(
+		//ModulePsp modulePsp = loadModuleFromVfs(
+		ModulePsp modulePsp = emulator.hleEmulatorState.moduleManager.loadModuleFromVfs(
+			emulator.mainCpuThread,
+			fsProgramPath,
+			1,
+			ModuleManager.CODE_PTR_ARGUMENTS + 4,
+			pspModulePath
 		);
+		
 		emulator.hleEmulatorState.mainModule = modulePsp;
 		emulator.mainCpuThread.threadState.threadModule = modulePsp; 
-		
-		with (emulator.mainCpuThread) {
-			registers.pcSet = emulator.hleEmulatorState.moduleLoader.PC; 
-		
-			registers.GP = emulator.hleEmulatorState.moduleLoader.GP;
-			registers.SP = emulator.hleEmulatorState.memoryManager.allocStack(PspPartition.User, "Stack for main thread", 0x4000) - 0x10;
-			registers.K0 = registers.SP;
-			registers.RA = CODE_PTR_EXIT_THREAD;
-			registers.A0 = 1;
-			registers.A1 = CODE_PTR_ARGUMENTS + 4;
-		}
-		
-		//emulator.emulatorState.memory.twrite(0x08810D62, cast(ubyte)0);
-		
-		Logger.log(Logger.Level.INFO, "EmulatorHelper", "Module '%s':'%s' loaded successfully", fsProgramPath, pspModulePath);
-		//logInfo("Module '%s' loaded successfully", pspModulePath);
 	}
 	
 	public void initComponents() {
@@ -183,7 +175,7 @@ class EmulatorHelper {
 		
 		stdout.writef("%s...", pspTestBasePath); stdout.flush();
 		if (std.file.exists(pspTestElfPath)) {
-			loadModule(pspTestElfPath);
+			loadMainModule(pspTestElfPath);
 			start();
 
 			string expected = std.string.strip(cast(string)std.file.read(pspTestExpectedPath));

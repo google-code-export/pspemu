@@ -27,6 +27,7 @@ import pspemu.hle.Syscall;
 import pspemu.hle.RootFileSystem;
 import pspemu.hle.Callbacks;
 import pspemu.hle.KPrint;
+import pspemu.hle.OsConfig;
 
 import pspemu.core.exceptions.NotImplementedException;
 
@@ -43,6 +44,7 @@ class HleEmulatorState : ISyscall {
 	public CallbacksHandler callbacksHandler;
 	public KPrint           kPrint;
 	public ModulePsp        mainModule;
+	public OsConfig         osConfig;
 	public Object           globalLock;
 	
 	string mainModuleName() {
@@ -65,6 +67,7 @@ class HleEmulatorState : ISyscall {
 		this.rootFileSystem   = new RootFileSystem(this);
 		this.callbacksHandler = new CallbacksHandler(this);
 		this.kPrint           = new KPrint();
+		this.osConfig         = new OsConfig();
 		this.emulatorState.syscall = this;
 	}
 

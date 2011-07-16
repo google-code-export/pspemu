@@ -3,11 +3,6 @@ module pspemu.hle.vfs.devices.IoDevice;
 public import pspemu.hle.vfs.ProxyVirtualFileSystem;
 public import pspemu.hle.HleEmulatorState;
 
-enum IoCtlCommand {
-	UmdSeekFile      = 0x01010005,
-	GetUmdFileLength = 0x01020007,
-}
-
 struct DeviceSize {
 	/**
 	 * Total number of clusters on the device.

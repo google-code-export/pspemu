@@ -93,6 +93,10 @@ class EmulatorState {
     	}
     }
     
+    void dumpDisplayMode() {
+    	writefln("DISPLAY: %s", display);
+    }
+    
 	void dumpThreads() {
 		try {
 			writefln("Threads(%d):", Thread.getAll.length);

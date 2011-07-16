@@ -69,6 +69,23 @@ class Display {
 	uint CURRENT_HCOUNT;
 	uint VBLANK_COUNT;
 	
+	public string toString() {
+		string r = "";
+		r ~= std.string.format("Display(");
+		r ~= std.string.format("mode=%d, ", mode);
+		r ~= std.string.format("width=%d, ", width);
+		r ~= std.string.format("bufferwidth=%d, ", width);
+		r ~= std.string.format("height=%d, ", height);
+		r ~= std.string.format("topaddr=0x%08X, ", topaddr);
+		r ~= std.string.format("pixelformat=%d:'%s', ", pixelformat, to!string(pixelformat));
+		r ~= std.string.format("sync=%d:'%s', ", sync, to!string(sync));
+		r ~= std.string.format("CURRENT_HCOUNT=%d, ", CURRENT_HCOUNT);
+		r ~= std.string.format("VBLANK_COUNT=%d, ", VBLANK_COUNT);
+		r ~= std.string.format(")");
+		return r;
+	}
+
+	
 	const real processed_pixels_per_second = 9_000_000; // hz
 	const real cycles_per_pixel            = 1;
 	const real pixels_in_a_row             = 525;
